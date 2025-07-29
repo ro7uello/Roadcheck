@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "RoadCheck",
+    "slug": "roadcheck",
+    "version": "1.0.0",
+    "orientation": "landscape",
+    "scheme": "roadcheck",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#000000"
+      }
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "newArchEnabled": true
+    },
+    "fonts": [
+      "./assets/fonts/pixel3.ttf"
+    ]
+  }
+}
