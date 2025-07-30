@@ -1,3 +1,4 @@
+// ===== FIXED app/_layout.jsx (ROOT LAYOUT) =====
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
@@ -9,8 +10,8 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     'Pixel3': require('../assets/fonts/pixel3.ttf'),
-    // You can also add multiple variants if the font has them
     'Pixel3-Regular': require('../assets/fonts/pixel3.ttf'),
+    'pixel': require('../assets/fonts/pixel3.ttf'),
   });
 
   useEffect(() => {
@@ -20,7 +21,6 @@ export default function RootLayout() {
   }, [fontsLoaded, fontError]);
 
   useEffect(() => {
-    // Debug font loading
     console.log('Pixel3 font loaded:', fontsLoaded);
     if (fontError) {
       console.error('Font loading error:', fontError);
@@ -36,11 +36,13 @@ export default function RootLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        orientation: 'landscape',
       }}
     >
       <Stack.Screen name="index" options={{ title: 'Home' }} />
       <Stack.Screen name="loadingScreen" options={{ title: 'Loading' }} />
+      <Stack.Screen name="optionPage" options={{ title: 'Options' }} />
+      <Stack.Screen name="driverGame" options={{ title: 'Driver Game' }} />
+      <Stack.Screen name="pedestrianGame" options={{ title: 'Pedestrian Game' }} />
     </Stack>
   );
 }

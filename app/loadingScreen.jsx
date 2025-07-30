@@ -1,3 +1,4 @@
+// ===== FIXED app/loadingScreen.jsx =====
 import React, { useRef, useEffect, useState } from 'react';
 import {
   StyleSheet,
@@ -12,41 +13,33 @@ import {
 import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
-
-// Configuration
 const BACKGROUND_SPEED = 12000;
 const LOADING_DURATION = 3000;
-const PROGRESS_STEPS = 60; // More granular progress updates
+const PROGRESS_STEPS = 60;
 
 export default function LoadingScreen() {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingText, setLoadingText] = useState('LOADING');
   
-  // Animations
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
   const carBounce = useRef(new Animated.Value(0)).current;
   const textPulse = useRef(new Animated.Value(0)).current;
   const loadingBarAnimation = useRef(new Animated.Value(0)).current;
   const fadeInAnimation = useRef(new Animated.Value(0)).current;
-  const titleGlow = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Start all animations
     startFadeInAnimation();
     startBackgroundAnimation();
     startCarAnimation();
     startTextAnimation();
-    startTitleGlowAnimation();
     startLoadingAnimation();
 
-    // Cleanup function
     return () => {
       backgroundAnimation.stopAnimation();
       carBounce.stopAnimation();
       textPulse.stopAnimation();
       loadingBarAnimation.stopAnimation();
       fadeInAnimation.stopAnimation();
-      titleGlow.stopAnimation();
     };
   }, []);
 
@@ -108,25 +101,6 @@ export default function LoadingScreen() {
     ).start();
   };
 
-  const startTitleGlowAnimation = () => {
-    titleGlow.setValue(0);
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(titleGlow, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(titleGlow, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ]),
-      { iterations: -1 }
-    ).start();
-  };
-
   const updateLoadingText = (progress) => {
     const dots = '.'.repeat((Math.floor(progress / 10) % 4));
     if (progress < 30) {
@@ -141,16 +115,14 @@ export default function LoadingScreen() {
   };
 
   const startLoadingAnimation = () => {
-    // Simulate loading progress with variable speed
     let currentProgress = 0;
     const progressInterval = setInterval(() => {
       setLoadingProgress(prev => {
-        // Variable loading speed - slower at beginning and end
         let increment;
         if (currentProgress < 20 || currentProgress > 80) {
-          increment = 1; // Slower at start/end
+          increment = 1;
         } else {
-          increment = 2; // Faster in middle
+          increment = 2;
         }
         
         const newProgress = Math.min(prev + increment, 100);
@@ -160,8 +132,8 @@ export default function LoadingScreen() {
         
         if (newProgress >= 100) {
           clearInterval(progressInterval);
-          // Navigate to option page after loading completes
           setTimeout(() => {
+            // Navigate to option page
             router.replace('/optionPage');
           }, 800);
           return 100;
@@ -170,7 +142,6 @@ export default function LoadingScreen() {
       });
     }, LOADING_DURATION / PROGRESS_STEPS);
 
-    // Animate the loading bar
     Animated.timing(loadingBarAnimation, {
       toValue: 1,
       duration: LOADING_DURATION,
@@ -178,7 +149,6 @@ export default function LoadingScreen() {
     }).start();
   };
 
-  // Animation interpolations
   const backgroundTranslate = backgroundAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -width],
@@ -209,14 +179,8 @@ export default function LoadingScreen() {
     outputRange: ['0%', '100%'],
   });
 
-  const titleGlowIntensity = titleGlow.interpolate({
-    inputRange: [0, 1],
-    outputRange: [8, 15],
-  });
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Moving Background */}
       <View style={styles.backgroundContainer}>
         <Animated.View
           style={[
@@ -246,10 +210,8 @@ export default function LoadingScreen() {
         </Animated.View>
       </View>
 
-      {/* Overlay */}
       <View style={styles.overlay} />
 
-      {/* Animated Car */}
       <Animated.View
         style={[
           styles.carContainer,
@@ -269,14 +231,12 @@ export default function LoadingScreen() {
         />
       </Animated.View>
 
-      {/* Main Content */}
       <Animated.View 
         style={[
           styles.contentContainer,
           { opacity: fadeInAnimation }
         ]}
       >
-        {/* BLOBAGETS Title */}
         <Animated.View
           style={[
             styles.titleContainer,
@@ -286,14 +246,12 @@ export default function LoadingScreen() {
             },
           ]}
         >
-          <Text style={styles.title}>BLOBAGETS</Text>
+          <Text style={styles.title}>R O A D C H E C K</Text>
         </Animated.View>
 
-        {/* Loading Section */}
         <View style={styles.loadingSection}>
           <Text style={styles.loadingText}>{loadingText}</Text>
           
-          {/* Loading Bar Container */}
           <View style={styles.loadingBarContainer}>
             <Animated.View
               style={[
@@ -301,7 +259,6 @@ export default function LoadingScreen() {
                 { width: loadingBarWidth }
               ]}
             />
-            {/* Loading bar shine effect */}
             <View
               style={[
                 styles.loadingBarShine,
@@ -312,11 +269,9 @@ export default function LoadingScreen() {
             />
           </View>
           
-          {/* Loading Percentage */}
           <Text style={styles.percentageText}>{loadingProgress}%</Text>
         </View>
 
-        {/* Subtitle */}
         <Text style={styles.subtitle}>PREPARING YOUR ADVENTURE...</Text>
       </Animated.View>
     </SafeAreaView>
@@ -376,10 +331,10 @@ const styles = StyleSheet.create({
     marginBottom: 60,
   },
   title: {
-    fontSize: 64,
+    fontSize: 54,
     color: '#ffffff',
     fontFamily: 'Pixel3',
-    textShadowColor: '#000000ff',
+    textShadowColor: '#000000',
     textShadowOffset: { width: 4, height: 4 },
     textShadowRadius: 8,
     letterSpacing: 6,
@@ -397,7 +352,7 @@ const styles = StyleSheet.create({
     textShadowColor: '#000',
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
-    minHeight: 30, // Prevent layout shift
+    minHeight: 30,
     textAlign: 'center',
   },
   loadingBarContainer: {
@@ -435,7 +390,7 @@ const styles = StyleSheet.create({
     textShadowColor: '#000',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
-    minWidth: 50, // Prevent layout shift
+    minWidth: 50,
     textAlign: 'center',
   },
   subtitle: {

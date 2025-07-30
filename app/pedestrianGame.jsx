@@ -1,5 +1,4 @@
-// ===== FIXED app/optionPage.jsx =====
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,15 +16,18 @@ import { useFonts } from 'expo-font';
 const { width, height } = Dimensions.get('window');
 const BACKGROUND_SPEED = 12000;
 
-export default function OptionPage() {
+export default function PedestrianGame() {
+  // Load font
   const [fontsLoaded] = useFonts({
     'pixel': require('../assets/fonts/pixel3.ttf'),
   });
   
+  // Animations
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
   const carBounce = useRef(new Animated.Value(0)).current;
-  const driverScale = useRef(new Animated.Value(1)).current;
-  const pedestrianScale = useRef(new Animated.Value(1)).current;
+  const roadMarkingsScale = useRef(new Animated.Value(1)).current;
+  const signsScale = useRef(new Animated.Value(1)).current;
+  const intersectionScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -36,8 +38,9 @@ export default function OptionPage() {
     return () => {
       backgroundAnimation.stopAnimation();
       carBounce.stopAnimation();
-      driverScale.stopAnimation();
-      pedestrianScale.stopAnimation();
+      roadMarkingsScale.stopAnimation();
+      signsScale.stopAnimation();
+      intersectionScale.stopAnimation();
     };
   }, [fontsLoaded]);
 
@@ -72,37 +75,54 @@ export default function OptionPage() {
     ).start();
   };
 
-  const handleDriverPress = () => {
+  const handleRoadMarkingsPress = () => {
     Animated.sequence([
-      Animated.timing(driverScale, {
+      Animated.timing(roadMarkingsScale, {
         toValue: 0.9,
         duration: 100,
         useNativeDriver: true,
       }),
-      Animated.timing(driverScale, {
+      Animated.timing(roadMarkingsScale, {
         toValue: 1,
         duration: 100,
         useNativeDriver: true,
       }),
     ]).start(() => {
-      router.push('/driverGame');
+      router.push('/roadMarkingPedestrian');
     });
   };
 
-  const handlePedestrianPress = () => {
+  const handleSignsPress = () => {
     Animated.sequence([
-      Animated.timing(pedestrianScale, {
+      Animated.timing(signsScale, {
         toValue: 0.9,
         duration: 100,
         useNativeDriver: true,
       }),
-      Animated.timing(pedestrianScale, {
+      Animated.timing(signsScale, {
         toValue: 1,
         duration: 100,
         useNativeDriver: true,
       }),
     ]).start(() => {
-      router.push('/pedestrianGame');
+      router.push('/signPedestrian');
+    });
+  };
+
+  const handleIntersectionPress = () => {
+    Animated.sequence([
+      Animated.timing(intersectionScale, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(intersectionScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      router.push('/intersectionPedestrian');
     });
   };
 
@@ -114,6 +134,7 @@ export default function OptionPage() {
     return null;
   }
 
+  // Animation interpolations
   const backgroundTranslate = backgroundAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -width],
@@ -125,41 +146,42 @@ export default function OptionPage() {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.backgroundContainer}>
+    <SafeAreaView style={pedestrianStyles.container}>
+      <View style={pedestrianStyles.backgroundContainer}>
         <Animated.View
           style={[
-            styles.backgroundWrapper,
+            pedestrianStyles.backgroundWrapper,
             { transform: [{ translateX: backgroundTranslate }] }
           ]}
         >
           <ImageBackground
             source={require('../assets/background/city-background.png')}
-            style={styles.backgroundImage}
+            style={pedestrianStyles.backgroundImage}
             resizeMode="stretch"
-            imageStyle={styles.backgroundImageStyle}
+            imageStyle={pedestrianStyles.backgroundImageStyle}
           />
         </Animated.View>
         <Animated.View
           style={[
-            styles.backgroundWrapper,
+            pedestrianStyles.backgroundWrapper,
             { transform: [{ translateX: Animated.add(backgroundTranslate, width) }] }
           ]}
         >
           <ImageBackground
             source={require('../assets/background/city-background.png')}
-            style={styles.backgroundImage}
+            style={pedestrianStyles.backgroundImage}
             resizeMode="stretch"
-            imageStyle={styles.backgroundImageStyle}
+            imageStyle={pedestrianStyles.backgroundImageStyle}
           />
         </Animated.View>
       </View>
 
-      <View style={styles.skyOverlay} />
+
+      <View style={pedestrianStyles.skyOverlay} />
 
       <Animated.View
         style={[
-          styles.carContainer,
+          pedestrianStyles.carContainer,
           {
             transform: [{ translateY: carVerticalBounce }],
           },
@@ -167,69 +189,86 @@ export default function OptionPage() {
       >
         <Image
           source={require('../assets/car/blue-car.png')}
-          style={styles.carImage}
+          style={pedestrianStyles.carImage}
           resizeMode="contain"
         />
       </Animated.View>
 
-      <TouchableOpacity style={styles.backButton} onPress={goBack}>
-        <Text style={styles.backButtonText}>←</Text>
+      <TouchableOpacity style={pedestrianStyles.backButton} onPress={goBack}>
+        <Text style={pedestrianStyles.backButtonText}>←</Text>
       </TouchableOpacity>
 
-      <View style={styles.topRightIcons}>
-        <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Settings pressed')}>
+      <View style={pedestrianStyles.topRightIcons}>
+        <TouchableOpacity style={pedestrianStyles.iconButton} onPress={() => console.log('Settings pressed')}>
           <Image
             source={require('../assets/icon/Settings.png')}
-            style={styles.topIcon}
+            style={pedestrianStyles.topIcon}
             resizeMode="contain"
           />
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Dictionary pressed')}>
+        <TouchableOpacity style={pedestrianStyles.iconButton} onPress={() => console.log('Dictionary pressed')}>
           <Image
             source={require('../assets/icon/Library.png')}
-            style={styles.topIcon}
+            style={pedestrianStyles.topIcon}
             resizeMode="contain"
           />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>CHOOSE</Text>
+      <View style={pedestrianStyles.titleContainer}>
+        <Text style={pedestrianStyles.title}>CHOOSE</Text>
       </View>
 
-      <View style={styles.selectionContainer}>
-        <Animated.View style={[{ transform: [{ scale: driverScale }] }]}>
+      <View style={pedestrianStyles.selectionContainer}>
+        <Animated.View style={[{ transform: [{ scale: roadMarkingsScale }] }]}>
           <TouchableOpacity
-            style={styles.optionContainer}
-            onPress={handleDriverPress}
+            style={pedestrianStyles.optionContainer}
+            onPress={handleRoadMarkingsPress}
             activeOpacity={0.8}
           >
-            <View style={styles.iconContainer}>
+            <View style={pedestrianStyles.iconContainer}>
               <Image
-                source={require('../assets/icon/steering-wheel.png')}
-                style={styles.optionImage}
+                source={require('../assets/icon/roadmarkings.png')}
+                style={pedestrianStyles.optionImage}
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.optionLabel}>DRIVER</Text>
+            <Text style={pedestrianStyles.optionLabel}>ROAD MARKINGS</Text>
           </TouchableOpacity>
         </Animated.View>
 
-        <Animated.View style={[{ transform: [{ scale: pedestrianScale }] }]}>
+        <Animated.View style={[{ transform: [{ scale: signsScale }] }]}>
           <TouchableOpacity
-            style={styles.optionContainer}
-            onPress={handlePedestrianPress}
+            style={pedestrianStyles.optionContainer}
+            onPress={handleSignsPress}
             activeOpacity={0.8}
           >
-            <View style={styles.iconContainer}>
+            <View style={pedestrianStyles.iconContainer}>
               <Image
-                source={require('../assets/icon/commuter.png')}
-                style={styles.optionImage}
+                source={require('../assets/icon/roadsigns.png')}
+                style={pedestrianStyles.optionImage}
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.optionLabel}>PEDESTRIAN</Text>
+            <Text style={pedestrianStyles.optionLabel}>SIGNS</Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <Animated.View style={[{ transform: [{ scale: intersectionScale }] }]}>
+          <TouchableOpacity
+            style={pedestrianStyles.optionContainer}
+            onPress={handleIntersectionPress}
+            activeOpacity={0.8}
+          >
+            <View style={pedestrianStyles.iconContainer}>
+              <Image
+                source={require('../assets/icon/intersection.png')}
+                style={pedestrianStyles.optionImage}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={pedestrianStyles.optionLabel}>INTERSECTION</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -237,7 +276,7 @@ export default function OptionPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const pedestrianStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#87CEEB',
@@ -264,24 +303,45 @@ const styles = StyleSheet.create({
     height: '100%',
     transform: [{ scale: 1.3 }],
   },
+  roadContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: height * 0.3,
+    zIndex: 1,
+  },
+  road: {
+    flex: 1,
+    backgroundColor: '#333333',
+    position: 'relative',
+  },
+  roadStripe: {
+    position: 'absolute',
+    top: '40%',
+    width: 40,
+    height: 4,
+    backgroundColor: '#FFFF00',
+    left: '12.5%',
+  },
   skyOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: height,
-    backgroundColor: 'rgba(0, 0, 0, 0)',
+    height: height * 0.7,
+    backgroundColor: 'rgba(135, 206, 235, 0.3)',
     zIndex: 0,
   },
   carContainer: {
     position: 'absolute',
-    bottom: -25,
+    bottom: height * 0.05,
     left: width * 0.05,
     zIndex: 2,
   },
   carImage: {
-    width: 400,
-    height: 210,
+    width: 200,
+    height: 100,
   },
   backButton: {
     position: 'absolute',
@@ -327,7 +387,7 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   title: {
-    fontSize: 78,
+    fontSize: 60,
     fontWeight: 'bold',
     color: 'white',
     fontFamily: 'pixel',
@@ -338,37 +398,35 @@ const styles = StyleSheet.create({
   },
   selectionContainer: {
     position: 'absolute',
-    top: height * 0.3,
+    top: height * 0.25,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingHorizontal: 80,
+    paddingHorizontal: 20,
     zIndex: 3,
   },
   optionContainer: {
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     borderRadius: 12,
-    padding: 30,
+    padding: 15,
     borderWidth: 3,
     borderColor: '#666',
-    minWidth: 120,
+    width: 200,
+    height: 200,
+    justifyContent: 'center',
   },
   iconContainer: {
-    marginBottom: 15,
+    marginBottom: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 100,
-    height: 100,
-  },
-  optionImage: {
-    width: 100,
-    height: 100,
+    width: 50,
+    height: 50,
   },
   optionLabel: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: 'bold',
     color: 'white',
     fontFamily: 'pixel',
@@ -376,5 +434,10 @@ const styles = StyleSheet.create({
     textShadowColor: '#000',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
+    bottom:-40,
+  },
+  optionImage: {
+    width: 150,
+    height: 150,
   },
 });
