@@ -90,7 +90,7 @@ export default function DriverPage() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      router.push('/roadMarkingDriver');
+      router.push('/ScenarioTest');
     });
   };
 
