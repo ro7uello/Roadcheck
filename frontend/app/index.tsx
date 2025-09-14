@@ -73,7 +73,7 @@ export default function Home() {
 
   const handleStartPress = () => {
     // Navigate to loading screen
-    router.push('../loadingScreen');
+    router.push('../login');
     console.log('Starting RoadCheck app...');
   };
 

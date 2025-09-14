@@ -207,7 +207,7 @@ export default function OptionPage() {
           >
             <View style={styles.iconContainer}>
               <Image
-                source={require('../assets/icon/steering-wheel.png')}
+                source={require('../assets/icon/steeringwheel.png')}
                 style={styles.optionImage}
                 resizeMode="contain"
               />
