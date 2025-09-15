@@ -58,7 +58,7 @@ export default function LoginPage() {
   });
 
   const handleLogin = () => {
-    router.push("/login"); // 👈 Redirect after login
+    router.push("/home-screen"); // 👈 Redirect after login
   };
 
   const handleRegister = () => {

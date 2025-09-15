@@ -1,7 +1,7 @@
+// profile.jsx
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   Dimensions,
   Image,
@@ -9,21 +9,16 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-
-// ✅ import supabase client
 import { supabase } from "./lib/supabaseClient";
 
 const { width, height } = Dimensions.get("window");
 const BACKGROUND_SPEED = 12000;
 
-export default function LoginPage() {
-  const [email, setEmail] = useState(""); // using email instead of "username"
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+export default function ProfilePage() {
+  const [profile, setProfile] = useState(null);
 
   const bgAnim = useRef(new Animated.Value(0)).current;
   const carAnim = useRef(new Animated.Value(0)).current;
@@ -39,35 +34,22 @@ export default function LoginPage() {
         Animated.timing(carAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
       ])
     ).start();
+
+    // ✅ Fetch profile data from Supabase
+    const fetchProfile = async () => {
+      const { data, error } = await supabase
+        .from("profiles") // replace with your table name
+        .select("name, email, road_markings, road_signs, intersections")
+        .single();
+
+      if (!error) setProfile(data);
+    };
+
+    fetchProfile();
   }, []);
 
   const bgTranslate = bgAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -width] });
   const carBounce = carAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -10] });
-
-  // ✅ Supabase login
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Missing Fields", "Please enter your email and password.");
-      return;
-    }
-    try {
-      setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        Alert.alert("Login Failed", error.message);
-      } else {
-        router.push("/home-screen"); // 👈 redirect after successful login
-      }
-    } catch (err) {
-      Alert.alert("Error", err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -96,36 +78,40 @@ export default function LoginPage() {
         <Image source={require("../assets/car/blue-car.png")} style={styles.car} resizeMode="contain" />
       </Animated.View>
 
-      {/* Login Box */}
+      {/* Profile Box */}
       <View style={styles.box}>
-        <Text style={styles.title}>LOGIN</Text>
+        <Text style={styles.title}>PROFILE</Text>
 
-        <TextInput
-          placeholder="EMAIL"
-          placeholderTextColor="#ccc"
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <TextInput
-          placeholder="PASSWORD"
-          placeholderTextColor="#ccc"
-          secureTextEntry
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-        />
+        {profile ? (
+          <>
+            <Text style={styles.label}>NAME: <Text style={styles.value}>{profile.name}</Text></Text>
+            <Text style={styles.label}>EMAIL: <Text style={styles.value}>{profile.email}</Text></Text>
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-          <Text style={styles.buttonText}>{loading ? "LOADING..." : "LOGIN"}</Text>
+            <Text style={[styles.label, { marginTop: 10 }]}>DRIVER PROGRESSION:</Text>
+            <View style={styles.progressBox}>
+              <Text style={styles.progress}>
+                ROAD MARKINGS: {profile.road_markings}% · {profile.road_markings >= 70 ? "PASSED" : "FAILED"}
+              </Text>
+              <Text style={styles.progress}>
+                ROAD SIGNS: {profile.road_signs}% · {profile.road_signs >= 70 ? "PASSED" : "FAILED"}
+              </Text>
+              <Text style={styles.progress}>
+                INTERSECTIONS: {profile.intersections}% · {profile.intersections >= 70 ? "PASSED" : "FAILED"}
+              </Text>
+            </View>
+          </>
+        ) : (
+          <Text style={styles.label}>Loading...</Text>
+        )}
+
+              <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.closeText}>X</Text>
         </TouchableOpacity>
 
-        <Text style={styles.link}>DON'T HAVE AN ACCOUNT?</Text>
-        <TouchableOpacity onPress={() => router.push("/register")}>
-          <Text style={[styles.link, { color: "#4ef5a2" }]}>SIGN UP</Text>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -141,37 +127,27 @@ const styles = StyleSheet.create({
 
   box: {
     position: "absolute",
-    top: height * 0.1, // ✅ fixed for all orientations
+    top: height * 0.1,
     alignSelf: "center",
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(255,255,255,0.9)",
     padding: 20,
+    borderRadius: 10,
+    width: "80%",
+  },
+  title: { fontSize: 20, color: "black", fontFamily: "pixel", textAlign: "center", marginBottom: 10 },
+  label: { fontSize: 12, color: "black", fontFamily: "pixel", marginBottom: 5 },
+  value: { fontWeight: "bold", color: "black" },
+  progressBox: { marginTop: 10, backgroundColor: "#333", padding: 10, borderRadius: 6 },
+  progress: { fontSize: 12, color: "white", fontFamily: "pixel", marginBottom: 4 },
+
+  closeButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    backgroundColor: "red",
     borderRadius: 12,
-    width: "70%",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  title: {
-    fontSize: 26,
-    color: "white",
-    fontFamily: "pixel",
-    textAlign: "center",
-    marginBottom: 15,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#fff",
-    borderRadius: 8,
-    padding: 10,
-    color: "white",
-    fontFamily: "pixel",
-    marginBottom: 12,
-    fontSize: 14,
-  },
-  button: {
-    backgroundColor: "rgba(0,0,0,0.8)",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginVertical: 8,
-  },
-  buttonText: { fontSize: 18, color: "white", fontFamily: "pixel" },
-  link: { fontSize: 12, color: "white", fontFamily: "pixel", textAlign: "center", marginTop: 8 },
+  closeText: { color: "white", fontWeight: "bold", fontSize: 12 },
 });

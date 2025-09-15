@@ -50,14 +50,14 @@ export default function Home() {
   const bgTranslate = bgAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -width],
-  });
+  });1
 
   const carBounce = carAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -10],
   });
 
-  const handleStart = () => router.push("/account-creation");
+  const handleStart = () => router.push("/option-screen");
 
   return (
     <TouchableOpacity style={styles.container} onPress={handleStart} activeOpacity={1}>
