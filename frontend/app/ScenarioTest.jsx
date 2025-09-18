@@ -6,72 +6,46 @@ import {
   Dimensions,
   TouchableOpacity,
   Text,
-  StyleSheet, // Import StyleSheet for better organization
+  StyleSheet,
 } from "react-native";
+import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get("window");
 
-// Road tiles
+// Responsive calculations
+const carWidth = Math.min(width * 0.25, 280);
+const carHeight = carWidth * (350/280);
+const overlayTop = height * 0.4;
+const overlayHeight = height * 0.35;
+const ltoWidth = Math.min(width * 0.3, 240);
+const ltoHeight = ltoWidth * (300/240);
+const sideMargin = width * 0.05;
+
+// Road tiles (same as yours)
 const roadTiles = {
   road1: require("../assets/road/road1.png"),
   road2: require("../assets/road/road2.png"),
   road3: require("../assets/road/road3.png"),
   road4: require("../assets/road/road4.png"),
-  road5: require("../assets/road/road5.png"),
-  road6: require("../assets/road/road6.png"),
-  road7: require("../assets/road/road7.png"),
-  road8: require("../assets/road/road8.png"),
   road9: require("../assets/road/road9.png"),
-  road10: require("../assets/road/road10.png"),
-  road11: require("../assets/road/road11.png"),
   road12: require("../assets/road/road12.png"),
   road13: require("../assets/road/road13.png"),
-  road14: require("../assets/road/road14.png"),
   road15: require("../assets/road/road15.png"),
   road16: require("../assets/road/road16.png"),
+  road49: require("../assets/road/road49.png"),
   road17: require("../assets/road/road17.png"),
   road18: require("../assets/road/road18.png"),
   road19: require("../assets/road/road19.png"),
-  road20: require("../assets/road/road20.png"),
-  road21: require("../assets/road/road21.png"),
-  road22: require("../assets/road/road22.png"),
-  road23: require("../assets/road/road23.png"),
-  road24: require("../assets/road/road24.png"),
-  road25: require("../assets/road/road25.png"),
-  road26: require("../assets/road/road26.png"),
-  road27: require("../assets/road/road27.png"),
-  road28: require("../assets/road/road28.png"),
-  road29: require("../assets/road/road29.png"),
-  road30: require("../assets/road/road30.png"),
-  road31: require("../assets/road/road31.png"),
-  road32: require("../assets/road/road32.png"),
-  road33: require("../assets/road/road33.png"),
-  road34: require("../assets/road/road34.png"),
-  road35: require("../assets/road/road35.png"),
-  road36: require("../assets/road/road36.png"),
-  road37: require("../assets/road/road37.png"),
-  road38: require("../assets/road/road38.png"),
-  road39: require("../assets/road/road39.png"),
-  road40: require("../assets/road/road40.png"),
-  road41: require("../assets/road/road41.png"),
-  road42: require("../assets/road/road42.png"),
-  road43: require("../assets/road/road43.png"),
-  road44: require("../assets/road/road44.png"),
-  road45: require("../assets/road/road45.png"),
-  road46: require("../assets/road/road46.png"),
   road47: require("../assets/road/road47.png"),
   road48: require("../assets/road/road48.png"),
-  road49: require("../assets/road/road49.png"),
   road50: require("../assets/road/road50.png"),
-  road51: require("../assets/road/road51.png"),
-  road52: require("../assets/road/road52.png"),
   road53: require("../assets/road/road53.png"),
   road54: require("../assets/road/road54.png"),
   road55: require("../assets/road/road55.png"),
   road56: require("../assets/road/road56.png"),
 };
 
-// Map layout
+// Map layout (same as yours)
 const mapLayout = [
   ["road18", "road1", "road1", "road1", "road17"],
   ["road18", "road1", "road1", "road1", "road17"],
@@ -117,21 +91,22 @@ const carSprites = {
   ],
 };
 
-// Questions
 const questions = [
   {
     question: "What does this road marking mean?",
-    options: ["Option 1", "Option 2", "Option 3"],
-    correct: "Option 1",
+    options: ["Option 1 Correct", "Option 2", "Option 3"],
+    correct: "Option 1 Correct",
   },
 ];
 
 export default function DrivingGame() {
+  const navigation = useNavigation();
+
   const numColumns = mapLayout[0].length;
-  const tileSize = width / numColumns + 11;
+  const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
 
-  const [showIntro, setShowIntro] = useState(true); // New state for introduction
+  const [showIntro, setShowIntro] = useState(true);
   const [isCarVisible, setIsCarVisible] = useState(true);
 
   const startOffset = -(mapHeight - height);
@@ -154,43 +129,15 @@ export default function DrivingGame() {
   const [showAnswers, setShowAnswers] = useState(false);
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carFrame, setCarFrame] = useState(0);
-  const carXAnim = useRef(new Animated.Value(width / 2 - 110)).current;
+
+  // Responsive car positioning
+  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
 
-  // No longer directly used, but keeping for reference if needed elsewhere
-  function animateTurnLeft(onComplete) {
-    const sequence = ["NORTH", "NORTHWEST", "WEST"];
-    let step = 0;
-    const interval = setInterval(() => {
-      setCarDirection(sequence[step]);
-      setCarFrame(0);
-      step++;
-      if (step >= sequence.length) {
-        clearInterval(interval);
-        if (onComplete) onComplete();
-      }
-    }, 300);
-  }
-
-  function animateTurnRight(onComplete) {
-    const sequence = ["NORTH", "NORTHEAST", "EAST"];
-    let step = 0;
-    const interval = setInterval(() => {
-      setCarDirection(sequence[step]);
-      setCarFrame(0);
-      step++;
-      if (step >= sequence.length) {
-        clearInterval(interval);
-        if (onComplete) onComplete();
-      }
-    }, 300);
-  }
-
   function startScrollAnimation() {
-    scrollY.setValue(startOffset); // Ensure scroll starts from bottom for each game start
-
+    scrollY.setValue(startOffset);
     const stopRow = 10;
     const stopOffset = startOffset + stopRow * tileSize;
 
@@ -206,12 +153,11 @@ export default function DrivingGame() {
     });
   }
 
-  // Effect to start game logic only when not showing intro
   useEffect(() => {
     if (!showIntro) {
       startScrollAnimation();
     }
-  }, [showIntro]); // Depend on showIntro
+  }, [showIntro]);
 
   const handleFeedback = (answer) => {
     if (answer === questions[questionIndex].correct) {
@@ -244,7 +190,7 @@ export default function DrivingGame() {
 
     const currentRow = Math.abs(currentScroll.current - startOffset) / tileSize;
 
-    if (answer === "Option 1") {
+    if (answer === "Option 1 Correct") {
       const targetRow = 17;
       const rowsToMove = targetRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
@@ -255,10 +201,6 @@ export default function DrivingGame() {
       }).start(() => handleFeedback(answer));
     } else if (answer === "Option 2") {
       const turnStartRow = 13;
-      // You can adjust turnEndRow to control how far the car drives off
-      // For now, it drives off immediately after the turn sequence
-      // const turnEndRow = 15;
-
       const initialScrollTarget =
         currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
@@ -317,8 +259,6 @@ export default function DrivingGame() {
       return;
     } else if (answer === "Option 3") {
       const turnStartRow = 13;
-      // const turnEndRow = 15;
-
       const initialScrollTarget =
         currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
@@ -384,30 +324,22 @@ export default function DrivingGame() {
     setSelectedAnswer(null);
     setCarFrame(0);
 
-    const centerX = width / 2 - 110;
+    const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
     setCarDirection("NORTH");
     setIsCarVisible(true);
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
-      // After handling next question, restart the scroll animation for the new question context
       startScrollAnimation();
-      // setShowQuestion(true); // startScrollAnimation will show the question
-      // setTimeout(() => { // startScrollAnimation will show answers
-      //   setShowAnswers(true);
-      // }, 1000);
     } else {
+      navigation.navigate('Scenario2');
       setShowQuestion(false);
-      // Optionally show a "Game Over" screen or reset to intro
-      setShowIntro(true); // Go back to intro after all questions
     }
   };
 
-  // Handler for the "Start Game" button on the intro screen
   const handleStartGame = () => {
     setShowIntro(false);
-    // The useEffect will now trigger startScrollAnimation()
   };
 
   if (showIntro) {
@@ -431,7 +363,6 @@ export default function DrivingGame() {
     );
   }
 
-  // Main game rendering starts here (if not showing intro)
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
       {/* Map */}
@@ -463,71 +394,31 @@ export default function DrivingGame() {
         )}
       </Animated.View>
 
-      {/* Car (fixed) - Only one Image component now */}
+      {/* Responsive Car */}
       {isCarVisible && (
         <Animated.Image
           source={carSprites[carDirection][carFrame]}
           style={{
-            width: 280,
-            height: 350,
+            width: carWidth,
+            height: carHeight,
             position: "absolute",
-            bottom: 80,
+            bottom: height * 0.1, // Responsive bottom positioning
             left: carXAnim,
             zIndex: 5,
           }}
         />
       )}
 
-      {/* Question Overlay */}
+      {/* Responsive Question Overlay */}
       {showQuestion && (
-        <View
-          style={{
-            position: "absolute",
-            top: 310,
-            left: 0,
-            width,
-            height: 265,
-            backgroundColor: "rgba(8, 8, 8, 0.43)",
-            flexDirection: "row",
-            alignItems: "flex-end",
-            paddingBottom: 10,
-            zIndex: 10,
-          }}
-        >
-          {/* LTO image at bottom-left */}
+        <View style={styles.questionOverlay}>
           <Image
             source={require("../assets/dialog/LTO.png")}
-            style={{
-              width: 240,
-              height: 300,
-              resizeMode: "contain",
-              marginLeft: -30,
-            }}
+            style={styles.ltoImage}
           />
-
-          {/* Question box bottom-center */}
-          <View
-            style={{
-              flex: 1,
-              bottom: 90,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <View
-              style={{
-                padding: 16,
-                maxWidth: width * 0.6,
-              }}
-            >
-              <Text
-                style={{
-                  color: "white",
-                  fontSize: 18,
-                  fontWeight: "bold",
-                  textAlign: "center",
-                }}
-              >
+          <View style={styles.questionBox}>
+            <View style={styles.questionTextContainer}>
+              <Text style={styles.questionText}>
                 {questions[questionIndex].question}
               </Text>
             </View>
@@ -535,110 +426,46 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Answers still float separately */}
+      {/* Responsive Answers */}
       {showAnswers && (
-        <View
-          style={{
-            position: "absolute",
-            top: height * 0.25,
-            right: 20,
-            width: width * 0.35,
-            zIndex: 11,
-          }}
-        >
+        <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
             <TouchableOpacity
               key={option}
-              style={{
-                backgroundColor: "#333",
-                padding: 14,
-                borderRadius: 8,
-                marginBottom: 12,
-                borderWidth: 1,
-                borderColor: "#555",
-              }}
+              style={styles.answerButton}
               onPress={() => handleAnswer(option)}
             >
-              <Text style={{ color: "white", fontSize: 16, textAlign: "center" }}>
-                {option}
-              </Text>
+              <Text style={styles.answerText}>{option}</Text>
             </TouchableOpacity>
           ))}
         </View>
       )}
 
-      {/* Feedback */}
+      {/* Responsive Feedback - Correct */}
       {animationType === "correct" && (
-        <Animated.View
-          style={{
-            position: "absolute",
-            top: height / 2 - 50,
-            left: width / 2 - 100,
-            width: 200,
-            height: 100,
-            backgroundColor: "green",
-            justifyContent: "center",
-            alignItems: "center",
-            opacity: correctAnim,
-            borderRadius: 16,
-            zIndex: 20,
-          }}
-        >
-          <Text style={{ color: "white", fontSize: 24, fontWeight: "bold" }}>
-            Correct!
-          </Text>
+        <Animated.View style={styles.feedbackOverlay}>
+          <Image source={require("../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <View style={styles.feedbackBox}>
+            <Text style={styles.feedbackText}>Correct!</Text>
+          </View>
         </Animated.View>
       )}
 
+      {/* Responsive Feedback - Wrong */}
       {animationType === "wrong" && (
-        <Animated.View
-          style={{
-            position: "absolute",
-            top: height / 2 - 50,
-            left: width / 2 - 100,
-            width: 200,
-            height: 100,
-            backgroundColor: "red",
-            justifyContent: "center",
-            alignItems: "center",
-            opacity: wrongAnim,
-            borderRadius: 16,
-            zIndex: 20,
-          }}
-        >
-          <Text style={{ color: "white", fontSize: 24, fontWeight: "bold" }}>
-            Wrong!
-          </Text>
+        <Animated.View style={styles.feedbackOverlay}>
+          <Image source={require("../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <View style={styles.feedbackBox}>
+            <Text style={styles.feedbackText}>Wrong!</Text>
+          </View>
         </Animated.View>
       )}
 
-      {/* Next button */}
+      {/* Responsive Next Button */}
       {showNext && (
-        <View
-          style={{
-            position: "absolute",
-            top: height / 2 + 70,
-            left: width / 2 - 60,
-            zIndex: 30,
-          }}
-        >
-          <TouchableOpacity
-            style={{
-              backgroundColor: "#007bff",
-              paddingVertical: 12,
-              paddingHorizontal: 32,
-              borderRadius: 8,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 3.84,
-              elevation: 5,
-            }}
-            onPress={handleNext}
-          >
-            <Text style={{ color: "white", fontSize: 18, fontWeight: "bold" }}>
-              Next
-            </Text>
+        <View style={styles.nextButtonContainer}>
+          <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+            <Text style={styles.nextButtonText}>Next</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -647,54 +474,167 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
+  // Intro styles (responsive)
   introContainer: {
     flex: 1,
     backgroundColor: "black",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: width * 0.05,
   },
   introLTOImage: {
-    width: 300, // Adjust size as needed
-    height: 300, // Adjust size as needed
+    width: width * 0.6,
+    height: height * 0.25,
     resizeMode: "contain",
-    marginBottom: 40,
+    marginBottom: height * 0.03,
   },
   introTextBox: {
-    backgroundColor: "rgba(8, 8, 8, 0.7)", // Slightly darker for text box
-    padding: 25,
+    backgroundColor: "rgba(8, 8, 8, 0.7)",
+    padding: width * 0.06,
     borderRadius: 15,
     alignItems: "center",
-    maxWidth: width * 0.8,
+    maxWidth: width * 0.85,
+    minHeight: height * 0.3,
+    justifyContent: "center",
   },
   introTitle: {
     color: "white",
-    fontSize: 28,
+    fontSize: Math.min(width * 0.07, 32),
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 15,
+    marginBottom: height * 0.02,
   },
   introText: {
     color: "white",
-    fontSize: 18,
+    fontSize: Math.min(width * 0.045, 20),
     textAlign: "center",
-    marginBottom: 30,
-    lineHeight: 24,
+    marginBottom: height * 0.04,
+    lineHeight: Math.min(width * 0.06, 26),
+    paddingHorizontal: width * 0.02,
   },
   startButton: {
-    backgroundColor: "#007bff", // Blue like your Next button
-    paddingVertical: 15,
-    paddingHorizontal: 40,
+    backgroundColor: "#007bff",
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.08,
     borderRadius: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 8,
+    minWidth: width * 0.4,
+    alignItems: "center",
   },
   startButtonText: {
     color: "white",
-    fontSize: 22,
+    fontSize: Math.min(width * 0.055, 24),
+    fontWeight: "bold",
+  },
+  
+  // In-game responsive styles
+  questionOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    width: width,
+    height: overlayHeight,
+    backgroundColor: "rgba(8, 8, 8, 0.43)",
+    flexDirection: "row",
+    alignItems: "flex-end",
+    paddingBottom: height * 0.01,
+    zIndex: 10,
+  },
+  ltoImage: {
+    width: ltoWidth,
+    height: ltoHeight,
+    resizeMode: "contain",
+    marginLeft: -width * 0.03,
+    marginBottom: -height * 0.09,
+  },
+  questionBox: {
+    flex: 1,
+    bottom: height * 0.1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: height * 0.05,
+  },
+  questionTextContainer: {
+    maxWidth: width * 0.6,
+  },
+  questionText: {
+    color: "white",
+    fontSize: Math.min(width * 0.045, 20),
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  answersContainer: {
+    position: "absolute",
+    top: height * 0.4,
+    right: sideMargin,
+    width: width * 0.35,
+    height: height * 0.1,
+    zIndex: 11,
+  },
+  answerButton: {
+    backgroundColor: "#333",
+    padding: height * 0.02,
+    borderRadius: 8,
+    marginBottom: height * 0.015,
+    borderWidth: 1,
+    borderColor: "#555",
+  },
+  answerText: {
+    color: "white",
+    fontSize: Math.min(width * 0.04, 18),
+    textAlign: "center",
+  },
+  feedbackOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    width: width,
+    height: overlayHeight,
+    backgroundColor: "rgba(8, 8, 8, 0.43)",
+    flexDirection: "row",
+    alignItems: "flex-end",
+    paddingBottom: height * 0.01,
+    zIndex: 10,
+  },
+  feedbackBox: {
+    flex: 1,
+    bottom: height * 0.1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  feedbackText: {
+    color: "white",
+    fontSize: Math.min(width * 0.06, 28),
+    fontWeight: "bold",
+  },
+  nextButtonContainer: {
+    position: "absolute",
+    top: height * 0.50,
+    right: sideMargin,
+    width: width * 0.2,
+    alignItems: "center",
+    zIndex: 11,
+  },
+  nextButton: {
+    backgroundColor: "#007bff",
+    paddingVertical: height * 0.015,
+    paddingHorizontal: width * 0.06,
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    minWidth: width * 0.15,
+    alignItems: "center",
+  },
+  nextButtonText: {
+    color: "white",
+    fontSize: Math.min(width * 0.045, 20),
     fontWeight: "bold",
   },
 });

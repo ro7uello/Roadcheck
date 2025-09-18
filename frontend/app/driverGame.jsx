@@ -90,7 +90,7 @@ export default function DriverPage() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      router.push('/ScenarioTest');
+      router.push('S1P1');
     });
   };
 
@@ -107,7 +107,7 @@ export default function DriverPage() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      router.push('/signDriver');
+      router.push('SignsS1P1');
     });
   };
 
