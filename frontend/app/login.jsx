@@ -1,5 +1,7 @@
 import { useRouter } from "expo-router";
 import { API_URL } from "@env";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from "../supabaseClient";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -43,38 +45,54 @@ export default function LoginPage() {
   const bgTranslate = bgAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -width] });
   const carBounce = carAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -10] });
 
-  // ✅ Backend login
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Email and password are required!");
-      return;
+  // ✅ Fixed backend login function
+  const handleLogin = async (email, password) => {
+  setLoading(true);
+  try {
+    console.log("🔄 Starting login...");
+    
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    
+    console.log("📡 Response status:", response.status);
+    
+    if (!response.ok) {
+      throw new Error(`Login failed: ${response.status}`);
     }
-
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        // Example: backend should return a token or user info
-        Alert.alert("Success", "Login successful!");
-        // 👉 Save token/user in AsyncStorage or Context later
-        router.push("/account-creation"); // adjust the route you want to go after login
-      } else {
-        Alert.alert("Login Failed", data.error || "Invalid credentials");
-      }
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Something went wrong.");
-    } finally {
-      setLoading(false);
+    
+    const data = await response.json();
+    console.log("✅ Login successful!");
+    console.log("🔑 Has access_token:", !!data.access_token);
+    
+    if (!data.access_token) {
+      throw new Error("No access token in response");
     }
-  };
+    
+    // Save token to AsyncStorage
+    await AsyncStorage.setItem("access_token", data.access_token);
+    console.log("💾 Token saved to AsyncStorage");
+    
+    // Verify token was saved
+    const savedToken = await AsyncStorage.getItem("access_token");
+    console.log("🔍 Token verification:", savedToken ? "✅ SAVED" : "❌ FAILED");
+    
+    if (savedToken) {
+      console.log("🚀 Navigating to account-creation...");
+      router.push('/account-creation');
+    } else {
+      throw new Error("Failed to save token");
+    }
+    
+  } catch (error) {
+    console.error("Login error:", error?.message || "Unknown error");
+    Alert.alert("Login Failed", error?.message || "Unknown error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -125,9 +143,13 @@ export default function LoginPage() {
           onChangeText={setPassword}
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-          <Text style={styles.buttonText}>{loading ? "LOADING..." : "LOGIN"}</Text>
-        </TouchableOpacity>
+        <TouchableOpacity 
+  style={styles.button}  // <- Make sure you have this
+  onPress={() => handleLogin(email, password)}
+  disabled={loading}
+>
+  <Text style={styles.buttonText}> {loading ? "Logging in..." : "Login"} </Text>
+</TouchableOpacity>
 
         <TouchableOpacity onPress={() => router.push("/register")}>
           <Text style={[styles.link, { color: "#4ef5a2" }]}>SIGN UP</Text>
