@@ -5,7 +5,20 @@ export const getScenarios = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("scenarios")
-      .select("id, title, description, scenario_choices(id, option, text, is_correct)")
+      .select(`
+        id, 
+        phase_id, 
+        title, 
+        description, 
+        choices:scenario_choices(
+          id, 
+          scenario_id,
+          option, 
+          text, 
+          is_correct,
+          explanation
+        )
+      `)
 
     if (error) throw error
 
@@ -21,7 +34,20 @@ export const getScenarioById = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("scenarios")
-      .select("id, title, description, scenario_choices(id, option, text, is_correct)")
+      .select(`
+        id, 
+        phase_id, 
+        title, 
+        description, 
+        choices:scenario_choices(
+          id, 
+          scenario_id,
+          option, 
+          text, 
+          is_correct,
+          explanation
+        )
+      `)
       .eq("id", id)
       .single()
 

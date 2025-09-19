@@ -400,7 +400,7 @@ export default function DrivingGame() {
       {/* Responsive Car */}
       {isCarVisible && (
         <Animated.Image
-          source={carSprites[carDirection][carFrame]}
+          source={playerCarSprites[carDirection][carFrame]}
           style={{
             width: carWidth,
             height: carHeight,
