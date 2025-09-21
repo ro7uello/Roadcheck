@@ -6,11 +6,12 @@
     "orientation": "landscape",
     "scheme": "roadcheck",
     "userInterfaceStyle": "light",
+    "API_URL": "http://localhost:5000",
     "assetBundlePatterns": [
       "**/*"
     ],
-    "ios": {
-      "supportsTablet": true
+    "web": {
+      "bundler": "metro"
     },
     "android": {
       "adaptiveIcon": {

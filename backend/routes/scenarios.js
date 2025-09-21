@@ -1,6 +1,6 @@
-import { supabase } from "../supabaseClient.js";
-import express from "express"
-import { authenticate } from "../middleware/auth.js";
+import express from 'express';
+import { authenticate } from '../middleware/auth.js';
+import { supabase } from '../config/supabase.js';
 import { createAttempt, getUserAttempts, getAttemptsSummary } from "../controllers/attemptsController.js";
 
 const router = express.Router()
@@ -42,5 +42,22 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+router.get('/category/:categoryId/phase/:phase', authenticate, async (req, res) => {
+  try {
+    const { categoryId, phase } = req.params;
+    
+    const { data, error } = await supabase
+      .from('scenarios')
+      .select('*')
+      .eq('category_id', categoryId)
+      .eq('phase_id', phase)
+      .order('id', { ascending: true });
+      
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 export default router;

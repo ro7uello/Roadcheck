@@ -1,6 +1,6 @@
-import express from "express"
-import { supabase } from "../supabaseClient.js";
-import { authenticate } from "../middleware/auth.js";
+import express from 'express';
+import { authenticate } from '../middleware/auth.js';
+import { supabase } from '../config/supabase.js';
 import { getUserAttempts, getAttemptsSummary } from "../controllers/attemptsController.js";
 
 const router = express.Router()
