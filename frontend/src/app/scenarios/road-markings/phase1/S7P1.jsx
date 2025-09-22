@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 
 // Debug API_URL at module level
-console.log('S3P1 Module loaded. API_URL from env:', API_URL);
+console.log('S7P1 Module loaded. API_URL from env:', API_URL);
 
 const { width, height } = Dimensions.get("window");
 
@@ -38,18 +38,18 @@ const roadTiles = {
 };
 
 const mapLayout = [
-  ["road1", "road62", "road1", "road4", "road3"],
-  ["road1", "road62", "road1", "road4", "road3"],
-  ["road1", "road62", "road1", "road4", "road3"],
-  ["road1", "road62", "road1", "road4", "road3"],
-  ["road1", "road62", "road1", "road4", "road3"],
-  ["road1", "road62", "road1", "road4", "road3"],
-  ["road1", "road62", "road1", "road4", "road3"],
-  ["road1", "road62", "road1", "road4", "road3"],
-  ["road1", "road62", "road1", "road4", "road3"],
-  ["road1", "road62", "road1", "road4", "road3"],
-  ["road1", "road62", "road1", "road4", "road3"],
-  ["road1", "road62", "road1", "road1", "road70"],
+  ["road1", "road62", "road1", "road4", "road17"],
+  ["road1", "road62", "road1", "road4", "road17"],
+  ["road1", "road62", "road1", "road4", "road17"],
+  ["road1", "road62", "road1", "road4", "road17"],
+  ["road1", "road62", "road1", "road4", "road17"],
+  ["road1", "road62", "road1", "road4", "road17"],
+  ["road1", "road62", "road1", "road4", "road17"],
+  ["road1", "road62", "road1", "road4", "road17"],
+  ["road1", "road62", "road1", "road4", "road17"],
+  ["road1", "road62", "road1", "road4", "road17"],
+  ["road1", "road62", "road1", "road4", "road17"],
+  ["road1", "road62", "road1", "road1", "road17"],
   ["road1", "road62", "road1", "road1", "road17"],
   ["road1", "road62", "road1", "road1", "road17"],
   ["road1", "road62", "road1", "road1", "road17"],
@@ -82,22 +82,22 @@ const playerCarSprites = {
   ],
 };
 
-const jeepneySprites = {
+const ambulanceSprites = {
   NORTH: [
-    require("../../../../../assets/car/JEEP TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/JEEP TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/NORTH/SEPARATED/AMBULANCE_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/NORTH/SEPARATED/AMBULANCE_CLEAN_NORTH_001.png"),
   ],
 };
 
 // Fallback questions - keep your original questions as backup
 const fallbackQuestions = [
   {
-    question: "You're on a two-lane highway with a solid white center line separating lanes going in the same direction. You need to change lanes to exit but the line is still solid on your exit.",
-    options: ["Continue straight and find another exit", "Slow down and wait for the line to become broken", "Cross the solid white line to change lanes for your exit"],
-    correct: "Cross the solid white line to change lanes for your exit",
+    question: "You're in heavy traffic with solid white lines between lanes. An ambulance is approaching from behind with sirens on.",
+    options: ["Stay in your lane since crossing solid white lines is discouraged", "Speed up to clear the way without changing lanes", "Carefully move to give way to the ambulance, crossing the solid white line if necessary"],
+    correct: "Carefully move to give way to the ambulance, crossing the solid white line if necessary",
     wrongExplanation: {
-      "Slow down and wait for the line to become broken": "Accident prone! Unneccessary slowing down on a highway might be dangerous and unexpected for the vehicle behind you.",
-      "Continue straight and find another exit": "Impractical! You may not find another exit for miles ahead."
+      "Stay in your lane since crossing solid white lines is discouraged": "Wrong! Emergency vehicles have priority, and giving way overrides lane marking restrictions.",
+      "Speed up to clear the way without changing lanes": "Accident prone! Speeding up might not provide adequate clearance and could be dangerous in heavy traffic."
     }
   },
 ];
@@ -115,7 +115,7 @@ export default function DrivingGame() {
   const mapHeight = mapLayout.length * tileSize;
 
   const [isCarVisible, setIsCarVisible] = useState(true);
-  const [isJeepneyVisible, setIsJeepneyVisible] = useState(false); // New state for jeepney visibility
+  const [isAmbulanceVisible, setIsAmbulanceVisible] = useState(false); // New state for ambulance visibility
 
   const startOffset = -(mapHeight - height);
 
@@ -140,10 +140,11 @@ export default function DrivingGame() {
   const [carFrame, setCarFrame] = useState(0);
 
   // Responsive car positioning
-  const carXAnim = useRef(new Animated.Value(0)).current;
-  const jeepneyYAnim = useRef(new Animated.Value(height * 1.5)).current; // Start well below the screen
-  const jeepneyXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2 + tileSize)).current; // Default lane to the right of player
-  const jeepneyEntryAnim = useRef(new Animated.Value(0)).current;
+  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current; // Player car starts centered
+  const AmbulanceYAnim = useRef(new Animated.Value(height * 1.5)).current; // Start well below the screen
+  const AmbulanceXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2 - tileSize)).current; // Default lane to the left of player
+  // const AmbulanceXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2 + tileSize)).current; // Default lane to the right of player
+  const AmbulanceEntryAnim = useRef(new Animated.Value(0)).current;
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
@@ -152,14 +153,14 @@ export default function DrivingGame() {
   useEffect(() => {
     const fetchScenarioData = async () => {
       try {
-        console.log('S3P1: Fetching scenario data...');
-        console.log('S3P1: API_URL value:', API_URL);
+        console.log('S7P1: Fetching scenario data...');
+        console.log('S7P1: API_URL value:', API_URL);
         
         const token = await AsyncStorage.getItem('access_token');
-        console.log('S3P1: Token retrieved:', token ? 'Yes' : 'No');
+        console.log('S7P1: Token retrieved:', token ? 'Yes' : 'No');
         
-        const url = `${API_URL}/scenarios/3`;
-        console.log('S3P1: Fetching from URL:', url);
+        const url = `${API_URL}/scenarios/7`;
+        console.log('S7P1: Fetching from URL:', url);
         
         const response = await fetch(url, {
           method: 'GET',
@@ -169,14 +170,14 @@ export default function DrivingGame() {
           }
         });
         
-        console.log('S3P1: Response status:', response.status);
+        console.log('S7P1: Response status:', response.status);
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('S3P1: Data received:', data);
+        console.log('S7P1: Data received:', data);
         
         if (data && data.scenario) {
           // Transform database response to match your frontend format
@@ -195,13 +196,13 @@ export default function DrivingGame() {
           });
           
           setQuestions([transformedQuestion]);
-          console.log('S3P1: ✅ Database questions loaded successfully');
+          console.log('S7P1: ✅ Database questions loaded successfully');
         } else {
-          console.log('S3P1: ⚠️ Invalid data structure, using fallback');
+          console.log('S7P1: ⚠️ Invalid data structure, using fallback');
           setQuestions(fallbackQuestions);
         }
       } catch (error) {
-        console.log('S3P1: ❌ Database error, using fallback questions:', error.message);
+        console.log('S7P1: ❌ Database error, using fallback questions:', error.message);
         setQuestions(fallbackQuestions);
         setError(error.message);
       } finally {
@@ -219,7 +220,7 @@ export default function DrivingGame() {
       const userId = await AsyncStorage.getItem('user_id');
       
       if (!token || !userId) {
-        console.log('S3P1: No token or user_id found for progress update');
+        console.log('S7P1: No token or user_id found for progress update');
         return;
       }
 
@@ -240,12 +241,12 @@ export default function DrivingGame() {
       });
 
       if (attemptResponse.ok) {
-        console.log('S3P1: ✅ Progress updated successfully');
+        console.log('S7P1: ✅ Progress updated successfully');
       } else {
-        console.log('S3P1: ⚠️ Failed to update progress:', attemptResponse.status);
+        console.log('S7P1: ⚠️ Failed to update progress:', attemptResponse.status);
       }
     } catch (error) {
-      console.log('S3P1: ❌ Error updating progress:', error.message);
+      console.log('S7P1: ❌ Error updating progress:', error.message);
     }
   };
 
@@ -259,7 +260,7 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset); // Ensure scroll starts from bottom for each game start
-    carXAnim.setValue(width / 2 - carWidth / 2); // Reset car position
+    carXAnim.setValue(width / 2 - carWidth / 2); // Reset car position to center lane
     setCarDirection("NORTH"); // Reset car direction
     setIsCarVisible(true); // Ensure car is visible
 
@@ -291,7 +292,7 @@ export default function DrivingGame() {
     const isCorrect = answerGiven === currentQuestion.correct;
     
     // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
-    updateProgress(3, answerGiven, isCorrect); // scenario_id = 3 for S3P1
+    updateProgress(7, answerGiven, isCorrect); // scenario_id = 7 for S7P1
     
     if (isCorrect) {
       setIsCorrectAnswer(true); // Set to true for correct feedback
@@ -342,94 +343,93 @@ export default function DrivingGame() {
     setShowAnswers(false);
 
     const actualCorrectAnswer = questions[questionIndex].correct;
-    const currentRow = getCarCurrentRow();
-    const exitLaneX = width / 2 - carWidth / 2 + tileSize; // One lane to the right
     const originalLaneX = width / 2 - carWidth / 2; // Original lane center
+    const rightLaneX = width / 2 - carWidth / 2 + tileSize; // One lane to the right
+    const leftLaneX = width / 2 - carWidth / 2 - tileSize; // One lane to the left
 
     if (option === actualCorrectAnswer) {
+      // Correct Answer: Player moves right, Ambulance passes on left
       setIsCarVisible(true);
-
-  // 1. Instantly change direction to NORTHEAST
-  setCarDirection("NORTHEAST");
-
-  Animated.sequence([
-    // 2. Move NORTHEAST one row (now that the direction is set)
-    Animated.parallel([
-      Animated.timing(carXAnim, {
-        toValue: width / 2 - carWidth / 2 + tileSize, // Move to the right lane
-        duration: 500,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scrollY, {
-        toValue: currentScroll.current + tileSize, // Move one tile forward
-        duration: 500,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-    ]),
-    Animated.delay(100), // Small delay after moving NORTHEAST
-  ]).start(() => {
-    // 3. Face NORTH and move to row 16
-    setCarDirection("NORTH"); // Instantly change direction back to NORTH
-    animateCarToTargetRow(16, 2000, () => {
-      handleFeedback(option); // Show feedback after animation
-    });
-  });
-
-    } else if (option === "Slow down and wait for the line to become broken") {
-      // WRONG Answer: Slow down and wait for the line to become broken
-      setIsJeepneyVisible(true); // Show jeepney
+      setIsAmbulanceVisible(true); // Show ambulance for this scenario
 
       Animated.sequence([
-        // 1. Jeepney appears from behind and overtakes
+        // 1. Player car moves to the right lane
         Animated.parallel([
-          Animated.timing(jeepneyYAnim, {
-            toValue: height * 0.5, // Stop in front of player car, higher on screen
-            duration: 1500, // Faster appearance
+          Animated.timing(carXAnim, {
+            toValue: rightLaneX, // Move to the right lane
+            duration: 500,
             easing: Easing.easeOut,
-            useNativeDriver: false,
+            useNativeDriver: true,
           }),
-          // Player car continues to scroll slowly during jeepney's appearance
           Animated.timing(scrollY, {
-            toValue: currentScroll.current + tileSize * 3, // Scroll for 3 tiles
-            duration: 2000, // Duration adjusted to match jeepney's "stop"
+            toValue: currentScroll.current + tileSize * 0.5, // Small forward movement
+            duration: 500,
             easing: Easing.linear,
             useNativeDriver: true,
           }),
         ]),
-        Animated.delay(500), // Hold jeepney in place (and player car continues slow scroll)
-        // After delay, jeepney overtakes and disappears
+        // 2. Ambulance passes on the left
         Animated.parallel([
-          Animated.timing(jeepneyYAnim, {
+          Animated.timing(AmbulanceYAnim, {
             toValue: -carHeight, // Move off-screen to the top
-            duration: 1500,
+            duration: 1500, // Speed of ambulance passing
             easing: Easing.linear,
             useNativeDriver: false,
           }),
-          // Player car continues to scroll slowly during jeepney's disappearance
+          Animated.timing(AmbulanceXAnim, {
+            toValue: leftLaneX, // Ensure ambulance is in the left lane
+            duration: 1, // Instantly set position
+            useNativeDriver: false,
+          }),
           Animated.timing(scrollY, {
-            toValue: currentScroll.current + tileSize * 3, // Scroll for another 3 tiles
+            toValue: currentScroll.current + tileSize * 3, // Player car scrolls slowly
             duration: 1500,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start(() => {
+        handleFeedback(option); // Show feedback after animation
+      });
+
+    } else if (option === "Stay in your lane since crossing solid white lines is discouraged") {
+      // WRONG Answer: Ambulance overtakes from the right
+      setIsAmbulanceVisible(true); // Show ambulance
+
+      // Ensure ambulance starts from behind and in the right lane
+      AmbulanceXAnim.setValue(rightLaneX);
+      AmbulanceYAnim.setValue(height * 1.5); // Start off-screen bottom
+
+      Animated.sequence([
+        // 1. Ambulance appears from behind and overtakes in the right lane
+        Animated.parallel([
+          Animated.timing(AmbulanceYAnim, {
+            toValue: -carHeight, // Move off-screen to the top
+            duration: 2500, // Duration for ambulance to pass
+            easing: Easing.linear,
+            useNativeDriver: false,
+          }),
+          // Player car continues to scroll slowly during ambulance's appearance and pass
+          Animated.timing(scrollY, {
+            toValue: currentScroll.current + tileSize * 5, // Scroll for 5 tiles
+            duration: 2500, // Duration adjusted to match ambulance's pass
             easing: Easing.linear,
             useNativeDriver: true,
           }),
         ])
       ]).start(() => handleFeedback(option));
-      // No car lane change for this wrong answer, as they waited.
 
-    } else if (option === "Continue straight and find another exit") {
-      // Wrong Answer: Continue straight
-      // Player car simply scrolls further down the road
-      Animated.timing(scrollY, { // Continue scrolling for 5 tiles
-        toValue: currentScroll.current + tileSize * 10, // Continue scrolling for 10 tiles, signifying missing the exit
-        duration: 3000,
+    } else if (option === "Speed up to clear the way without changing lanes") {
+      // Wrong Answer: Player car speeds up (scrolls faster and further)
+      Animated.timing(scrollY, {
+        toValue: currentScroll.current + tileSize * 18, // Target row 18 (relative to current position)
+        duration: 4000, // Speed of 4 seconds
         easing: Easing.linear,
         useNativeDriver: true,
       }).start(() => {
         handleFeedback(option);
       });
-      // Car stays NORTH
+      // Car stays NORTH, in its original lane.
     }
   };
 
@@ -444,14 +444,15 @@ export default function DrivingGame() {
     carXAnim.setValue(centerX);
     setCarDirection("NORTH");
     setIsCarVisible(true);
-    setIsJeepneyVisible(false); // Hide jeepney for next question
-    jeepneyYAnim.setValue(height * 1.5); // Reset jeepney position off-screen bottom
+    setIsAmbulanceVisible(false); // Hide ambulance for next question
+    AmbulanceYAnim.setValue(height * 1.5); // Reset ambulance position off-screen bottom
+    AmbulanceXAnim.setValue(width / 2 - carWidth / 2 - tileSize); // Reset ambulance X to left lane for next potential pass
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S4P1');
+      navigation.navigate('S8P1');
       setShowQuestion(false);
     }
   };
@@ -468,7 +469,7 @@ export default function DrivingGame() {
   // Determine the feedback message based on whether the answer was correct or wrong (from S2P1)
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! You can cross solid white lines but it is heavily discouraged. Do so with care."
+    ? "Correct! You must give way to emergency vehicles, even if it requires crossing solid white lines."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
 
   // Main game rendering
@@ -513,23 +514,23 @@ export default function DrivingGame() {
             position: "absolute",
             bottom: height * 0.1, // Responsive bottom positioning
             transform: [
-      { translateX: carXAnim }
-    ],
+              { translateX: carXAnim }
+            ],
             zIndex: 5,
           }}
         />
       )}
 
-      {/* Responsive Jeepney */}
-      {isJeepneyVisible && (
+      {/* Responsive Ambulance */}
+      {isAmbulanceVisible && (
         <Animated.Image
-          source={jeepneySprites["NORTH"][carFrame]} // Jeepney always faces NORTH
+          source={ambulanceSprites["NORTH"][carFrame]} // Ambulance always faces NORTH
           style={{
             width: carWidth,
             height: carHeight,
             position: "absolute",
-            top: jeepneyYAnim, // Position controlled by animation
-            left: jeepneyXAnim, // Position in the lane to the right of the player        
+            top: AmbulanceYAnim, // Position controlled by animation
+            left: AmbulanceXAnim, // Position in the lane (left or right of player)
             zIndex: 4, // Always behind player car
           }}
         />

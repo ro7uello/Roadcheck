@@ -20,7 +20,7 @@ const { width, height } = Dimensions.get('window');
 const BACKGROUND_SPEED = 12000;
 
 // Backend API configuration
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.35:3001';
+const API_BASE_URL = process.env.API_URL;
 
 export default function OptionPage() {
   const [fontsLoaded] = useFonts({

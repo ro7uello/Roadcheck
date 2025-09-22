@@ -69,89 +69,51 @@ export default function CategorySelectionScreen() {
   };
 
   const loadUserProgress = async () => {
-    try {
-      const token = await AsyncStorage.getItem('access_token');
-      if (token) {
-        const response = await fetch(`${API_BASE_URL}/user/progress`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (response.ok) {
-          const progress = await response.json();
-          setUserProgress(progress);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading user progress:', error);
-    }
-  };
-
-  const saveUserProgress = async (categoryId, categoryName, route) => {
-    try {
-      setIsLoading(true);
-      const token = await AsyncStorage.getItem('access_token');
-      
-      if (!token) {
-        console.log('No token found, proceeding offline');
-        // Store locally and navigate
-        await AsyncStorage.setItem('selectedCategory', JSON.stringify({
-          id: categoryId,
-          name: categoryName,
-          selectedAt: new Date().toISOString()
-        }));
-        router.push(route);
-        return;
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/user/progress`, {
-        method: 'POST',
+  try {
+    const token = await AsyncStorage.getItem('access_token');
+    if (token) {
+      // Use existing /attempts endpoint instead
+      const response = await fetch(`${API_BASE_URL}/attempts`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          action: 'category_selection',
-          categoryId: categoryId,
-          categoryName: categoryName,
-          selectedMode: selectedMode,
-          screen: 'category_selection',
-          timestamp: new Date().toISOString(),
-        }),
       });
       
       if (response.ok) {
-        console.log('Category progress saved successfully');
-      } else {
-        console.log('Failed to save category progress, but continuing...');
+        const attempts = await response.json();
+        // Process attempts data to calculate progress
+        setUserProgress(attempts);
       }
-      
-      // Store locally
-      await AsyncStorage.setItem('selectedCategory', JSON.stringify({
-        id: categoryId,
-        name: categoryName,
-        selectedAt: new Date().toISOString()
-      }));
-      
-      // Navigate to the specified route
-      router.push(route);
-      
-    } catch (error) {
-      console.error('Error saving category progress:', error);
-      // Still navigate even if backend fails
-      await AsyncStorage.setItem('selectedCategory', JSON.stringify({
-        id: categoryId,
-        name: categoryName,
-        selectedAt: new Date().toISOString()
-      }));
-      router.push(route);
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (error) {
+    console.error('Error loading user progress:', error);
+  }
+};
+
+const saveUserProgress = async (categoryId, categoryName, route) => {
+  try {
+    setIsLoading(true);
+    
+    // Store locally first
+    await AsyncStorage.setItem('selectedCategory', JSON.stringify({
+      id: categoryId,
+      name: categoryName,
+      selectedAt: new Date().toISOString()
+    }));
+    
+    // Navigate immediately (don't wait for backend)
+    router.push(route);
+    
+  } catch (error) {
+    console.error('Error saving category progress:', error);
+    // Still navigate
+    router.push(route);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const startBackgroundAnimation = () => {
     backgroundAnimation.setValue(0);

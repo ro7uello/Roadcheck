@@ -1,4 +1,3 @@
-// frontend/src/app/scenarios/road-markings/phase1/S2P1.jsx
 import React, { useRef, useEffect, useState } from "react";
 import {
   View,
@@ -14,13 +13,16 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 
+// Debug API_URL at module level
+console.log('S2P1 Module loaded. API_URL from env:', API_URL);
+
 const { width, height } = Dimensions.get("window");
 
 // Responsive calculations
-const playerCarWidth = Math.min(width * 0.25, 280);
+const playerCarWidth = Math.min(width * 0.25, 280); // Renamed for clarity
 const playerCarHeight = playerCarWidth * (350/280);
-const jeepWidth = Math.min(width * 0.28, 300);
-const jeepHeight = jeepWidth * (350/280);
+const jeepWidth = Math.min(width * 0.28, 300); // Slightly wider
+const jeepHeight = jeepWidth * (350/280); // Maintain aspect ratio
 const overlayTop = height * 0.4;
 const overlayHeight = height * 0.35;
 const ltoWidth = Math.min(width * 0.3, 240);
@@ -61,7 +63,7 @@ const mapLayout = [
   ["road18", "road66", "road67", "road17", "road20"],
 ];
 
-// Vehicle sprites
+// Separated sprites for clarity and easier management
 const playerCarSprites = {
   NORTH: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
@@ -83,6 +85,7 @@ const playerCarSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
   ],
+  // Add other directions if needed for specific overtaking maneuvers
 };
 
 const jeepneySprites = {
@@ -92,7 +95,7 @@ const jeepneySprites = {
   ],
 };
 
-// FALLBACK QUESTIONS - ONLY USED IF DATABASE FAILS
+// Fallback questions - keep your original questions as backup
 const fallbackQuestions = [
   {
     question: "You're driving on a highway and see a single solid yellow lines in the center. Traffic is heavy, and you notice a faster-moving lane to your left.",
@@ -105,134 +108,20 @@ const fallbackQuestions = [
   },
 ];
 
-export default function S2P1() {
+export default function DrivingGame() {
   const navigation = useNavigation();
 
-  // DATABASE STATE - REPLACES HARDCODED QUESTIONS
+  // ✅ DATABASE INTEGRATION - Added these 3 state variables
   const [questions, setQuestions] = useState(fallbackQuestions);
   const [loading, setLoading] = useState(true);
-
-  // Database functions
-  const fetchQuestionsFromDatabase = async () => {
-    try {
-      setLoading(true);
-      console.log('Fetching S2P1 from:', API_URL);
-      
-      const token = await AsyncStorage.getItem('access_token');
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const scenarioResponse = await fetch(`${API_URL}/scenarios/2`, { headers });
-      const choicesResponse = await fetch(`${API_URL}/scenario_choices/2`, { headers });
-      
-      console.log('S2P1 Scenario response:', scenarioResponse.status);
-      console.log('S2P1 Choices response:', choicesResponse.status);
-      
-      if (scenarioResponse.ok && choicesResponse.ok) {
-        const scenarioData = await scenarioResponse.json();
-        const choicesData = await choicesResponse.json();
-        
-        console.log('S2P1 Scenario data:', scenarioData);
-        console.log('S2P1 Choices data:', choicesData);
-        
-        const correctChoice = choicesData.find(choice => choice.is_correct);
-        
-        const dbQuestions = [{
-          question: scenarioData.description || scenarioData.title,
-          options: choicesData.map(choice => choice.text),
-          correct: correctChoice?.text || "",
-          correctExplanation: correctChoice?.explanation || "",
-          wrongExplanation: choicesData.reduce((acc, choice) => {
-            if (!choice.is_correct) {
-              acc[choice.text] = choice.explanation;
-            }
-            return acc;
-          }, {})
-        }];
-        
-        setQuestions(dbQuestions);
-        console.log('S2P1 Database questions loaded successfully');
-      } else {
-        console.log('S2P1 Database fetch failed, using fallback questions');
-      }
-    } catch (error) {
-      console.log('S2P1 Database error, using fallback questions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const recordAttempt = async (selectedChoice, isCorrect) => {
-    try {
-      const token = await AsyncStorage.getItem('access_token');
-      if (!token) return;
-
-      const payload = {
-        user_id: 1,
-        scenario_id: 2,
-        selected_option: selectedChoice,
-        is_correct: isCorrect,
-        attempt_time: new Date().toISOString(),
-      };
-
-      console.log('S2P1 Sending to backend:', payload);
-
-      await fetch(`${API_URL}/attempts`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      console.log('S2P1 Attempt recorded:', selectedChoice, isCorrect);
-    } catch (err) {
-      console.log('S2P1 Failed to record attempt:', err);
-    }
-  };
-
-  const updateProgress = async (isCompleted = false) => {
-    try {
-      const token = await AsyncStorage.getItem('access_token');
-      if (!token) return;
-
-      await fetch(`${API_URL}/progress`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: 1,
-          category_id: 2,
-          phase_id: 1,
-          scenario_id: 2,
-          is_completed: isCompleted,
-          completed_at: isCompleted ? new Date().toISOString() : null,
-        }),
-      });
-      console.log('S2P1 Progress updated:', isCompleted);
-    } catch (err) {
-      console.log('S2P1 Failed to update progress:', err);
-    }
-  };
-
-  // Fetch database questions on component mount
-  useEffect(() => {
-    fetchQuestionsFromDatabase();
-  }, []);
+  const [error, setError] = useState(null);
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
 
-  const [isPlayerCarVisible, setIsPlayerCarVisible] = useState(true);
-  const [isJeepneyVisible, setIsJeepneyVisible] = useState(true);
+  const [isPlayerCarVisible, setIsPlayerCarVisible] = useState(true); // Renamed for clarity
+  const [isJeepneyVisible, setIsJeepneyVisible] = useState(true); // State for jeep visibility
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const currentScroll = useRef(0);
@@ -247,20 +136,126 @@ export default function S2P1() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [showQuestion, setShowQuestion] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [isCorrectAnswer, setIsCorrectAnswer] = useState(null);
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState(null); // NEW STATE for correct/wrong feedback
   const [animationType, setAnimationType] = useState(null);
   const [showNext, setShowNext] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
-  const [playerCarDirection, setPlayerCarDirection] = useState("NORTH");
+  const [playerCarDirection, setPlayerCarDirection] = useState("NORTH"); // Renamed for clarity
   const [playerCarFrame, setPlayerCarFrame] = useState(0);
   const [jeepneyFrame, setJeepneyFrame] = useState(0);
 
   const playerCarXAnim = useRef(new Animated.Value(width / 2 - playerCarWidth / 2)).current;
+
+  // Jeepney's X position: middle of the 'road5' tile (index 2 in the previous map, adjusted for new map if needed)
+  // Assuming the jeepney will still be in a central lane, let's pick lane index 2 (road67) for now.
   const jeepneyInitialX = 2 * tileSize + (tileSize / 2 - jeepWidth / 2);
+  // Jeepney's Y position: dynamically set based on scroll and its row
+  // Starts off-screen TOP
   const jeepneyYAnim = useRef(new Animated.Value(-jeepHeight)).current;
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
+
+  // ✅ DATABASE INTEGRATION - Added this useEffect to fetch data
+  useEffect(() => {
+    const fetchScenarioData = async () => {
+      try {
+        console.log('S2P1: Fetching scenario data...');
+        console.log('S2P1: API_URL value:', API_URL);
+        
+        const token = await AsyncStorage.getItem('access_token');
+        console.log('S2P1: Token retrieved:', token ? 'Yes' : 'No');
+        
+        const url = `${API_URL}/scenarios/2`;
+        console.log('S2P1: Fetching from URL:', url);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        console.log('S2P1: Response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('S2P1: Data received:', data);
+        
+        if (data && data.scenario) {
+          // Transform database response to match your frontend format
+          const transformedQuestion = {
+            question: data.scenario.question_text,
+            options: data.choices.map(choice => choice.choice_text),
+            correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
+            wrongExplanation: {}
+          };
+          
+          // Build wrong explanations
+          data.choices.forEach(choice => {
+            if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
+              transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
+            }
+          });
+          
+          setQuestions([transformedQuestion]);
+          console.log('S2P1: ✅ Database questions loaded successfully');
+        } else {
+          console.log('S2P1: ⚠️ Invalid data structure, using fallback');
+          setQuestions(fallbackQuestions);
+        }
+      } catch (error) {
+        console.log('S2P1: ❌ Database error, using fallback questions:', error.message);
+        setQuestions(fallbackQuestions);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchScenarioData();
+  }, []);
+
+  // ✅ DATABASE INTEGRATION - Added updateProgress function
+  const updateProgress = async (scenarioId, selectedOption, isCorrect) => {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
+      
+      if (!token || !userId) {
+        console.log('S2P1: No token or user_id found for progress update');
+        return;
+      }
+
+      // Record the attempt
+      const attemptResponse = await fetch(`${API_URL}/attempts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          user_id: parseInt(userId),
+          scenario_id: scenarioId,
+          selected_option: selectedOption,
+          is_correct: isCorrect,
+          completed_at: new Date().toISOString()
+        })
+      });
+
+      if (attemptResponse.ok) {
+        console.log('S2P1: ✅ Progress updated successfully');
+      } else {
+        console.log('S2P1: ⚠️ Failed to update progress:', attemptResponse.status);
+      }
+    } catch (error) {
+      console.log('S2P1: ❌ Error updating progress:', error.message);
+    }
+  };
 
   // Animation for player's car sprite
   useEffect(() => {
@@ -283,34 +278,38 @@ export default function S2P1() {
   }, [showQuestion, isJeepneyVisible]);
 
   const scrollAnimationRef = useRef(null);
-  const jeepneyAnimationRef = useRef(null);
+  const jeepneyAnimationRef = useRef(null); // Ref to hold the jeepney's entry animation
 
   function startScrollAnimation() {
     scrollY.setValue(0);
-    jeepneyYAnim.setValue(-jeepHeight);
+    jeepneyYAnim.setValue(-jeepHeight); // Reset jeepney to off-screen top
 
+    // Continuous looping background scroll - MUCH FASTER
     scrollAnimationRef.current = Animated.loop(
       Animated.timing(scrollY, {
         toValue: -mapHeight,
-        duration: mapHeight * 10,
+        duration: mapHeight * 10, // Significantly reduced duration for faster scroll
         easing: Easing.linear,
         useNativeDriver: true,
       })
     );
     scrollAnimationRef.current.start();
 
+    // Animate jeepney into view from the top
     jeepneyAnimationRef.current = Animated.timing(jeepneyYAnim, {
       toValue: -height * 0.2,
-      duration: 3000,
+      duration: 3000, // Duration for jeepney to move into position
       easing: Easing.linear,
       useNativeDriver: true,
     });
 
     jeepneyAnimationRef.current.start(() => {
+      // After jeepney is in position, set a timeout to stop scrolling and show question
       setTimeout(() => {
         if (scrollAnimationRef.current) {
-          scrollAnimationRef.current.stop();
+          scrollAnimationRef.current.stop(); // Stop the continuous scroll
         }
+        // Freeze car and jeepney sprite animations
         setIsPlayerCarVisible(true);
         setIsJeepneyVisible(true);
         setPlayerCarFrame(0);
@@ -320,34 +319,34 @@ export default function S2P1() {
         setTimeout(() => {
           setShowAnswers(true);
         }, 1000);
-      }, 2000);
+      }, 2000); // Time to drive before the question appears after jeepney is in view
     });
   }
 
+  // ✅ DATABASE INTEGRATION - Modified useEffect to wait for data
   useEffect(() => {
-    startScrollAnimation();
+    if (!loading) {
+      startScrollAnimation();
+    }
     return () => {
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
       }
       if (jeepneyAnimationRef.current) {
-        jeepneyAnimationRef.current.stop();
-      }
+          jeepneyAnimationRef.current.stop();
+      } // Clean up animations
     };
-  }, []);
+  }, [loading]); // Added loading dependency
 
-  const handleFeedback = async (answerGiven) => {
+  const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
     const isCorrect = answerGiven === currentQuestion.correct;
     
-    setIsCorrectAnswer(isCorrect);
-
-    await recordAttempt(answerGiven, isCorrect);
+    // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
+    updateProgress(2, answerGiven, isCorrect); // scenario_id = 2 for S2P1
+    
     if (isCorrect) {
-      await updateProgress(true);
-    }
-
-    if (isCorrect) {
+      setIsCorrectAnswer(true); // Set to true for correct feedback
       setAnimationType("correct");
       Animated.timing(correctAnim, {
         toValue: 1,
@@ -358,6 +357,7 @@ export default function S2P1() {
         setShowNext(true);
       });
     } else {
+      setIsCorrectAnswer(false); // Set to false for wrong feedback
       setAnimationType("wrong");
       Animated.timing(wrongAnim, {
         toValue: 1,
@@ -370,145 +370,118 @@ export default function S2P1() {
     }
   };
 
-  const animateOvertake = async (targetX) => {
-    return new Promise(async (resolve) => {
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+const animateOvertake = async (targetX) => {
+    // Stop continuous scroll and sprite animations for a moment
+    if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
 
-      setPlayerCarFrame(0);
-      setJeepneyFrame(0);
+    setPlayerCarFrame(0);
+    setJeepneyFrame(0);
 
-      await new Promise(resolveStep => {
+    // 1. Car faces Northwest and moves slightly to the left (initial lane change)
+    await new Promise(resolve => {
         setPlayerCarDirection("NORTHWEST");
         Animated.parallel([
-          Animated.timing(playerCarXAnim, {
-            toValue: targetX,
-            duration: 300,
-            easing: Easing.easeOut,
-            useNativeDriver: false,
-          }),
-          Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 0.5),
-            duration: 300,
-            easing: Easing.easeOut,
-            useNativeDriver: true,
-          })
-        ]).start(resolveStep);
-      });
+            Animated.timing(playerCarXAnim, {
+                toValue: targetX, // Move left towards the target lane
+                duration: 300,
+                easing: Easing.easeOut,
+                useNativeDriver: false,
+            }),
+            Animated.timing(scrollY, {
+                toValue: scrollY._value - (tileSize * 0.5), // Move forward slightly
+                duration: 300,
+                easing: Easing.easeOut,
+                useNativeDriver: true,
+            })
+        ]).start(resolve);
+    });
 
-      await new Promise(resolveStep => {
-        setPlayerCarDirection("NORTH");
+    // 2. Car faces North and moves further forward (main overtaking acceleration)
+    await new Promise(resolve => {
+        setPlayerCarDirection("NORTH"); // Face North
         Animated.parallel([
-          Animated.timing(jeepneyYAnim, {
-            toValue: height + jeepHeight,
-            duration: 1000,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 3),
-            duration: 1000,
-            easing: Easing.easeOut,
-            useNativeDriver: true,
-          }),
-        ]).start(resolveStep);
-      });
-      setIsJeepneyVisible(false);
+            Animated.timing(jeepneyYAnim, { // <--- ADD THIS ANIMATION FOR JEEPNEY
+                toValue: height + jeepHeight, // Move the jeepney off-screen bottom
+                duration: 1000, // Duration for jeepney to disappear
+                easing: Easing.linear,
+                useNativeDriver: true,
+            }),
+            Animated.timing(scrollY, { // Player car continues to move significantly forward
+                toValue: scrollY._value - (tileSize * 3), // More forward movement
+                duration: 1000,
+                easing: Easing.easeOut,
+                useNativeDriver: true,
+            }),
+        ]).start(resolve);
+    });
+    setIsJeepneyVisible(false); // Hide jeepney after it's out of view
 
-      await new Promise(resolveStep => {
+    // 3. Car faces Northeast and moves back towards the right (returning to lane)
+    await new Promise(resolve => {
         setPlayerCarDirection("NORTHEAST");
         Animated.parallel([
-          Animated.timing(playerCarXAnim, {
-            toValue: width / 2 - playerCarWidth / 2,
-            duration: 400,
-            easing: Easing.easeOut,
-            useNativeDriver: false,
-          }),
-          Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 0.5),
-            duration: 400,
-            easing: Easing.easeOut,
-            useNativeDriver: true,
-          })
-        ]).start(resolveStep);
-      });
-
-      setPlayerCarDirection("NORTH");
-
-      if (scrollAnimationRef.current) scrollAnimationRef.current.start();
-      setIsPlayerCarVisible(true);
-      setIsJeepneyVisible(false);
-      
-      resolve();
+            Animated.timing(playerCarXAnim, {
+                toValue: width / 2 - playerCarWidth / 2, // Move back to center X
+                duration: 400,
+                easing: Easing.easeOut,
+                useNativeDriver: false,
+            }),
+            Animated.timing(scrollY, { // Still moving forward slightly during lane change
+                toValue: scrollY._value - (tileSize * 0.5),
+                duration: 400,
+                easing: Easing.easeOut,
+                useNativeDriver: true,
+            })
+        ]).start(resolve);
     });
+
+    // 4. Car faces North again
+    setPlayerCarDirection("NORTH");
+
+    // Restart continuous scroll and sprite animations
+    if (scrollAnimationRef.current) scrollAnimationRef.current.start();
+    
+    setIsPlayerCarVisible(true);
+    setIsJeepneyVisible(false); // Reset for next scenario, if needed
   };
-
-  const animateHonking = async () => {
-    return new Promise(async (resolve) => {
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-
-      setPlayerCarFrame(0);
-      setJeepneyFrame(0);
-
-      // Simple animation - just move forward slightly while "honking"
-      await new Promise(resolveStep => {
-        Animated.timing(scrollY, {
-          toValue: scrollY._value - (tileSize * 1),
-          duration: 2000,
-          easing: Easing.easeOut,
-          useNativeDriver: true,
-        }).start(resolveStep);
-      });
-
-      if (scrollAnimationRef.current) scrollAnimationRef.current.start();
-      
-      resolve();
-    });
-  };
-
+  // Adjust handleAnswer to call animateOvertake without turnDirection parameters
   const handleAnswer = (answer) => {
-    console.log('S2P1 Answer selected:', answer);
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
 
+    // If scrollAnimationRef.current exists, restart it for continuous movement after answering
     if (scrollAnimationRef.current) {
       scrollAnimationRef.current.start();
     }
+    // Restart player car animations
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
 
-    const currentQuestion = questions[questionIndex];
-    const isCorrect = answer === currentQuestion.correct;
-
-    if (isCorrect) {
-      handleFeedback(answer);
-    } else {
-      // Dynamic animation logic based on answer content patterns
-      const answerLower = answer.toLowerCase();
-      
-      if (answerLower.includes('overtake') && answerLower.includes('crossing')) {
-        // Animation for overtaking across solid yellow lines
-        const targetX = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2);
-        animateOvertake(targetX).then(() => {
-          handleFeedback(answer);
-        });
-      } else if (answerLower.includes('honk')) {
-        // Animation for honking behavior
-        animateHonking().then(() => {
-          handleFeedback(answer);
-        });
+    if (answer === questions[questionIndex].correct) {
+      // Correct answer, no overtake action if it's "Don't overtake at all"
+      handleFeedback(answer); // Call feedback directly
+    } else if (answer === "Overtake by crossing the solid yellow lines to reach the faster lane") { // Adjusted option text
+      // Overtake to the left lane (column 1) if this was a wrong answer
+      const targetX = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2);
+      animateOvertake(targetX); // Call without turn directions, as they are now internal
+      handleFeedback(answer); // Call feedback here, or after animateOvertake completes
+    } else if (answer === "Honk for a long time to make the cars move faster.") { // Adjusted option text
+        setTimeout(() => {
+            // No specific car animation for this wrong answer, just feedback
+            handleFeedback(answer);
+        }, 1000); // A small delay before showing feedback
       } else {
-        // For other wrong answers, just show feedback immediately
+        // Fallback for any other answer (e.g., if there were more options)
         handleFeedback(answer);
       }
-    }
   };
 
   const handleNext = () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setIsCorrectAnswer(null);
+    setIsCorrectAnswer(null); // Reset feedback state
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
 
@@ -522,30 +495,31 @@ export default function S2P1() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-        console.log('Trying to navigate to S3P1');
       navigation.navigate('S3P1');
       setShowQuestion(false);
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
       }
       if (jeepneyAnimationRef.current) {
-        jeepneyAnimationRef.current.stop();
+          jeepneyAnimationRef.current.stop();
       }
     }
   };
 
-  const currentQuestionData = questions[questionIndex];
-  const feedbackMessage = isCorrectAnswer
-    ? "Correct! " + (currentQuestionData.correctExplanation || "Solid yellow lane means you cannot overtake. Stay in your lane to avoid unnecessary accidents.")
-    : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
-
+  // ✅ DATABASE INTEGRATION - Show loading screen while fetching data
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: "black", justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: 'white', fontSize: 18 }}>Loading S2P1 scenario...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: 'black' }]}>
+        <Text style={styles.loadingText}>Loading scenario...</Text>
       </View>
     );
   }
+
+  // Determine the feedback message based on whether the answer was correct or wrong
+  const currentQuestionData = questions[questionIndex];
+  const feedbackMessage = isCorrectAnswer
+    ? "Correct! Solid yellow lane means you cannot overtake. Stay in your lane to avoid unnecessary accidents."
+    : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
 
   return (
     <View style={{ flex: 1, backgroundColor: "black", overflow: 'hidden' }}>
@@ -618,7 +592,7 @@ export default function S2P1() {
         />
       )}
 
-      {/* Question Overlay - NOW USES DATABASE DATA */}
+      {/* Responsive Question Overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -628,17 +602,17 @@ export default function S2P1() {
           <View style={styles.questionBox}>
             <View style={styles.questionTextContainer}>
               <Text style={styles.questionText}>
-                {currentQuestionData.question}
+                {questions[questionIndex].question}
               </Text>
             </View>
           </View>
         </View>
       )}
 
-      {/* Answer Choices - NOW USES DATABASE DATA */}
+      {/* Responsive Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
-          {currentQuestionData.options.map((option) => (
+          {questions[questionIndex].options.map((option) => (
             <TouchableOpacity
               key={option}
               style={styles.answerButton}
@@ -673,6 +647,19 @@ export default function S2P1() {
 }
 
 const styles = StyleSheet.create({
+  // ✅ DATABASE INTEGRATION - Added loading styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  // No intro styles (responsive)
+  // In-game responsive styles
   questionOverlay: {
     position: "absolute",
     bottom: 0,
@@ -751,6 +738,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: Math.min(width * 0.06, 28),
     fontWeight: "bold",
+    textAlign: "center",
   },
   nextButtonContainer: {
     position: "absolute",

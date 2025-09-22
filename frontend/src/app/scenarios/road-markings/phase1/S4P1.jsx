@@ -10,8 +10,6 @@ import {
   Easing,
 } from "react-native";
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@env';
 
 const { width, height } = Dimensions.get("window");
 
@@ -92,17 +90,30 @@ const jeepneySprites = {
   ],
 };
 
+// Updated question structure following S2P1 format - FALLBACK QUESTIONS
+const fallbackQuestions = [
+  {
+    question: "You're on an expressway with broken white lane lines between lanes going in the same direction. You want to move to the faster left lane.",
+    options: ["Change lanes without signaling since the lines are broken", "Stay in your current lane to avoid any violations", "Signal, check mirrors and blind spots, then change lanes when safe"],
+    correct: "Signal, check mirrors and blind spots, then change lanes when safe",
+    wrongExplanation: {
+      "Change lanes without signaling since the lines are broken": "Accident prone! Always let other drivers know you are changing lanes by turning on your signal and check your side mirrors if it's clear to change.",
+      "Stay in your current lane to avoid any violations": "Wrong! Changing lanes on a broken white line is accepted although change lane with care."
+    }
+  },
+];
+
 export default function DrivingGame() {
   const navigation = useNavigation();
-
-  // DATABASE INTEGRATION: Only add these 3 database states
-  const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState([]);
-  const [scenarioData, setScenarioData] = useState(null);
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
+
+  // Database integration state
+  const [loading, setLoading] = useState(true);
+  const [questions, setQuestions] = useState(fallbackQuestions);
+  const [error, setError] = useState(null);
 
   const [isPlayerCarVisible, setIsPlayerCarVisible] = useState(true); // Renamed for clarity
   const [isJeepneyVisible, setIsJeepneyVisible] = useState(true); // State for jeep visibility
@@ -140,86 +151,74 @@ export default function DrivingGame() {
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
 
-  // DATABASE INTEGRATION: Fetch scenario data
+  // Database integration: Fetch scenario data
   useEffect(() => {
+    const fetchScenarioData = async () => {
+      try {
+        console.log('Fetching scenario data for S4P1...');
+        setLoading(true);
+        
+        // Replace with your actual backend URL
+        const response = await fetch('http://localhost:3001/scenarios/4');
+        console.log('Response status:', response.status);
+        
+        const data = await response.json();
+        console.log('Full response data:', JSON.stringify(data, null, 2));
+        
+        if (data.success) {
+          // Transform database response to match frontend format
+          const transformedQuestions = [{
+            question: data.data.question,
+            options: data.data.options,
+            correct: data.data.correct_answer,
+            wrongExplanation: data.data.wrong_explanations || {}
+          }];
+          
+          console.log('Setting questions from database:', transformedQuestions);
+          setQuestions(transformedQuestions);
+        } else {
+          console.log('Database response not successful, using fallback questions');
+          setQuestions(fallbackQuestions);
+        }
+      } catch (error) {
+        console.error('Error fetching scenario data:', error);
+        console.log('Using fallback questions due to error');
+        setQuestions(fallbackQuestions);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+        console.log('Setting loading to false');
+      }
+    };
+
     fetchScenarioData();
   }, []);
 
-  const fetchScenarioData = async () => {
+  // Function to update user progress
+  const updateProgress = async (selectedAnswer, isCorrect) => {
     try {
-      const response = await fetch(`${API_URL}/scenarios/34`);
-      const data = await response.json();
+      const progressData = {
+        user_id: 1, // Replace with actual user ID
+        scenario_id: 4, // S4P1 scenario ID
+        selected_answer: selectedAnswer,
+        is_correct: isCorrect,
+        attempts: 1,
+        completed_at: new Date().toISOString()
+      };
+
+      console.log('Updating progress:', progressData);
       
-      if (data && data.scenario_choices && data.description) {
-        setScenarioData(data);
-        
-        const transformedQuestions = [{
-          question: data.description,
-          options: data.scenario_choices.map(choice => choice.text),
-          correct: data.scenario_choices.find(choice => choice.is_correct).text,
-          wrongExplanation: {}
-        }];
-        
-        data.scenario_choices.forEach(choice => {
-          if (!choice.is_correct) {
-            transformedQuestions[0].wrongExplanation[choice.text] = choice.explanation;
-          }
-        });
-        
-        setQuestions(transformedQuestions);
-      } else {
-        throw new Error('Database response format unexpected');
-      }
-    } catch (error) {
-      console.error('Database error, using fallback questions:', error);
-      setQuestions([
-        {
-          question: "You're on an expressway with broken white lane lines between lanes going in the same direction. You want to move to the faster left lane.",
-          options: ["Change lanes without signaling since the lines are broken", "Stay in your current lane to avoid any violations", "Signal, check mirrors and blind spots, then change lanes when safe"],
-          correct: "Signal, check mirrors and blind spots, then change lanes when safe",
-          wrongExplanation: {
-            "Change lanes without signaling since the lines are broken": "Accident prone! Always let other drivers know you are changing lanes by turning on your signal and check your side mirrors if it's clear to change.",
-            "Stay in your current lane to avoid any violations": "Wrong! Changing lanes on a broken white line is accepted although change lane with care."
-          }
-        }
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // DATABASE INTEGRATION: Update user progress
-  const updateProgress = async (selectedOption, isCorrect) => {
-    try {
-      const userId = await AsyncStorage.getItem('userId');
-      if (!userId) return;
-
-      await fetch(`${API_URL}/progress`, {
+      // Replace with your actual backend URL
+      const response = await fetch('http://localhost:3001/user-progress/scenario', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          user_id: parseInt(userId),
-          scenario_id: 34,
-          selected_option: selectedOption,
-          is_correct: isCorrect,
-          completed_at: new Date().toISOString()
-        })
+        body: JSON.stringify(progressData),
       });
 
-      await fetch(`${API_URL}/attempts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: parseInt(userId),
-          scenario_id: 34,
-          selected_choice: selectedOption,
-          is_correct: isCorrect
-        })
-      });
+      const result = await response.json();
+      console.log('Progress updated successfully:', result);
     } catch (error) {
       console.error('Error updating progress:', error);
     }
@@ -227,23 +226,23 @@ export default function DrivingGame() {
 
   // Animation for player's car sprite
   useEffect(() => {
-    if (!loading && !showQuestion && isPlayerCarVisible) {
+    if (!showQuestion && isPlayerCarVisible) {
       const interval = setInterval(() => {
         setPlayerCarFrame((prevFrame) => (prevFrame === 0 ? 1 : 0));
       }, 200);
       return () => clearInterval(interval);
     }
-  }, [loading, showQuestion, isPlayerCarVisible]);
+  }, [showQuestion, isPlayerCarVisible]);
 
   // Animation for jeepney's sprite
   useEffect(() => {
-    if (!loading && !showQuestion && isJeepneyVisible) {
+    if (!showQuestion && isJeepneyVisible) {
       const interval = setInterval(() => {
         setJeepneyFrame((prevFrame) => (prevFrame === 0 ? 1 : 0));
       }, 250);
       return () => clearInterval(interval);
     }
-  }, [loading, showQuestion, isJeepneyVisible]);
+  }, [showQuestion, isJeepneyVisible]);
 
   const scrollAnimationRef = useRef(null);
   const jeepneyAnimationRef = useRef(null); // Ref to hold the jeepney's entry animation
@@ -299,7 +298,8 @@ export default function DrivingGame() {
   }
 
   useEffect(() => {
-    if (!loading && questions.length > 0) {
+    if (!loading) {
+      console.log('Loading complete, starting scroll animation');
       startScrollAnimation();
     }
     return () => {
@@ -310,17 +310,12 @@ export default function DrivingGame() {
           jeepneyAnimationRef.current.stop();
       }
     };
-  }, [loading, questions]);
+  }, [loading]);
 
   // Updated handleFeedback function from S2P1
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
-    const isCorrect = answerGiven === currentQuestion.correct;
-    
-    // DATABASE INTEGRATION: Update progress
-    updateProgress(answerGiven, isCorrect);
-    
-    if (isCorrect) {
+    if (answerGiven === currentQuestion.correct) {
       setIsCorrectAnswer(true); // Set to true for correct feedback
       setAnimationType("correct");
       Animated.timing(correctAnim, {
@@ -509,6 +504,10 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
+    // Update progress in database
+    const isCorrect = option === questions[questionIndex].correct;
+    await updateProgress(option, isCorrect);
+
     // Stop continuous scroll and sprite animations immediately
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
     if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
@@ -567,20 +566,23 @@ export default function DrivingGame() {
     }
   };
 
-  // DATABASE INTEGRATION: Show loading while fetching
-  if (loading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: "black", justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: 'white', fontSize: 18 }}>Loading scenario...</Text>
-      </View>
-    );
-  }
-
   // Determine the feedback message based on whether the answer was correct or wrong (from S2P1)
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
     ? "Correct! Broken white lines allow lane changes. Always signal and check your surroundings before changing lanes."
-    : (currentQuestionData?.wrongExplanation?.[selectedAnswer] || "Wrong answer!");
+    : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
+
+  // Show loading screen while fetching data
+  if (loading) {
+    console.log('Showing loading screen. Loading:', loading, 'Questions length:', questions.length);
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading scenario...</Text>
+      </View>
+    );
+  }
+
+  console.log('Rendering main game. Loading:', loading, 'Questions length:', questions.length);
 
   return (
     <View style={{ flex: 1, backgroundColor: "black", overflow: 'hidden' }}>
@@ -708,6 +710,18 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
+  // Loading screen styles
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
   // No intro styles (responsive)
   // In-game responsive styles
   questionOverlay: {
@@ -742,6 +756,7 @@ const styles = StyleSheet.create({
   questionText: {
     color: "white",
     fontSize: Math.min(width * 0.045, 28),
+    fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {

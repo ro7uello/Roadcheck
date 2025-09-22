@@ -10,6 +10,11 @@ import {
   Easing,
 } from "react-native";
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '@env';
+
+// Debug API_URL at module level
+console.log('S6P1 Module loaded. API_URL from env:', API_URL);
 
 const { width, height } = Dimensions.get("window");
 
@@ -26,38 +31,34 @@ const sideMargin = width * 0.05;
 
 // Road tiles
 const roadTiles = {
-    road6: require("../../../../../assets/road/road6.png"),
-    road8: require("../../../../../assets/road/road8.png"),
-    road17: require("../../../../../assets/road/road17.png"),
-    road18: require("../../../../../assets/road/road18.png"),
-    road20: require("../../../../../assets/road/road20.png"),
+    road20: require("../../../../../assets/road/road20.png"), // Straight road
+    road8: require("../../../../../assets/road/road8.png"),   // Straight road with dashed lines
+    road69: require("../../../../../assets/road/road69.png"), // Straight road with solid lines
 };
 
 // Map layout
 const mapLayout = [
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
 ];
 
 // Separated sprites for clarity and easier management
@@ -87,20 +88,20 @@ const playerCarSprites = {
 
 const jeepneySprites = {
   NORTH: [
-    require("../../../../../assets/car/JEEP TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/JEEP TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/MICRO TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_MICRO_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/MICRO TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_MICRO_CLEAN_NORTH_001.png"),
   ],
 };
 
-// Updated question structure following S2P1 format - FALLBACK QUESTIONS
+// Fallback questions - keep your original questions as backup
 const fallbackQuestions = [
   {
-    question: "You encounter double solid yellow lines but traffic on your side has completely stopped. You're tempted to use the opposite lane to bypass the jam.",
-    options: ["Move to the opposite lane to bypass the traffic jam.", "Check if the opposite lane is clear and overtake to move further on the road.", "Stay on your lane."],
-    correct: "Stay on your lane.",
+    question: "You're on a narrow provincial road with a single solid yellow line on the opposite side and a broken line on your side. You want to overtake a car.",
+    options: ["Don't overtake since there's a solid yellow line.", "Overtake carefully since your side has a broken line", "Wait for both lines to become broken"],
+    correct: "Overtake carefully since your side has a broken line",
     wrongExplanation: {
-      "Move to the opposite lane to bypass the traffic jam.": "Violation! Double solid yellow lines prohibit crossing regardless of traffic conditions on either side.",
-      "Check if the opposite lane is clear and overtake to move further on the road.": "Violation! Even if the opposite lane is clear, double solid yellow lines prohibit overtaking and crossing."
+      "Don't overtake since there's a solid yellow line.": "Wrong! The solid line on the opposite side doesn't prohibit you to overtake. It restricts theirs. You have a broken line on your side so you can overtake.",
+      "Wait for both lines to become broken": "Wrong! The solid line on the opposite side doesn't prohibit you to overtake. It restricts theirs. You have a broken line on your side so you can overtake."
     }
   },
 ];
@@ -108,14 +109,14 @@ const fallbackQuestions = [
 export default function DrivingGame() {
   const navigation = useNavigation();
 
+  // ✅ DATABASE INTEGRATION - Added these 3 state variables
+  const [questions, setQuestions] = useState(fallbackQuestions);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
-
-  // Database integration state
-  const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState(fallbackQuestions);
-  const [error, setError] = useState(null);
 
   const [isPlayerCarVisible, setIsPlayerCarVisible] = useState(true); // Renamed for clarity
   const [isJeepneyVisible, setIsJeepneyVisible] = useState(true); // State for jeep visibility
@@ -153,76 +154,104 @@ export default function DrivingGame() {
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
 
-  // Database integration: Fetch scenario data
+  // ✅ DATABASE INTEGRATION - Added this useEffect to fetch data
   useEffect(() => {
     const fetchScenarioData = async () => {
       try {
-        console.log('Fetching scenario data for S5P1...');
-        setLoading(true);
+        console.log('S6P1: Fetching scenario data...');
+        console.log('S6P1: API_URL value:', API_URL);
         
-        // Replace with your actual backend URL
-        const response = await fetch('http://localhost:3001/scenarios/5');
-        console.log('Response status:', response.status);
+        const token = await AsyncStorage.getItem('access_token');
+        console.log('S6P1: Token retrieved:', token ? 'Yes' : 'No');
+        
+        const url = `${API_URL}/scenarios/6`;
+        console.log('S6P1: Fetching from URL:', url);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        console.log('S6P1: Response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         
         const data = await response.json();
-        console.log('Full response data:', JSON.stringify(data, null, 2));
+        console.log('S6P1: Data received:', data);
         
-        if (data.success) {
-          // Transform database response to match frontend format
-          const transformedQuestions = [{
-            question: data.data.question,
-            options: data.data.options,
-            correct: data.data.correct_answer,
-            wrongExplanation: data.data.wrong_explanations || {}
-          }];
+        if (data && data.scenario) {
+          // Transform database response to match your frontend format
+          const transformedQuestion = {
+            question: data.scenario.question_text,
+            options: data.choices.map(choice => choice.choice_text),
+            correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
+            wrongExplanation: {}
+          };
           
-          console.log('Setting questions from database:', transformedQuestions);
-          setQuestions(transformedQuestions);
+          // Build wrong explanations
+          data.choices.forEach(choice => {
+            if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
+              transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
+            }
+          });
+          
+          setQuestions([transformedQuestion]);
+          console.log('S6P1: ✅ Database questions loaded successfully');
         } else {
-          console.log('Database response not successful, using fallback questions');
+          console.log('S6P1: ⚠️ Invalid data structure, using fallback');
           setQuestions(fallbackQuestions);
         }
       } catch (error) {
-        console.error('Error fetching scenario data:', error);
-        console.log('Using fallback questions due to error');
+        console.log('S6P1: ❌ Database error, using fallback questions:', error.message);
         setQuestions(fallbackQuestions);
         setError(error.message);
       } finally {
         setLoading(false);
-        console.log('Setting loading to false');
       }
     };
 
     fetchScenarioData();
   }, []);
 
-  // Function to update user progress
-  const updateProgress = async (selectedAnswer, isCorrect) => {
+  // ✅ DATABASE INTEGRATION - Added updateProgress function
+  const updateProgress = async (scenarioId, selectedOption, isCorrect) => {
     try {
-      const progressData = {
-        user_id: 1, // Replace with actual user ID
-        scenario_id: 5, // S5P1 scenario ID
-        selected_answer: selectedAnswer,
-        is_correct: isCorrect,
-        attempts: 1,
-        completed_at: new Date().toISOString()
-      };
-
-      console.log('Updating progress:', progressData);
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
       
-      // Replace with your actual backend URL
-      const response = await fetch('http://localhost:3001/user-progress/scenario', {
+      if (!token || !userId) {
+        console.log('S6P1: No token or user_id found for progress update');
+        return;
+      }
+
+      // Record the attempt
+      const attemptResponse = await fetch(`${API_URL}/attempts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(progressData),
+        body: JSON.stringify({
+          user_id: parseInt(userId),
+          scenario_id: scenarioId,
+          selected_option: selectedOption,
+          is_correct: isCorrect,
+          completed_at: new Date().toISOString()
+        })
       });
 
-      const result = await response.json();
-      console.log('Progress updated successfully:', result);
+      if (attemptResponse.ok) {
+        console.log('S6P1: ✅ Progress updated successfully');
+      } else {
+        console.log('S6P1: ⚠️ Failed to update progress:', attemptResponse.status);
+      }
     } catch (error) {
-      console.error('Error updating progress:', error);
+      console.log('S6P1: ❌ Error updating progress:', error.message);
     }
   };
 
@@ -299,9 +328,9 @@ export default function DrivingGame() {
     });
   }
 
+  // ✅ DATABASE INTEGRATION - Modified useEffect to wait for data
   useEffect(() => {
     if (!loading) {
-      console.log('Loading complete, starting scroll animation');
       startScrollAnimation();
     }
     return () => {
@@ -312,12 +341,17 @@ export default function DrivingGame() {
           jeepneyAnimationRef.current.stop();
       }
     };
-  }, [loading]);
+  }, [loading]); // Added loading dependency
 
   // Updated handleFeedback function from S2P1
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
-    if (answerGiven === currentQuestion.correct) {
+    const isCorrect = answerGiven === currentQuestion.correct;
+    
+    // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
+    updateProgress(6, answerGiven, isCorrect); // scenario_id = 6 for S6P1
+    
+    if (isCorrect) {
       setIsCorrectAnswer(true); // Set to true for correct feedback
       setAnimationType("correct");
       Animated.timing(correctAnim, {
@@ -369,66 +403,6 @@ export default function DrivingGame() {
 
     // Then handle feedback
     handleFeedback(selectedAnswer);
-  };
-
-  // NEW ANIMATION: Sudden Overtake (for wrong answers)
-  const animateSuddenOvertake = async () => {
-    if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
-
-    setPlayerCarFrame(0);
-    setJeepneyFrame(0);
-    setIsPlayerCarVisible(true);
-    setIsJeepneyVisible(true); // Start with jeepney visible
-
-    const targetXLeftLane = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2); // Left lane (index 1)
-
-    // 1. Car faces Northwest and moves quickly left
-    await new Promise(resolve => {
-        setPlayerCarDirection("NORTHWEST");
-        Animated.parallel([
-            Animated.timing(playerCarXAnim, {
-                toValue: targetXLeftLane, // Move to left lane
-                duration: 400, // Fast
-                easing: Easing.easeOut,
-                useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-                toValue: scrollY._value - (tileSize * 0.8), // Move forward a bit
-                duration: 400,
-                easing: Easing.easeOut,
-                useNativeDriver: true,
-            })
-        ]).start(resolve);
-    });
-
-    // 2. Car faces North, continues forward rapidly, and jeepney falls behind
-    await new Promise(resolve => {
-        setPlayerCarDirection("NORTH"); // Face North
-        Animated.parallel([
-            Animated.timing(jeepneyYAnim, {
-                toValue: height + jeepHeight, // Move the jeepney off-screen bottom
-                duration: 800, // Quickly disappear
-                easing: Easing.easeIn, // Faster exit
-                useNativeDriver: true,
-            }),
-            Animated.timing(scrollY, { // Player car moves significantly forward
-                toValue: scrollY._value - (tileSize * 4), // More forward movement
-                duration: 800,
-                easing: Easing.easeOut,
-                useNativeDriver: true,
-            }),
-        ]).start(resolve);
-    });
-    setIsJeepneyVisible(false); // Hide jeepney after it's out of view
-
-    // Player car stays in the left lane
-    setPlayerCarDirection("NORTH"); // Keep facing North in new lane
-
-    // Pause briefly before showing feedback
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    handleFeedback(selectedAnswer); // Pass the selected wrong answer to feedback
   };
 
   // NEW ANIMATION: Careful Overtake (for "Signal, check mirrors...")
@@ -506,10 +480,6 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
-    // Update progress in database
-    const isCorrect = option === questions[questionIndex].correct;
-    await updateProgress(option, isCorrect);
-
     // Stop continuous scroll and sprite animations immediately
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
     if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
@@ -522,19 +492,19 @@ export default function DrivingGame() {
     const actualCorrectAnswer = questions[questionIndex].correct;
 
     if (option === actualCorrectAnswer) {
-      if (option === "Stay on your lane.") {
-        await animateStayInLane();
+      if (option === "Overtake carefully since your side has a broken line") {
+        await animateCarefulOvertake();
       }
       // If there were other correct answers with specific animations, add them here
       // For this specific question, 'Stay on your lane' is the only correct answer.
     } else {
         // This block handles all wrong answers
-        if (option === "Move to the opposite lane to bypass the traffic jam.") {
-            await animateSuddenOvertake();
-        } else if (option === "Check if the opposite lane is clear and overtake to move further on the road.") {
+        if (option === "Don't overtake since there's a solid yellow line.") {
+            await animateStayInLane();
+        } else if (option === "Wait for both lines to become broken") {
             // This is also a wrong answer for this scenario (due to 'opposite lane' implying violation).
             // So, we'll use an animation that shows a wrong/unsafe maneuver.
-            await animateSuddenOvertake();
+            await animateStayInLane();
         } else {
             // Fallback for any other answer (if you add more wrong options later)
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -562,7 +532,7 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S6P1');
+      navigation.navigate('S7P1');
       setShowQuestion(false);
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
@@ -573,23 +543,20 @@ export default function DrivingGame() {
     }
   };
 
-  // Determine the feedback message based on whether the answer was correct or wrong (from S2P1)
-  const currentQuestionData = questions[questionIndex];
-  const feedbackMessage = isCorrectAnswer
-    ? "Correct! Solid yellow double lines means that you cannot overtake or cross. Respecting the road markings will help you avoid violations, accidents, and potential road rage."
-    : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
-
-  // Show loading screen while fetching data
+  // ✅ DATABASE INTEGRATION - Show loading screen while fetching data
   if (loading) {
-    console.log('Showing loading screen. Loading:', loading, 'Questions length:', questions.length);
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: 'black' }]}>
         <Text style={styles.loadingText}>Loading scenario...</Text>
       </View>
     );
   }
 
-  console.log('Rendering main game. Loading:', loading, 'Questions length:', questions.length);
+  // Determine the feedback message based on whether the answer was correct or wrong (from S2P1)
+  const currentQuestionData = questions[questionIndex];
+  const feedbackMessage = isCorrectAnswer
+    ? "Correct! The broken line on your side allows overtaking if done safely, even if the opposite side has a solid line."
+    : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
 
   return (
     <View style={{ flex: 1, backgroundColor: "black", overflow: 'hidden' }}>
@@ -717,17 +684,16 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // Loading screen styles
+  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
-    backgroundColor: "black",
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingText: {
-    color: "white",
-    fontSize: 20,
-    fontWeight: "bold",
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   // No intro styles (responsive)
   // In-game responsive styles
@@ -771,7 +737,7 @@ const styles = StyleSheet.create({
     top: height * 0.4,
     right: sideMargin,
     width: width * 0.35,
-    height: height * 0.21,
+    height: height * 0.25,
     zIndex: 11,
   },
   answerButton: {

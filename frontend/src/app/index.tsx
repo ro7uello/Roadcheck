@@ -76,7 +76,7 @@ export default function Home() {
     router.push('/login');
     console.log('Starting RoadCheck app...');
     console.log('All env vars:', process.env);
-    console.log('API_URL specifically:', process.env.EXPO_PUBLIC_API_URL);
+    console.log('API_URL specifically:', process.env.API_URL);
   };
 
   return (
