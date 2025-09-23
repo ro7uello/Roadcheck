@@ -66,7 +66,7 @@ export default function OptionPage() {
             'Content-Type': 'application/json',
           },
         });
-
+        
         if (response.ok) {
           const profile = await response.json();
           setUserProfile(profile);
