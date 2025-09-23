@@ -77,25 +77,66 @@ export default function DriverGame() {
     ).start();
   };
 
+  // Replace the three handler functions in your categorySelectionScreen.tsx
+
   const handleRoadMarkingsPress = () => {
+    if (isLoading) return;
+
     Animated.sequence([
-      Animated.timing(roadMarkingsScale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
-      Animated.timing(roadMarkingsScale, { toValue: 1, duration: 100, useNativeDriver: true }),
-    ]).start(() => router.push('/phaseSelectionScreen-ROADMARKINGS'));
+      Animated.timing(roadMarkingsScale, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(roadMarkingsScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Navigate to phase selection with category parameters
+      saveUserProgress(1, 'Road Markings', '/phaseSelectionScreen?categoryId=1&categoryName=Road Markings&categorySlug=road-markings');
+    });
   };
 
   const handleSignsPress = () => {
+    if (isLoading) return;
+
     Animated.sequence([
-      Animated.timing(signsScale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
-      Animated.timing(signsScale, { toValue: 1, duration: 100, useNativeDriver: true }),
-    ]).start(() => router.push('/driver-game/signs'));
+      Animated.timing(signsScale, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(signsScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Navigate to phase selection with category parameters
+      saveUserProgress(2, 'Traffic Signs', '/phaseSelectionScreen?categoryId=2&categoryName=Traffic Signs&categorySlug=traffic-signs');
+    });
   };
 
   const handleIntersectionPress = () => {
+    if (isLoading) return;
+
     Animated.sequence([
-      Animated.timing(intersectionScale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
-      Animated.timing(intersectionScale, { toValue: 1, duration: 100, useNativeDriver: true }),
-    ]).start(() => router.push('/driver-game/intersections'));
+      Animated.timing(intersectionScale, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(intersectionScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Navigate to phase selection with category parameters
+      saveUserProgress(3, 'Intersection and Others', '/phaseSelectionScreen?categoryId=3&categoryName=Intersection and Others&categorySlug=intersection-and-others');
+    });
   };
 
   const goBack = () => {
