@@ -1,20 +1,10 @@
 import { useFonts } from 'expo-font';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  Dimensions,
-  Image,
-  ImageBackground,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+import { Animated, Dimensions, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const API_BASE_URL = process.env.API_URL;
 const { width, height } = Dimensions.get('window');
 const BACKGROUND_SPEED = 12000;
 
@@ -69,45 +59,96 @@ export default function PhaseSelectionScreen() {
       }
 
       try {
-        console.log('Fetching phases for category:', categoryId);
+        console.log('=== PHASE FETCH DEBUG ===');
+        console.log('categoryId:', categoryId);
+        console.log('API_BASE_URL:', API_BASE_URL);
+
+        const url = `${API_BASE_URL}/phases/category/${categoryId}`;
+        console.log('Fetching from URL:', url);
+
         setLoading(true);
-        
-        const response = await fetch(`http://your-backend-url/phases/category/${categoryId}`);
+
+        const response = await fetch(url);
         console.log('Response status:', response.status);
-        
+        console.log('Response ok:', response.ok);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.log('Error response:', errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
         const data = await response.json();
         console.log('Phases response:', data);
-        
+
         if (data.success) {
           setPhases(data.data);
+          console.log('Phases set successfully:', data.data);
         } else {
           setError(data.message || 'Failed to fetch phases');
+          console.log('Backend returned error:', data.message);
         }
       } catch (error) {
         console.error('Error fetching phases:', error);
-        setError('Failed to connect to server');
+        console.error('Error details:', error.message);
+        setError('Failed to connect to server: ' + error.message);
       } finally {
         setLoading(false);
+        console.log('=== PHASE FETCH END ===');
       }
     };
+
+    const getPhaseIcon = (phaseId: number, categoryId: string) => {
+        let phaseNumber = 1;
+
+        // Same mapping logic as your navigation function
+        if (categoryId === '1') {
+          phaseNumber = phaseId; // Road Markings: direct mapping
+        } else if (categoryId === '2') {
+          phaseNumber = phaseId - 3; // Traffic Signs: 4,5,6 → 1,2,3
+        } else if (categoryId === '3') {
+          phaseNumber = phaseId - 6; // Intersection: 7,8,9 → 1,2,3
+        }
+
+        // Return the appropriate icon based on phase number
+        switch (phaseNumber) {
+          case 1:
+            return require('../../assets/icon/1.png');
+          case 2:
+            return require('../../assets/icon/2.png');
+          case 3:
+            return require('../../assets/icon/3.png');
+          default:
+            return require('../../assets/icon/1.png');
+        }
+      };
 
     fetchPhases();
   }, [categoryId]);
 
   // Update user progress when phase is selected
-  const updateUserProgress = async (phaseId: number, phaseName: string) => {
+  const updateUserProgress = async (phaseId, phaseName) => {
     try {
+      console.log('=== PROGRESS UPDATE DEBUG ===');
+
+      // Get user ID from storage (same way as optionPage)
+      let userId = await AsyncStorage.getItem('user_id');
+      if (!userId) {
+        console.log('No user ID found in storage');
+        return;
+      }
+
       const progressData = {
-        user_id: 1, // Replace with actual user ID from auth
-        current_category_id: parseInt(categoryId as string),
+        user_id: userId,
+        current_category_id: parseInt(categoryId),
         current_phase: phaseId,
-        current_scenario_index: 1, // Start with first scenario
-        updated_at: new Date().toISOString()
+        current_scenario_index: 0 // Start at beginning of phase
       };
 
       console.log('Updating user progress:', progressData);
-      
-      const response = await fetch('http://your-backend-url/user-progress', {
+      console.log('API URL:', `${API_BASE_URL}/user-progress`);
+
+      const response = await fetch(`${API_BASE_URL}/user-progress`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -115,9 +156,17 @@ export default function PhaseSelectionScreen() {
         body: JSON.stringify(progressData),
       });
 
+      console.log('Progress response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Progress update error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
       const result = await response.json();
       console.log('Progress update result:', result);
-      
+
       if (result.success) {
         console.log('User progress updated successfully');
       } else {
@@ -125,31 +174,60 @@ export default function PhaseSelectionScreen() {
       }
     } catch (error) {
       console.error('Error updating user progress:', error);
+      console.error('Progress update error details:', error.message);
     }
   };
 
-  // Route to appropriate scenario based on category and phase
   const navigateToScenario = (categoryName: string, phaseId: number) => {
-    const categoryLower = categoryName.toLowerCase();
-    
-    // Map category names to route patterns
-    const routeMapping: { [key: string]: string } = {
-      'road signs': '/driver-game/signs',
-      'road markings': '/driver-game/markings', 
-      'intersections': '/driver-game/intersections',
-      'others': '/driver-game/others'
+    console.log('=== NAVIGATION DEBUG ===');
+    console.log('categoryName:', categoryName);
+    console.log('phaseId:', phaseId);
+    console.log('categoryId:', categoryId);
+
+    // Map category ID to proper slug (matching your file structure)
+    const categorySlugMap: { [key: string]: string } = {
+      '1': 'road-markings',
+      '2': 'traffic-signs',
+      '3': 'intersections'
     };
 
-    const baseRoute = routeMapping[categoryLower];
-    
-    if (baseRoute) {
-      // Navigate to the phase-specific route
-      const route = `${baseRoute}/phase-${phaseId}`;
-      console.log('Navigating to:', route);
-      router.push(route);
-    } else {
-      Alert.alert('Error', `Route not found for category: ${categoryName}`);
+    let phaseNumber = 1; // Default
+
+    if (categoryId === '1') {
+      // Road Markings - direct mapping (phase ID 1 = phase1, etc.)
+      phaseNumber = phaseId;
+    } else if (categoryId === '2') {
+      // Traffic Signs - phase IDs are 4,5,6 so map to 1,2,3
+      phaseNumber = phaseId - 3;
+    } else if (categoryId === '3') {
+      // Intersection - phase IDs are 7,8,9 so map to 1,2,3
+      phaseNumber = phaseId - 6;
     }
+
+    // Ensure phase number is valid (1, 2, or 3)
+    if (phaseNumber < 1 || phaseNumber > 3) {
+      console.warn('Invalid phase number calculated:', phaseNumber, 'defaulting to 1');
+      phaseNumber = 1; // Fallback to phase 1
+    }
+
+    const categorySlug = categorySlugMap[categoryId as string];
+
+    console.log('categorySlug:', categorySlug);
+    console.log('phaseNumber:', phaseNumber);
+
+    if (!categorySlug || phaseNumber < 1) {
+      console.error('Invalid mapping:', { categoryId, phaseId, categorySlug, phaseNumber });
+      Alert.alert('Error', `Invalid route mapping for category ${categoryId}, phase ${phaseId}`);
+      return;
+    }
+
+    // Build route matching your file structure: /scenarios/road-markings/phase1/S1P1
+    const route = `/scenarios/${categorySlug}/phase${phaseNumber}/S1P${phaseNumber}`;
+
+    console.log('Final route:', route);
+    console.log('=== NAVIGATION END ===');
+
+    router.push(route);
   };
 
   useEffect(() => {
@@ -297,9 +375,36 @@ export default function PhaseSelectionScreen() {
 
       {/* Phase Options */}
       <View style={styles.selectionContainer}>
-        {phases.map((phase, index) => (
-          <Animated.View 
-            key={phase.id} 
+      {phases.map((phase, index) => {
+        // Calculate phase number inline
+        let phaseNumber = 1;
+        if (categoryId === '1') {
+          phaseNumber = phase.id; // Road Markings: direct mapping
+        } else if (categoryId === '2') {
+          phaseNumber = phase.id - 3; // Traffic Signs: 4,5,6 → 1,2,3
+        } else if (categoryId === '3') {
+          phaseNumber = phase.id - 6; // Intersection: 7,8,9 → 1,2,3
+        }
+
+        // Determine which icon to use
+        let iconSource;
+        switch (phaseNumber) {
+          case 1:
+            iconSource = require('../../assets/icon/1.png');
+            break;
+          case 2:
+            iconSource = require('../../assets/icon/2.png');
+            break;
+          case 3:
+            iconSource = require('../../assets/icon/3.png');
+            break;
+          default:
+            iconSource = require('../../assets/icon/1.png');
+        }
+
+        return (
+          <Animated.View
+            key={phase.id}
             style={{ transform: [{ scale: phaseScales[index] || new Animated.Value(1) }] }}
           >
             <TouchableOpacity
@@ -307,15 +412,16 @@ export default function PhaseSelectionScreen() {
               onPress={() => handlePhasePress(phase, index)}
               activeOpacity={0.8}
             >
-              <Image 
-                source={require('../../assets/icon/1.png')} // You can customize icons per phase
-                style={styles.optionImage} 
-                resizeMode="contain" 
+              <Image
+                source={iconSource}
+                style={styles.optionImage}
+                resizeMode="contain"
               />
               <Text style={styles.optionLabel}>{phase.name.toUpperCase()}</Text>
             </TouchableOpacity>
           </Animated.View>
-        ))}
+        );
+      })}
       </View>
 
       {/* No phases message */}
