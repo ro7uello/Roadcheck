@@ -134,7 +134,7 @@ export default function LoadingScreen() {
           clearInterval(progressInterval);
           setTimeout(() => {
             // Navigate to option page
-            router.replace('/optionPage');
+            router.replace('/option-screen');
           }, 800);
           return 100;
         }

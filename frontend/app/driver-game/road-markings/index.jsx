@@ -16,6 +16,13 @@ import {
 const { width, height } = Dimensions.get('window');
 const BACKGROUND_SPEED = 12000;
 
+// Define your chapters data
+const chapters = [
+  { id: 1, label: 'CHAPTER 1', path: '/driver-game/road-markings/chapter-1', icon: require('../../../assets/icon/1.png') },
+  { id: 2, label: 'CHAPTER 2', path: '/driver-game/road-markings/phase2/s1p2', icon: require('../../../assets/icon/2.png') },
+  { id: 3, label: 'CHAPTER 3', path: '/driver-game/road-markings/chapter-3', icon: require('../../../assets/icon/3.png') },
+];
+
 export default function RoadMarkings() {
   const [fontsLoaded] = useFonts({
     pixel: require('../../../assets/fonts/pixel3.ttf'),
@@ -23,9 +30,13 @@ export default function RoadMarkings() {
 
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
   const carBounce = useRef(new Animated.Value(0)).current;
-  const option1Scale = useRef(new Animated.Value(1)).current;
-  const option2Scale = useRef(new Animated.Value(1)).current;
-  const option3Scale = useRef(new Animated.Value(1)).current;
+  // Use a map to store Animated.Value for each option scale
+  const optionScales = useRef(
+    chapters.reduce((acc, chapter) => {
+      acc[chapter.id] = new Animated.Value(1);
+      return acc;
+    }, {})
+  ).current;
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -35,9 +46,8 @@ export default function RoadMarkings() {
     return () => {
       backgroundAnimation.stopAnimation();
       carBounce.stopAnimation();
-      option1Scale.stopAnimation();
-      option2Scale.stopAnimation();
-      option3Scale.stopAnimation();
+      // Stop all option scale animations
+      Object.values(optionScales).forEach(scale => scale.stopAnimation());
     };
   }, [fontsLoaded]);
 
@@ -64,8 +74,8 @@ export default function RoadMarkings() {
     ).start();
   };
 
-  // handlers for the three options
-  const handleOptionPress = (scaleRef, path) => {
+  const handleOptionPress = (chapterId, path) => {
+    const scaleRef = optionScales[chapterId];
     Animated.sequence([
       Animated.timing(scaleRef, { toValue: 0.9, duration: 100, useNativeDriver: true }),
       Animated.timing(scaleRef, { toValue: 1, duration: 100, useNativeDriver: true }),
@@ -126,8 +136,8 @@ export default function RoadMarkings() {
       {/* Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
         <Image
-          source={require('../../../assets/icon/backButton.png')}
-          style={styles.backButtonImageTop}
+          source={require('../../../assets/icon/backButton.png')}                                   
+          style={styles.backButtonImageTop} // Note: This style is not defined in your StyleSheet
           resizeMode="contain"
         />
       </TouchableOpacity>
@@ -138,43 +148,20 @@ export default function RoadMarkings() {
         <Text style={styles.title}>ROAD MARKINGS</Text>
       </View>
 
-      {/* 3 Options */}
+      {/* Chapters (Dynamically Rendered) */}
       <View style={styles.selectionContainer}>
-        {/* Option 1 */}
-        <Animated.View style={{ transform: [{ scale: option1Scale }] }}>
-          <TouchableOpacity
-            style={styles.optionContainer}
-            onPress={() => handleOptionPress(option1Scale, '/driver-game/road-markings/chapter-1')}
-            activeOpacity={0.8}
-          >
-            <Image source={require('../../../assets/icon/1.png')} style={styles.optionImage} resizeMode="contain" />
-            <Text style={styles.optionLabel}>CHAPTER 1</Text>
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Option 2 */}
-        <Animated.View style={{ transform: [{ scale: option2Scale }] }}>
-          <TouchableOpacity
-            style={styles.optionContainer}
-            onPress={() => handleOptionPress(option2Scale, '/driver-game/road-markings/chapter-2')}
-            activeOpacity={0.8}
-          >
-            <Image source={require('../../../assets/icon/2.png')} style={styles.optionImage} resizeMode="contain" />
-            <Text style={styles.optionLabel}>CHAPTER 2</Text>
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Option 3 */}
-        <Animated.View style={{ transform: [{ scale: option3Scale }] }}>
-          <TouchableOpacity
-            style={styles.optionContainer}
-            onPress={() => handleOptionPress(option3Scale, '/driver-game/road-markings/chapter-3')}
-            activeOpacity={0.8}
-          >
-            <Image source={require('../../../assets/icon/3.png')} style={styles.optionImage} resizeMode="contain" />
-            <Text style={styles.optionLabel}>CHAPTER 3</Text>
-          </TouchableOpacity>
-        </Animated.View>
+        {chapters.map((chapter) => (
+          <Animated.View key={chapter.id} style={{ transform: [{ scale: optionScales[chapter.id] }] }}>
+            <TouchableOpacity
+              style={styles.optionContainer}
+              onPress={() => handleOptionPress(chapter.id, chapter.path)}
+              activeOpacity={0.8}
+            >
+              <Image source={chapter.icon} style={styles.optionImage} resizeMode="contain" />
+              <Text style={styles.optionLabel}>{chapter.label}</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        ))}
       </View>
     </SafeAreaView>
   );
@@ -200,6 +187,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 5,
+  },
+  // Note: backButtonImageTop was not defined, added here for completeness if you intend to use it.
+  backButtonImageTop: {
+    width: 24, // Example size
+    height: 24, // Example size
+    tintColor: 'white', // Example color
   },
   backButtonText: { fontSize: 24, color: 'white', fontWeight: 'bold' },
   titleContainer: { marginTop: 60, alignItems: 'center'},

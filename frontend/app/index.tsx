@@ -73,7 +73,7 @@ export default function Home() {
 
   const handleStartPress = () => {
     // Navigate to loading screen
-    router.push('../login');
+    router.push('/driver-game/road-markings/phase3/s2p3');
     console.log('Starting RoadCheck app...');
   };
 
