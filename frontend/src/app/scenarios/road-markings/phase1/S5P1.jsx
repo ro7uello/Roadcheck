@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.05,
   },
   questionBox: {
     flex: 1,
@@ -761,14 +761,15 @@ const styles = StyleSheet.create({
     maxWidth: width * 0.6,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 28),
+    fontSize: Math.min(width * 0.045, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.4,
+    top: height * 0.2,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
@@ -792,7 +793,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -807,7 +808,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
