@@ -1,38 +1,33 @@
-// src/app/categorySelectionScreen.tsx
-import React, { useRef, useEffect, useState } from 'react';
+import { useFonts } from 'expo-font';
+import { router } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
+  Animated,
   Dimensions,
+  Image,
   ImageBackground,
   SafeAreaView,
-  Animated,
-  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { useFonts } from 'expo-font';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
-
-// Configuration
 const BACKGROUND_SPEED = 12000;
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.35:3001';
 
-export default function CategorySelectionScreen() {
-  // Load font
+export default function DriverGame() {
   const [fontsLoaded] = useFonts({
-    'pixel': require('../../assets/fonts/pixel3.ttf'), // Fixed path
+    pixel: require('../../assets/fonts/pixel3.ttf'),
   });
+
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [libraryVisible, setLibraryVisible] = useState(false);
   
-  // State
-  const [selectedMode, setSelectedMode] = useState('driver');
-  const [isLoading, setIsLoading] = useState(false);
-  const [userProgress, setUserProgress] = useState({});
-  
-  // Animations
+  const modalScale = useRef(new Animated.Value(0)).current;
+  const libraryModalScale = useRef(new Animated.Value(0)).current;
+
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
   const carBounce = useRef(new Animated.Value(0)).current;
   const roadMarkingsScale = useRef(new Animated.Value(1)).current;
@@ -43,77 +38,35 @@ export default function CategorySelectionScreen() {
     if (fontsLoaded) {
       startBackgroundAnimation();
       startCarAnimation();
-      loadUserData();
     }
-
     return () => {
       backgroundAnimation.stopAnimation();
       carBounce.stopAnimation();
       roadMarkingsScale.stopAnimation();
       signsScale.stopAnimation();
       intersectionScale.stopAnimation();
+      modalScale.stopAnimation();
+      libraryModalScale.stopAnimation();
     };
   }, [fontsLoaded]);
 
-  const loadUserData = async () => {
-    try {
-      // Load selected mode
-      const mode = await AsyncStorage.getItem('selectedMode');
-      setSelectedMode(mode || 'driver');
-      
-      // Load user progress
-      await loadUserProgress();
-    } catch (error) {
-      console.error('Error loading user data:', error);
-    }
-  };
+  useEffect(() => {
+    Animated.spring(modalScale, {
+      toValue: settingsVisible ? 1 : 0,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 8,
+    }).start();
+  }, [settingsVisible]);
 
-  const loadUserProgress = async () => {
-  try {
-    const token = await AsyncStorage.getItem('access_token');
-    if (token) {
-      // Use existing /attempts endpoint instead
-      const response = await fetch(`${API_BASE_URL}/attempts`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        const attempts = await response.json();
-        // Process attempts data to calculate progress
-        setUserProgress(attempts);
-      }
-    }
-  } catch (error) {
-    console.error('Error loading user progress:', error);
-  }
-};
-
-const saveUserProgress = async (categoryId, categoryName, route) => {
-  try {
-    setIsLoading(true);
-    
-    // Store locally first
-    await AsyncStorage.setItem('selectedCategory', JSON.stringify({
-      id: categoryId,
-      name: categoryName,
-      selectedAt: new Date().toISOString()
-    }));
-    
-    // Navigate immediately (don't wait for backend)
-    router.push(route);
-    
-  } catch (error) {
-    console.error('Error saving category progress:', error);
-    // Still navigate
-    router.push(route);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  useEffect(() => {
+    Animated.spring(libraryModalScale, {
+      toValue: libraryVisible ? 1 : 0,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 8,
+    }).start();
+  }, [libraryVisible]);
 
   const startBackgroundAnimation = () => {
     backgroundAnimation.setValue(0);
@@ -131,91 +84,46 @@ const saveUserProgress = async (categoryId, categoryName, route) => {
     carBounce.setValue(0);
     Animated.loop(
       Animated.sequence([
-        Animated.timing(carBounce, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(carBounce, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
+        Animated.timing(carBounce, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(carBounce, { toValue: 0, duration: 1000, useNativeDriver: true }),
       ]),
       { iterations: -1 }
     ).start();
   };
 
   const handleRoadMarkingsPress = () => {
-    if (isLoading) return;
-    
     Animated.sequence([
-      Animated.timing(roadMarkingsScale, {
-        toValue: 0.9,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(roadMarkingsScale, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      saveUserProgress(1, 'Road Markings', '/scenarios/road-markings/phase1/S1P1');
-    });
+      Animated.timing(roadMarkingsScale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
+      Animated.timing(roadMarkingsScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start(() => router.push('/driver-game/road-markings'));
   };
 
   const handleSignsPress = () => {
-    if (isLoading) return;
-    
     Animated.sequence([
-      Animated.timing(signsScale, {
-        toValue: 0.9,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(signsScale, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      saveUserProgress(2, 'Traffic Signs', '/scenarios/traffic-signs/phase1/S1P1');
-    });
+      Animated.timing(signsScale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
+      Animated.timing(signsScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start(() => router.push('/driver-game/signs'));
   };
 
   const handleIntersectionPress = () => {
-    if (isLoading) return;
-    
     Animated.sequence([
-      Animated.timing(intersectionScale, {
-        toValue: 0.9,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(intersectionScale, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      saveUserProgress(3, 'Intersections', '/scenarios/intersections/phase1/S1P1');
-    });
+      Animated.timing(intersectionScale, { toValue: 0.9, duration: 100, useNativeDriver: true }),
+      Animated.timing(intersectionScale, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start(() => router.push('/driver-game/intersections'));
+  };
+
+  const handleLibraryPress = () => {
+    setLibraryVisible(true);
   };
 
   const goBack = () => {
-    router.back();
+    setTimeout(() => {
+      router.back();
+    }, -5000); // small delay lets animation complete
   };
 
-  if (!fontsLoaded) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
+  if (!fontsLoaded) return null;
 
-  // Animation interpolations
   const backgroundTranslate = backgroundAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -width],
@@ -228,29 +136,19 @@ const saveUserProgress = async (categoryId, categoryName, route) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Moving Background */}
+      {/* Background */}
       <View style={styles.backgroundContainer}>
-        <Animated.View
-          style={[
-            styles.backgroundWrapper,
-            { transform: [{ translateX: backgroundTranslate }] }
-          ]}
-        >
+        <Animated.View style={[styles.backgroundWrapper, { transform: [{ translateX: backgroundTranslate }] }]}>
           <ImageBackground
-            source={require('../../assets/background/city-background.png')} // Fixed path
+            source={require('../../assets/background/city-background.png')}
             style={styles.backgroundImage}
             resizeMode="stretch"
             imageStyle={styles.backgroundImageStyle}
           />
         </Animated.View>
-        <Animated.View
-          style={[
-            styles.backgroundWrapper,
-            { transform: [{ translateX: Animated.add(backgroundTranslate, width) }] }
-          ]}
-        >
+        <Animated.View style={[styles.backgroundWrapper, { transform: [{ translateX: Animated.add(backgroundTranslate, width) }] }]}>
           <ImageBackground
-            source={require('../../assets/background/city-background.png')} // Fixed path
+            source={require('../../assets/background/city-background.png')}
             style={styles.backgroundImage}
             resizeMode="stretch"
             imageStyle={styles.backgroundImageStyle}
@@ -258,224 +156,180 @@ const saveUserProgress = async (categoryId, categoryName, route) => {
         </Animated.View>
       </View>
 
-      {/* Sky overlay for better contrast */}
       <View style={styles.skyOverlay} />
 
-      {/* Animated Car */}
-      <Animated.View
-        style={[
-          styles.carContainer,
-          {
-            transform: [{ translateY: carVerticalBounce }],
-          },
-        ]}
-      >
-        <Image
-          source={require('../../assets/car/blue-car.png')} // Fixed path
-          style={styles.carImage}
-          resizeMode="contain"
-        />
+      {/* Car */}
+      <Animated.View style={[styles.carContainer, { transform: [{ translateY: carVerticalBounce }] }]}>
+        <Image source={require('../../assets/car/blue-car.png')} style={styles.carImage} resizeMode="contain" />
       </Animated.View>
 
-      {/* Back Button */}
-      <TouchableOpacity style={styles.backButton} onPress={goBack}>
-        <Text style={styles.backButtonText}>←</Text>
-      </TouchableOpacity>
+         {/* Back Button */}
+    <TouchableOpacity style={styles.backButton} onPress={goBack} activeOpacity={0.7}>
+      <Image
+        source={require('../../assets/icon/backButton.png')}
+        style={styles.backButtonImageTop}
+        resizeMode="contain"
+      />
+    </TouchableOpacity>
 
-      {/* Top Right Icons */}
+      {/* Top-right Icons (same style as OptionPage) */}
       <View style={styles.topRightIcons}>
-        <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Settings pressed')}>
-          <Image
-            source={require('../../assets/icon/Settings.png')} // Fixed path
-            style={styles.topIcon}
-            resizeMode="contain"
-          />
+        <TouchableOpacity style={styles.iconButton} onPress={() => setSettingsVisible(true)}>
+          <Image source={require('../../assets/icon/Settings.png')} style={styles.topIcon} resizeMode="contain" />
         </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Dictionary pressed')}>
-          <Image
-            source={require('../../assets/icon/Library.png')} // Fixed path
-            style={styles.topIcon}
-            resizeMode="contain"
-          />
+        <TouchableOpacity style={styles.iconButton} onPress={handleLibraryPress}>
+          <Image source={require('../../assets/icon/Library.png')} style={styles.topIcon} resizeMode="contain" />
         </TouchableOpacity>
       </View>
 
       {/* Title */}
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>CHOOSE</Text>
-        <Text style={styles.subtitle}>Mode: {selectedMode.toUpperCase()}</Text>
+        <Image 
+          source={require('../../assets/background/choose.png')} 
+          style={styles.title} 
+          resizeMode="contain" 
+        />
       </View>
 
-      {/* Options Selection */}
+      {/* Options */}
       <View style={styles.selectionContainer}>
-        {/* Road Markings Option */}
         <Animated.View style={[{ transform: [{ scale: roadMarkingsScale }] }]}>
-          <TouchableOpacity
-            style={[styles.optionContainer, isLoading && styles.disabledOption]}
-            onPress={handleRoadMarkingsPress}
-            activeOpacity={0.8}
-            disabled={isLoading}
-          >
+          <TouchableOpacity style={styles.optionContainer} onPress={handleRoadMarkingsPress} activeOpacity={0.8}>
             <View style={styles.iconContainer}>
-              <Image
-                source={require('../../assets/icon/roadmarkings.png')} // Fixed path
-                style={styles.optionImage}
-                resizeMode="contain"
-              />
+              <Image source={require('../../assets/icon/roadmarkings.png')} style={styles.optionImage} resizeMode="contain" />
             </View>
             <Text style={styles.optionLabel}>ROAD MARKINGS</Text>
-            {userProgress.roadMarkings && (
-              <View style={styles.progressIndicator}>
-                <Text style={styles.progressText}>
-                  {userProgress.roadMarkings.percentage || 0}%
-                </Text>
-              </View>
-            )}
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Signs Option */}
         <Animated.View style={[{ transform: [{ scale: signsScale }] }]}>
-          <TouchableOpacity
-            style={[styles.optionContainer, isLoading && styles.disabledOption]}
-            onPress={handleSignsPress}
-            activeOpacity={0.8}
-            disabled={isLoading}
-          >
+          <TouchableOpacity style={styles.optionContainer} onPress={handleSignsPress} activeOpacity={0.8}>
             <View style={styles.iconContainer}>
-              <Image
-                source={require('../../assets/icon/roadsigns.png')} // Fixed path
-                style={styles.optionImage}
-                resizeMode="contain"
-              />
+              <Image source={require('../../assets/icon/roadsigns.png')} style={styles.optionImage} resizeMode="contain" />
             </View>
             <Text style={styles.optionLabel}>SIGNS</Text>
-            {userProgress.signs && (
-              <View style={styles.progressIndicator}>
-                <Text style={styles.progressText}>
-                  {userProgress.signs.percentage || 0}%
-                </Text>
-              </View>
-            )}
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Intersection Option */}
         <Animated.View style={[{ transform: [{ scale: intersectionScale }] }]}>
-          <TouchableOpacity
-            style={[styles.optionContainer, isLoading && styles.disabledOption]}
-            onPress={handleIntersectionPress}
-            activeOpacity={0.8}
-            disabled={isLoading}
-          >
+          <TouchableOpacity style={styles.optionContainer} onPress={handleIntersectionPress} activeOpacity={0.8}>
             <View style={styles.iconContainer}>
-              <Image
-                source={require('../../assets/icon/intersection.png')} // Fixed path
-                style={styles.optionImage}
-                resizeMode="contain"
-              />
+              <Image source={require('../../assets/icon/intersection.png')} style={styles.optionImage} resizeMode="contain" />
             </View>
-            <Text style={styles.optionLabel}>INTERSECTION</Text>
-            {userProgress.intersection && (
-              <View style={styles.progressIndicator}>
-                <Text style={styles.progressText}>
-                  {userProgress.intersection.percentage || 0}%
-                </Text>
-              </View>
-            )}
+            <Text style={styles.optionLabel}>INTERSECTIONS</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
 
-      {/* Loading Overlay */}
-      {isLoading && (
-        <View style={styles.loadingOverlay}>
-          <Text style={styles.loadingText}>Saving progress...</Text>
-        </View>
+      {/* Settings Panel */}
+      {settingsVisible && (
+        <Animated.View style={[styles.settingsPanel, { transform: [{ scale: modalScale }] }]}>
+          <Image
+            source={require('../../assets/background/settings-tab.png')}
+            style={styles.settingsTab}
+            resizeMode="stretch"
+          />
+          <Text style={styles.settingsTitle}>SETTINGS</Text>
+
+          <View style={styles.settingsOptionsColumn}>
+            <TouchableOpacity onPress={() => { setSettingsVisible(false); router.push('/profile'); }}>
+              <Image source={require('../../assets/background/profile.png')} style={styles.profileButton} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setSettingsVisible(false); router.push('/audio'); }}>
+              <Image source={require('../../assets/background/audio.png')} style={styles.audioButton} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setSettingsVisible(false)}>
+              <Image source={require('../../assets/background/back.png')} style={styles.backButtonImage} />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      )}
+
+      {/* Library Modal */}
+      {libraryVisible && (
+        <Animated.View
+          style={[
+            styles.libraryPanel,
+            { transform: [{ scale: libraryModalScale }] },
+          ]}
+        >
+          <Image
+            source={require('../../assets/background/settings-tab.png')}
+            style={styles.settingsTab}
+            resizeMode="stretch"
+          />
+
+          <Text style={styles.libraryTitle}>REFERENCES</Text>
+
+          <View style={styles.libraryContent}>
+            <ScrollView 
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={true}
+            >
+              <View style={styles.referenceContainer}>
+                <Text style={styles.referenceText}>
+                  Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102). 
+                  https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
+                </Text>
+              </View>
+
+              <View style={styles.referenceContainer}>
+                <Text style={styles.referenceText}>
+                  DEPARTMENT OF TRANSPORTATION. (2023, OCTOBER 26). SEC. BAUTISTA TO LTO: REDUCE ROAD CRASH INCIDENTS, ENSURE PEDESTRIAN SAFETY. 
+                  Republic of the Philippines: DEPARTMENT OF TRANSPORTATION. 
+                  https://dotr.gov.ph/sec-bautista-to-lto-reduce-road-crash-incidents-ensure-pedestrian-safety/
+                </Text>
+              </View>
+            </ScrollView>
+          </View>
+
+          <TouchableOpacity
+            style={styles.libraryBackButton}
+            onPress={() => setLibraryVisible(false)}
+          >
+            <Image
+              source={require('../../assets/background/back.png')}
+              style={styles.backButtonImage}
+            />
+          </TouchableOpacity>
+        </Animated.View>
       )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#87CEEB',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#87CEEB',
-  },
-  backgroundContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  backgroundWrapper: {
-    position: 'absolute',
-    width: width,
-    height: height,
-  },
-  backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  backgroundImageStyle: {
-    width: '100%',
-    height: '100%',
-    transform: [{ scale: 1.3 }],
-  },
-  skyOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: height * 0.7,
-    backgroundColor: 'rgba(135, 206, 235, 0.3)',
-    zIndex: 0,
-  },
-  carContainer: {
-    position: 'absolute',
-    bottom: height * 0.05,
-    left: width * 0.05,
-    zIndex: 2,
-  },
-  carImage: {
-    width: 200,
-    height: 100,
-  },
+  container: { flex: 1, backgroundColor: '#87CEEB' },
+  backgroundContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  backgroundWrapper: { position: 'absolute', width, height },
+  backgroundImage: { flex: 1, width: '100%', height: '100%' },
+  backgroundImageStyle: { width: '100%', height: '100%', transform: [{ scale: 1.3 }] },
+  skyOverlay: { position: 'absolute', top: 0, left: 0, right: 0, height, backgroundColor: 'rgba(0,0,0,0)', zIndex: 0 },
+  carContainer: { position: 'absolute', bottom: height * 0.05, left: width * 0.05, zIndex: 2 },
+  carImage: { width: 200, height: 300, bottom: -90 },
+
+  // Back button (you need to add this style)
   backButton: {
     position: 'absolute',
     top: 40,
     left: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    zIndex: 5,
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 5,
   },
-  backButtonText: {
-    fontSize: 24,
-    color: 'white',
-    fontWeight: 'bold',
+  backButtonImageTop: {
+    width: 80,
+    height: 84,
   },
-  topRightIcons: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    flexDirection: 'row',
-    zIndex: 5,
-  },
+
+  // Top-right icons (same as OptionPage)
+  topRightIcons: { position: 'absolute', top: 40, right: 20, flexDirection: 'row', zIndex: 5 },
   iconButton: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -483,114 +337,97 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginLeft: 10,
   },
-  topIcon: {
-    width: 24,
-    height: 24,
-  },
-  titleContainer: {
+  topIcon: { width: 24, height: 24 },
+
+  // Title
+  titleContainer: { position: 'absolute', top: 10, alignSelf: 'center', zIndex: 3 },
+  title: { width: width * 0.8, height: 90, resizeMode: "contain" },
+
+  // Options
+  selectionContainer: { position: 'absolute', top: height * 0.25, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingHorizontal: 20, zIndex: 3 },
+  optionContainer: { alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.8)', borderRadius: 12, padding: 15, borderWidth: 3, borderColor: '#666', width: 200, height: 200, justifyContent: 'center' },
+  iconContainer: { marginBottom: 10, alignItems: 'center', justifyContent: 'center', width: 50, height: 50 },
+  optionImage: { width: 150, height: 150 },
+  optionLabel: { fontSize: 12, color: 'white', fontFamily: 'pixel', textAlign: 'center', textShadowColor: '#000', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2, bottom: -40 },
+
+  // Settings panel
+  settingsPanel: {
     position: 'absolute',
-    top: 10,
+    top: height * 0.15,
     alignSelf: 'center',
-    alignItems: 'center',
-    zIndex: 3,
-  },
-  title: {
-    fontSize: 60,
-    fontWeight: 'bold',
-    color: 'white',
-    fontFamily: 'pixel',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 3, height: 3 },
-    textShadowRadius: 6,
-    letterSpacing: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: 'white',
-    fontFamily: 'pixel',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-    marginTop: 5,
-  },
-  selectionContainer: {
-    position: 'absolute',
-    top: height * 0.25,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    zIndex: 3,
-  },
-  optionContainer: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    borderRadius: 12,
-    padding: 15,
-    borderWidth: 3,
-    borderColor: '#666',
-    width: 200,
-    height: 200,
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  disabledOption: {
-    opacity: 0.6,
-  },
-  iconContainer: {
-    marginBottom: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 50,
-    height: 50,
-  },
-  optionLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: 'white',
-    fontFamily: 'pixel',
-    textAlign: 'center',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-    bottom: -40,
-  },
-  optionImage: {
-    width: 150,
-    height: 150,
-  },
-  progressIndicator: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(76, 175, 80, 0.8)',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  progressText: {
-    fontSize: 10,
-    color: 'white',
-    fontFamily: 'pixel',
-    fontWeight: 'bold',
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: Math.min(width * 0.9, 400),
+    height: Math.min(height * 0.6, 400),
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
   },
-  loadingText: {
-    fontSize: 16,
-    color: 'white',
-    fontFamily: 'pixel',
+  settingsTab: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  settingsTitle: {
+    fontSize: 15,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginBottom: 20,
     textAlign: 'center',
+  },
+  settingsOptionsColumn: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 25,
+  },
+  profileButton: { width: 147, height: 50, resizeMode: 'contain',marginBottom:-10,marginTop:10},
+  audioButton: { width: 120, height: 50, resizeMode: 'contain',marginBottom:-10 },
+  backButtonImage: { width: 100, height: 50, resizeMode: 'contain', marginBottom:30 },
+
+  // Library Panel Styles
+  libraryPanel: {
+    position: 'absolute',
+    top: height * 0.05,
+    alignSelf: 'center',
+    width: Math.min(width * 0.95, 500),
+    height: Math.min(height * 0.85, 600),
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  libraryTitle: {
+    fontSize: 15,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginTop: 20,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  libraryContent: {
+    flex: 1,
+    width: '90%',
+    marginBottom: 15,
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  referenceContainer: {
+    marginBottom: 20,
+    paddingHorizontal: 5,
+  },
+  referenceText: {
+    fontSize: 10,
+    color: 'black',
+    fontFamily: "Pixel3",
+    lineHeight: 14,
+    textAlign: 'justify',
+  },
+  libraryBackButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 15,
   },
 });
