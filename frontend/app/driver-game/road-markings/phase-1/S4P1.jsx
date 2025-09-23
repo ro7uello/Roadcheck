@@ -9,7 +9,7 @@ import {
   StyleSheet,
   Easing,
 } from "react-native";
-import { useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
@@ -26,85 +26,85 @@ const sideMargin = width * 0.05;
 
 // Road tiles
 const roadTiles = {
-    road20: require("../assets/road/road20.png"), // Straight road
-    road8: require("../assets/road/road8.png"),   // Straight road with dashed lines
-    road69: require("../assets/road/road69.png"), // Straight road with solid lines
-    
+    road2: require("../../../../assets/road/road2.png"),
+    road5: require("../../../../assets/road/road5.png"),
+    road7: require("../../../../assets/road/road7.png"),
 };
 
 // Map layout
 const mapLayout = [
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
-  ["road20", "road8", "road69", "road20", "road20"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
+  ["road7", "road5", "road2", "road2", "road2"],
 ];
 
 // Separated sprites for clarity and easier management
 const playerCarSprites = {
   NORTH: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
   NORTHWEST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
   ],
   WEST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
   ],
   NORTHEAST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
   ],
   EAST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
   ],
   // Add other directions if needed for specific overtaking maneuvers
 };
 
 const jeepneySprites = {
   NORTH: [
-    require("../assets/car/MICRO TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_MICRO_CLEAN_NORTH_000.png"),
-    require("../assets/car/MICRO TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_MICRO_CLEAN_NORTH_001.png"),
+    require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
+    require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
   ],
 };
 
 // Updated question structure following S2P1 format
 const questions = [
   {
-    question: "You're on a narrow provincial road with a single solid yellow line on the opposite side and a broken line on your side. You want to overtake a car.",
-    options: ["Don't overtake since there's a solid yellow line.", "Overtake carefully since your side has a broken line", "Wait for both lines to become broken"],
-    correct: "Overtake carefully since your side has a broken line",
+    question: "You're on an expressway with broken white lane lines between lanes going in the same direction. You want to move to the faster left lane.",
+    options: ["Change lanes without signaling since the lines are broken", "Stay in your current lane to avoid any violations", "Signal, check mirrors and blind spots, then change lanes when safe"],
+    correct: "Signal, check mirrors and blind spots, then change lanes when safe",
     wrongExplanation: {
-      "Don't overtake since there's a solid yellow line.": "Wrong! The solid line on the opposite side doesn't prohibit you to overtake. It restricts theirs. You have a broken line on your side so you can overtake.",
-      "Wait for both lines to become broken": "Wrong! The solid line on the opposite side doesn't prohibit you to overtake. It restricts theirs. You have a broken line on your side so you can overtake."
+      "Change lanes without signaling since the lines are broken": "Accident prone! Always let other drivers know you are changing lanes by turning on your signal and check your side mirrors if it's clear to change.",
+      "Stay in your current lane to avoid any violations": "Wrong! Changing lanes on a broken white line is accepted although change lane with care."
     }
   },
 ];
 
 export default function DrivingGame() {
-  const navigation = useNavigation();
-
+  
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
@@ -288,6 +288,66 @@ export default function DrivingGame() {
     handleFeedback(selectedAnswer);
   };
 
+  // NEW ANIMATION: Sudden Overtake (for "Change lanes without signaling")
+  const animateSuddenOvertake = async () => {
+    if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
+
+    setPlayerCarFrame(0);
+    setJeepneyFrame(0);
+    setIsPlayerCarVisible(true);
+    setIsJeepneyVisible(true); // Start with jeepney visible
+
+    const targetXLeftLane = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2); // Left lane (index 1)
+
+    // 1. Car faces Northwest and moves quickly left
+    await new Promise(resolve => {
+        setPlayerCarDirection("NORTHWEST");
+        Animated.parallel([
+            Animated.timing(playerCarXAnim, {
+                toValue: targetXLeftLane, // Move to left lane
+                duration: 400, // Fast
+                easing: Easing.easeOut,
+                useNativeDriver: false,
+            }),
+            Animated.timing(scrollY, {
+                toValue: scrollY._value - (tileSize * 0.8), // Move forward a bit
+                duration: 400,
+                easing: Easing.easeOut,
+                useNativeDriver: true,
+            })
+        ]).start(resolve);
+    });
+
+    // 2. Car faces North, continues forward rapidly, and jeepney falls behind
+    await new Promise(resolve => {
+        setPlayerCarDirection("NORTH"); // Face North
+        Animated.parallel([
+            Animated.timing(jeepneyYAnim, {
+                toValue: height + jeepHeight, // Move the jeepney off-screen bottom
+                duration: 800, // Quickly disappear
+                easing: Easing.easeIn, // Faster exit
+                useNativeDriver: true,
+            }),
+            Animated.timing(scrollY, { // Player car moves significantly forward
+                toValue: scrollY._value - (tileSize * 4), // More forward movement
+                duration: 800,
+                easing: Easing.easeOut,
+                useNativeDriver: true,
+            }),
+        ]).start(resolve);
+    });
+    setIsJeepneyVisible(false); // Hide jeepney after it's out of view
+
+    // Player car stays in the left lane
+    setPlayerCarDirection("NORTH"); // Keep facing North in new lane
+
+    // Pause briefly before showing feedback
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    handleFeedback(selectedAnswer); // Pass the selected wrong answer to feedback
+  };
+
   // NEW ANIMATION: Careful Overtake (for "Signal, check mirrors...")
   const animateCarefulOvertake = async () => {
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
@@ -376,26 +436,21 @@ export default function DrivingGame() {
     const actualCorrectAnswer = questions[questionIndex].correct;
 
     if (option === actualCorrectAnswer) {
-      if (option === "Overtake carefully since your side has a broken line") {
+      if (option === "Signal, check mirrors and blind spots, then change lanes when safe") {
         await animateCarefulOvertake();
+      } else if (option === "Stay in your current lane to avoid any violations") {
+        await animateStayInLane();
       }
-      // If there were other correct answers with specific animations, add them here
-      // For this specific question, 'Stay on your lane' is the only correct answer.
+      handleFeedback(option);
+    } else if (option === "Change lanes without signaling since the lines are broken") {
+      await animateSuddenOvertake();
+      handleFeedback(option);
     } else {
-        // This block handles all wrong answers
-        if (option === "Don't overtake since there's a solid yellow line.") {
-            await animateStayInLane();
-        } else if (option === "Wait for both lines to become broken") {
-            // This is also a wrong answer for this scenario (due to 'opposite lane' implying violation).
-            // So, we'll use an animation that shows a wrong/unsafe maneuver.
-            await animateStayInLane();
-        } else {
-            // Fallback for any other answer (if you add more wrong options later)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
+        // Fallback for any other answer (e.g., the other wrong answer from the example)
+        // For now, just show feedback after a small delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        handleFeedback(option);
     }
-    // After animation, always handle feedback
-    handleFeedback(option);
   };
 
   const handleNext = () => {
@@ -416,7 +471,7 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S7P1');
+      router.push('/driver-game/road-markings/phase-1/S5P1');
       setShowQuestion(false);
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
@@ -430,7 +485,7 @@ export default function DrivingGame() {
   // Determine the feedback message based on whether the answer was correct or wrong (from S2P1)
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! The broken line on your side allows overtaking if done safely, even if the opposite side has a solid line."
+    ? "Correct! Broken white lines allow lane changes. Always signal and check your surroundings before changing lanes."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
 
 
@@ -509,7 +564,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../assets/dialog/LTO.png")}
+            source={require("../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -540,7 +595,7 @@ export default function DrivingGame() {
       {/* Responsive Feedback - Updated to use S2P1 format */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -602,7 +657,7 @@ const styles = StyleSheet.create({
     top: height * 0.4,
     right: sideMargin,
     width: width * 0.35,
-    height: height * 0.25,
+    height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {

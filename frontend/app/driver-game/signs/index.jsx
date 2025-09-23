@@ -143,7 +143,7 @@ export default function Signs() {
         <Animated.View style={{ transform: [{ scale: option1Scale }] }}>
           <TouchableOpacity
             style={styles.optionContainer}
-            onPress={() => handleOptionPress(option1Scale, '/driver-game/signs/chapter-1')}
+            onPress={() => handleOptionPress(option1Scale, '/driver-game/signs/phase-1/S1P1')}
             activeOpacity={0.8}
           >
             <Image source={require('../../../assets/icon/1.png')} style={styles.optionImage} resizeMode="contain" />
@@ -155,7 +155,7 @@ export default function Signs() {
         <Animated.View style={{ transform: [{ scale: option2Scale }] }}>
           <TouchableOpacity
             style={styles.optionContainer}
-            onPress={() => handleOptionPress(option2Scale, '/driver-game/signs/chapter-2')}
+            onPress={() => handleOptionPress(option2Scale, '/driver-game/signs/phase-2/S1P2')}
             activeOpacity={0.8}
           >
             <Image source={require('../../../assets/icon/2.png')} style={styles.optionImage} resizeMode="contain" />
@@ -167,7 +167,7 @@ export default function Signs() {
         <Animated.View style={{ transform: [{ scale: option3Scale }] }}>
           <TouchableOpacity
             style={styles.optionContainer}
-            onPress={() => handleOptionPress(option3Scale, '/driver-game/signs/chapter-3')}
+            onPress={() => handleOptionPress(option3Scale, '/driver-game/signs/phase-3')}
             activeOpacity={0.8}
           >
             <Image source={require('../../../assets/icon/3.png')} style={styles.optionImage} resizeMode="contain" />

@@ -90,7 +90,7 @@ export default function DriverPage() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      router.push('S1P1');
+      router.push('/driver-game/road-markings/');
     });
   };
 
@@ -107,7 +107,7 @@ export default function DriverPage() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      router.push('SignsS1P1');
+      router.push('/driver-game/signs');
     });
   };
 
@@ -124,7 +124,7 @@ export default function DriverPage() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      router.push('/intersectionDriver');
+      router.push('/driver-game/intersections');
     });
   };
 

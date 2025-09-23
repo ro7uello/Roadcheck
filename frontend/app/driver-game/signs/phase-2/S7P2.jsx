@@ -8,7 +8,7 @@ import {
   Text,
   StyleSheet,
 } from "react-native";
-import { useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
@@ -21,55 +21,60 @@ const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
-// --- assets and tiles (same as yours) ---
+//FIXX ANIMATION
 const roadTiles = {
-    road1: require("../assets/road/road1.png"),
-    road2: require("../assets/road/road2.png"),
-    road3: require("../assets/road/road3.png"),
-    road4: require("../assets/road/road4.png"),
-    road9: require("../assets/road/road9.png"),
-    road10: require("../assets/road/road10.png"),
-    road11: require("../assets/road/road11.png"),
-    road13: require("../assets/road/road13.png"),
-    road15: require("../assets/road/road15.png"),
-    road16: require("../assets/road/road16.png"),
-    road17: require("../assets/road/road17.png"),
-    road20: require("../assets/road/road20.png"),
-    road22: require("../assets/road/road22.png"),
-    road23: require("../assets/road/road23.png"),
-    road24: require("../assets/road/road24.png"),
-    road31: require("../assets/road/road31.png"),
-    road37: require("../assets/road/road37.png"),
-    road43: require("../assets/road/road43.png"),
-    road47: require("../assets/road/road47.png"),
-    road48: require("../assets/road/road48.png"),
-    road50: require("../assets/road/road50.png"),
-    road51: require("../assets/road/road51.png"),
-    road52: require("../assets/road/road52.png"),
-    road53: require("../assets/road/road52.png"),
-    road54: require("../assets/road/road54.png"),
-    road55: require("../assets/road/road54.png"),
-    road56: require("../assets/road/road56.png"),
-    road61: require("../assets/road/road61.png"),
-    road62: require("../assets/road/road62.png"),
-    road63: require("../assets/road/road63.png"),
-    int1: require("../assets/road/int1.png"),
-    int4: require("../assets/road/int4.png"),
-    int9: require("../assets/road/int9.png"),
-    int10: require("../assets/road/int10.png"),
-    int12: require("../assets/road/int12.png"),
-    int13: require("../assets/road/int13.png"),
-    int14: require("../assets/road/int14.png"),
-    int15: require("../assets/road/int15.png"),
+    road1: require("../../../../assets/road/road1.png"),
+    road2: require("../../../../assets/road/road2.png"),
+    road3: require("../../../../assets/road/road3.png"),
+    road4: require("../../../../assets/road/road4.png"),
+    road9: require("../../../../assets/road/road9.png"),
+    road10: require("../../../../assets/road/road10.png"),
+    road11: require("../../../../assets/road/road11.png"),
+    road12: require("../../../../assets/road/road12.png"),
+    road13: require("../../../../assets/road/road13.png"),
+    road15: require("../../../../assets/road/road15.png"),
+    road16: require("../../../../assets/road/road16.png"),
+    road17: require("../../../../assets/road/road17.png"),
+    road20: require("../../../../assets/road/road20.png"),
+    road22: require("../../../../assets/road/road22.png"),
+    road23: require("../../../../assets/road/road23.png"),
+    road24: require("../../../../assets/road/road24.png"),
+    road30: require("../../../../assets/road/road30.png"),
+    road31: require("../../../../assets/road/road31.png"),
+    road37: require("../../../../assets/road/road37.png"),
+    road39: require("../../../../assets/road/road39.png"),
+    road43: require("../../../../assets/road/road43.png"),
+    road47: require("../../../../assets/road/road47.png"),
+    road48: require("../../../../assets/road/road48.png"),
+    road50: require("../../../../assets/road/road50.png"),
+    road51: require("../../../../assets/road/road51.png"),
+    road52: require("../../../../assets/road/road52.png"),
+    road53: require("../../../../assets/road/road53.png"),
+    road54: require("../../../../assets/road/road54.png"),
+    road55: require("../../../../assets/road/road55.png"),
+    road56: require("../../../../assets/road/road56.png"),
+    road61: require("../../../../assets/road/road61.png"),
+    road62: require("../../../../assets/road/road62.png"),
+    road63: require("../../../../assets/road/road63.png"),
+    road81: require("../../../../assets/road/road81.png"),
+    road82: require("../../../../assets/road/road82.png"),
+    int1: require("../../../../assets/road/int1.png"),
+    int4: require("../../../../assets/road/int4.png"),
+    int9: require("../../../../assets/road/int9.png"),
+    int10: require("../../../../assets/road/int10.png"),
+    int12: require("../../../../assets/road/int12.png"),
+    int13: require("../../../../assets/road/int13.png"),
+    int14: require("../../../../assets/road/int14.png"),
+    int15: require("../../../../assets/road/int15.png"),
 };
 
 const mapLayout = [
   ["road62", "road4", "road2", "road3", "road17"],
   ["road62", "road4", "road2", "road3", "road17"],
-  ["road62", "road4", "road2", "road3", "road17"],
-  ["road62", "road4", "road2", "road3", "road17"],
-  ["road62", "road4", "road2", "road3", "road17"],
-  ["road63", "road4", "road2", "road3", "road17"],
+  ["road62", "road1", "road1", "road1", "road17"],
+  ["road62", "road1", "road1", "road1", "road17"],
+  ["road62", "road1", "road1", "road1", "road17"],
+  ["road63", "road39", "road82", "road30", "road17"],
   ["road15", "road15", "road15", "road56", "road50"],
   ["int12", "int12", "int12", "int4", "road55"],
   ["road48", "road48", "int14", "int13", "road54"],
@@ -78,7 +83,7 @@ const mapLayout = [
   ["road48", "road48", "int15", "int13", "road54"],
   ["int10", "int10", "int10", "int1", "road47"],
   ["road15", "road15", "road15", "road56", "road16"],
-  ["road61", "road9", "road13", "road11", "road17"],
+  ["road61", "road9", "road81", "road12", "road17"],
   ["road62", "road1", "road1", "road1", "road17"],
   ["road62", "road1", "road1", "road1", "road17"],
   ["road62", "road1", "road1", "road1", "road17"],
@@ -91,42 +96,73 @@ const mapLayout = [
 
 const carSprites = {
   NORTH: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
   NORTHWEST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
   ],
   WEST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
   ],
   NORTHEAST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
   ],
   EAST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
   ],
 };
+
+const trafficSign = {
+    sign: require("../../../../assets/signs/no_entry.png"),
+};
+
+const treeSprites = {
+  tree1: require("../../../../assets/tree/Tree3_idle_s.png"),
+  // Add more tree variations if you have them
+  // tree2: require("../assets/tree/Tree2_idle_s"),
+  // tree3: require("../assets/tree/Tree1_idle_s"),
+};
+const treePositions = [
+  // Left side trees (column -1, outside the road)
+  { row: 1.5, col: 0, type: 'tree1' },
+  { row: 2.5, col: 0, type: 'tree1' },
+  { row: 3.5, col: 0, type: 'tree1' },
+  { row: 4.5, col: 0, type: 'tree1' },
+  { row: 14, col: 0, type: 'tree1' },
+  { row: 15, col: 0, type: 'tree1' },
+  { row: 16, col: 0, type: 'tree1' },
+  { row: 17, col: 0, type: 'tree1' },
+  { row: 18, col: 0, type: 'tree1' },
+  { row: 19, col: 0, type: 'tree1' },
+  { row: 20, col: 0, type: 'tree1' },
+  { row: 21, col: 0, type: 'tree1' },
+  { row: 22, col: 0, type: 'tree1' },
+  
+];
 
 // Updated question structure following S9P1 format
 const questions = [
   {
-    question: "You're approaching an intersection with solid white lines leading to the junction. You realize you're in the wrong lane for your intended direction.",
-    options: ["Quickly change lanes before the intersection despite the solid lines", "Stop and reverse to get in the correct lane", "Continue straight and find another route to your destination"],
-    correct: "Continue straight and find another route to your destination",
+    question: "You're driving in Mandaluyong and accidentally enter Shaw Boulevard from a side street. You immediately notice a ONE WAY sign indicating that traffic flows in the opposite direction from where you're headed. You see several vehicles approaching you from the correct direction.",
+    options: ["Continue driving and find the nearest exit point", "Carefully reverse back to where you entered and exit immediately", "Drive faster to quickly get through the one-way section"],
+    correct: "Carefully reverse back to where you entered and exit immediately",
     wrongExplanation: {
-      "Quickly change lanes before the intersection despite the solid lines": "Accident prone! Quickly changing lanes may surprise drivers on the other lane and may cause accidents due to unexpected change of lanes.",
-      "Stop and reverse to get in the correct lane": "Accident prone! Reversing may surprise drivers behind you and on the other lane. This may cause accidents due to unexpected driving behavior."
+      "Continue driving and find the nearest exit point": "Accident Prone! Continuing to drive against traffic flow is extremely dangerous and illegal.",
+      "Drive faster to quickly get through the one-way section": "Accident Prone! Driving faster against traffic creates an even more dangerous situation."
     }
   },
 ];
 
 export default function DrivingGame() {
-  const navigation = useNavigation();
+
+  const trafficSignRowIndex = 6;
+  const trafficSignColIndex = 3.8;
+  const trafficSignXOffset = 20;
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
@@ -194,7 +230,7 @@ export default function DrivingGame() {
   function startScrollAnimation() {
     scrollY.setValue(startOffset); // Ensure scroll starts from bottom for each game start
 
-    const stopRow = 6.5;
+    const stopRow = 16;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -248,8 +284,8 @@ export default function DrivingGame() {
 
     const currentRow = Math.abs(currentScroll.current - startOffset) / tileSize;
 
-    if (answer === "Continue straight and find another route to your destination") {
-      const targetRow = 17;
+    if (answer === "Continue driving and find the nearest exit point") {
+      const targetRow = 19;
       const rowsToMove = targetRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
       Animated.timing(scrollY, {
@@ -257,90 +293,87 @@ export default function DrivingGame() {
         duration: 3000,
         useNativeDriver: true,
       }).start(() => handleFeedback(answer));
-    } else if (answer === "Quickly change lanes before the intersection despite the solid lines") {
-      const turnStartRow = 7;
-      const turnEndRow = 9;
-
-      const initialScrollTarget =
-        currentScroll.current + (turnStartRow - currentRow) * tileSize;
-
+    } else if (answer === "Drive faster to quickly get through the one-way section") {
+      const targetRow = 19;
+      const rowsToMove = targetRow - currentRow;
+      const nextTarget = currentScroll.current + rowsToMove * tileSize;
       Animated.timing(scrollY, {
-        toValue: initialScrollTarget,
-        duration: 2000,
+        toValue: nextTarget,
+        duration: 3000,
         useNativeDriver: true,
-      }).start(() => {
-        const turnSequence = ["NORTHWEST", "NORTH"];
-        let currentTurnStep = 0;
+      }).start(() => handleFeedback(answer));
+    } else if (answer === "Carefully reverse back to where you entered and exit immediately") {
+  const currentRow = Math.abs(currentScroll.current - startOffset) / tileSize;
+  const reverseToRow = 17; // Reverse back to row 14 (entry point)
+  const turnStartRow = 15;
 
-        const animateTurnAndMove = () => {
-          if (currentTurnStep < turnSequence.length) {
-            setCarDirection(turnSequence[currentTurnStep]);
-            setCarFrame(0);
+  // First, reverse back to the entry point
+  const reverseTarget = startOffset + reverseToRow * tileSize;
 
-            let deltaX = 0;
-            let deltaYScroll = 0;
+  Animated.timing(scrollY, {
+    toValue: reverseTarget,
+    duration: 2000,
+    useNativeDriver: true,
+  }).start(() => {
+    // Then move to turn start position
+    const turnStartTarget = startOffset + turnStartRow * tileSize;
+    
+    Animated.timing(scrollY, {
+      toValue: turnStartTarget,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start(() => {
+    const turnSequence = ["NORTH", "NORTHWEST", "WEST"];
+    let currentTurnStep = 0;
 
-            if (turnSequence[currentTurnStep] === "NORTHWEST") {
-              deltaX = -tileSize * 0.5;
-              deltaYScroll = tileSize * 0.5;
-            } else if (turnSequence[currentTurnStep] === "NORTH") {
-              deltaX = 0;
-              deltaYScroll = tileSize;
-            }
-
-            Animated.parallel([
-              Animated.timing(carXAnim, {
-                toValue: carXAnim._value + deltaX,
-                duration: 500,
-                useNativeDriver: false,
-              }),
-              Animated.timing(scrollY, {
-                toValue: scrollY._value + deltaYScroll,
-                duration: 500,
-                useNativeDriver: true,
-              }),
-            ]).start(() => {
-              currentTurnStep++;
-              animateTurnAndMove();
-            });
-          } else {
-            Animated.timing(carXAnim, {
-              toValue: -width,
-              duration: 2500,
-              useNativeDriver: false,
-            }).start(() => {
-              setIsCarVisible(false);
-              handleFeedback(answer);
-            });
-          }
-        };
-        animateTurnAndMove();
-      });
-      return;
-    } else if (answer === "Stop and reverse to get in the correct lane") {
-      const turnStartRow = 6.5;
-      const reverseAmount = tileSize * 2;
-
-      const initialScrollTarget =
-        currentScroll.current + (turnStartRow - currentRow) * tileSize;
-
-      Animated.timing(scrollY, {
-        toValue: initialScrollTarget,
-        duration: 2000,
-        useNativeDriver: true,
-      }).start(() => {
-        setCarDirection("NORTH");
+    const animateTurnAndMove = () => {
+      if (currentTurnStep < turnSequence.length) {
+        setCarDirection(turnSequence[currentTurnStep]);
         setCarFrame(0);
 
-        Animated.timing(scrollY, {
-          toValue: scrollY._value - reverseAmount, // Scroll down to simulate car moving back
-          duration: 1500, // Duration for reversing
-          useNativeDriver: true,
-        }).start(() => {handleFeedback(answer);});
-            });
+        let deltaX = 0;
+        let deltaYScroll = 0;
+
+        if (turnSequence[currentTurnStep] === "NORTHWEST") {
+          deltaX = -tileSize / 4;
+          deltaYScroll = tileSize / 4;
+        } else if (turnSequence[currentTurnStep] === "WEST") {
+          deltaX = -tileSize / 2;
+          deltaYScroll = tileSize / 2;
+        }
+
+        Animated.parallel([
+          Animated.timing(carXAnim, {
+            toValue: carXAnim._value + deltaX,
+            duration: 300,
+            useNativeDriver: false,
+          }),
+          Animated.timing(scrollY, {
+            toValue: scrollY._value + deltaYScroll,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          currentTurnStep++;
+          animateTurnAndMove();
+        });
+      } else {
+        Animated.timing(carXAnim, {
+          toValue: -width,
+          duration: 2500,
+          useNativeDriver: false,
+        }).start(() => {
+          setIsCarVisible(false);
+          handleFeedback(answer);
+        });
+      }
+    };
+    animateTurnAndMove();
+  });
+  return;
+});
     }
   };
-
   const handleNext = () => {
     setAnimationType(null);
     setShowNext(false);
@@ -357,15 +390,18 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('driverGame');
+      router.push('/driver-game/signs/phase-2/S8P2');
       setShowQuestion(false);
     }
   };
 
+  const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;  
+  const trafficSignTop = trafficSignRowIndex * tileSize;
+
   // Determine the feedback message based on whether the answer was correct or wrong (from S9P1)
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! You made the right choice."
+    ? "Correct! You should carefully reverse back to your entry point and exit the one-way street immediately to avoid endangering everyone."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
 
   // Main game rendering
@@ -398,8 +434,37 @@ export default function DrivingGame() {
             />
           ))
         )}
-      </Animated.View>
 
+        <Image
+              source={trafficSign.sign}
+              style={{
+                  width: tileSize * .8,
+                  height: tileSize *.8,
+                  position: "absolute",
+                  top: trafficSignTop,
+                  left: trafficSignLeft,
+                  zIndex: 11,
+              }}
+              resizeMode="contain"
+              />
+              {treePositions.map((tree, index) => (
+                <Image
+                  key={`tree-${index}`}
+                  source={treeSprites[tree.type]}
+                  style={{
+                  position: "absolute",
+                  width: tileSize * 0.8,
+                  height: tileSize * 1.2,
+                  left: tree.col * tileSize,
+                  top: tree.row * tileSize,
+                  zIndex: 2,
+                }}
+              resizeMode="contain"
+            />
+        ))}
+
+      </Animated.View>
+      
       {/* Responsive Car */}
       {isCarVisible && (
         <Animated.Image
@@ -419,7 +484,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../assets/dialog/LTO.png")}
+            source={require("../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -450,7 +515,7 @@ export default function DrivingGame() {
       {/* Responsive Feedback - Updated to use S9P1 format */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>

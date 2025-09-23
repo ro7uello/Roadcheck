@@ -8,7 +8,7 @@ import {
   Text,
   StyleSheet,
 } from "react-native";
-import { useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
@@ -19,80 +19,88 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 const roadTiles = {
-  road3: require("../assets/road/road3.png"),
-  road4: require("../assets/road/road4.png"),
-  road17: require("../assets/road/road17.png"),
-  road18: require("../assets/road/road18.png"),
-  road57: require("../assets/road/road57.png"),
-  road59: require("../assets/road/road59.png"),
-  road20: require("../assets/road/road20.png"),
+  road2: require("../../../../assets/road/road2.png"),  
+  road83: require("../../../../assets/road/road83.png"),
+  road17: require("../../../../assets/road/road17.png"),
+  road20: require("../../../../assets/road/road20.png"),
+
 };
 
+//FIX ANIMATION
+
 const mapLayout = [
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road59", "road57", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+  ["road2", "road2", "road83", "road17", "road20"],
+];
+
+const treeSprites = {
+  tree1: require("../../../../assets/tree/Tree3_idle_s.png"),
+  // Add more tree variations if you have them
+  // tree2: require("../assets/tree/Tree2_idle_s"),
+  // tree3: require("../assets/tree/Tree1_idle_s"),
+};
+const treePositions = [
+  // Left side trees (column -1, outside the road)
+  { row: 7, col: 4, type: 'tree1' },
+  { row: 8, col: 4, type: 'tree1' },
+  { row: 9, col: 4, type: 'tree1' },
+  { row: 10, col: 4, type: 'tree1' },
+  { row: 11, col: 4, type: 'tree1' },
+  { row: 12, col: 4, type: 'tree1' },
+  { row: 13, col: 4, type: 'tree1' },
+  { row: 14, col: 4, type: 'tree1' },
+  { row: 15, col: 4, type: 'tree1' },
+  { row: 16, col: 4, type: 'tree1' },
+  { row: 17, col: 4, type: 'tree1' },
+  { row: 18, col: 4, type: 'tree1' },
+  { row: 19, col: 4, type: 'tree1' },
+  { row: 20, col: 4, type: 'tree1' },
 ];
 
 const carSprites = {
   NORTH: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
-  ],
-  NORTHWEST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
-  ],
-  WEST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
-  ],
-  NORTHEAST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
-  ],
-  EAST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
 };
 
 const questions = [
   {
-    question: "You are driving along a major highway during rush hour. You noticed that the traffic light turned RED and the cars from the other lanes are slowing down to a stop. You can clearly see the marked pedestrian lane in front of you because there is no cars in front of you.",
-    options: ["Stop before the line of the pedestrian lane.", "Slowly move forward ahead the traffic light despite the Red traffic light because your lane is clear.", "Stop where you currently are despite the clear lane before the marked pedestrian lane."],
-    correct: "Stop before the line of the pedestrian lane.",
+    question: "You're driving along Makati Avenue when you see a BICYCLE LANE AHEAD warning sign. As you continue, you notice the road narrows and there's a dedicated bicycle lane marked on the right side with several cyclists using it.",
+    options: ["Drive normally since you're in the car lane", "Reduce speed, maintain safe distance from bicycle lane, and be extra cautious of cyclists", "Use the bicycle lane to accomodate more cars in the road."],
+    correct: "Reduce speed, maintain safe distance from bicycle lane, and be extra cautious of cyclists",
     wrongExplanation: {
-      "Slowly move forward ahead the traffic light despite the Red traffic light because your lane is clear.": "Violation! Ignoring traffic sign is a clear violation. Always follow traffic signs unless directed by an officer otherwise.",
-      "Stop where you currently are despite the clear lane before the marked pedestrian lane.": "Wrong! You cannot just stop where ever you are on a road despite the traffic sign. Stop where it is appropriate to stop."
+      "Drive normally since you're in the car lane": "Not the best answer! Normal driving doesn't account for the increased need for caution around cyclists.",
+      "Use the bicycle lane to accommodate more cars in the road.": "Wrong! Motor vehicles are prohibited from using bicycle lanes regardless of traffic conditions."
     }
   },
   // Add more questions here as needed
 ];
 
-// Traffic light sprites
-const trafficLightSprites = {
-  normal: require("../assets/traffic light/Traffic_Light.png"),
-  red: require("../assets/traffic light/traffic_light_red2.png"),
+const trafficSign = {
+    sign: require("../../../../assets/signs/bike_lane.png"),
 };
 
 export default function DrivingGame() {
-  const navigation = useNavigation();
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
@@ -102,10 +110,9 @@ export default function DrivingGame() {
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  // Traffic light position (place it before the pedestrian crossing)
-  const trafficLightRowIndex = 9.2; // One row before the 'crossing' point
-  const trafficLightColIndex = 2; // Left side of the road
-  const trafficLightXOffset = -30;
+  const trafficSignRowIndex = 14.5;
+  const trafficSignColIndex = 2.8;
+  const trafficSignXOffset = 20;
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -126,13 +133,9 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - (280 / 2))).current;
 
-  // Traffic light
-  const [trafficLightState, setTrafficLightState] = useState('red');
-  // Removed isBlinking state as blinking is commented out
-
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 6; // Adjusted to match the visual stop point
+    const stopRow = 4; // Adjusted to match the visual stop point
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -203,27 +206,24 @@ export default function DrivingGame() {
 
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
-    if (answer === "Stop before the line of the pedestrian lane.") {
-      const targetRow = 6.8;
+    if (answer === "Drive normally since you're in the car lane") {
+      const targetRow = 10;
       const rowsToMove = targetRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
       
       Animated.timing(scrollY, {
         toValue: nextTarget,
-        duration: 3000,
+        duration: 4000,
         useNativeDriver: true,
       }).start(() => {
         handleFeedback(answer);
       });
-    } else if (answer === "Slowly move forward ahead the traffic light despite the Red traffic light because your lane is clear.") {
-        // Since there's no pedestrian, "yielding" means pausing briefly and then proceeding.
+    } else if (answer === "Reduce speed, maintain safe distance from bicycle lane, and be extra cautious of cyclists") {
         const targetRow = 9;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-        setCarPaused(true); // Car pauses as if yielding
         setTimeout(() => {
-            setCarPaused(false); // Car resumes after a short pause
             Animated.timing(scrollY, {
                 toValue: nextTarget,
                 duration: 5000,
@@ -231,19 +231,21 @@ export default function DrivingGame() {
             }).start(() => {
                 handleFeedback(answer);
             });
-        }, 2000); // Simulate a 2-second yield time
-    } else if(answer === "Stop where you currently are despite the clear lane before the marked pedestrian lane."){
-        const targetRow = 6;
+        }); // Simulate a 2-second yield time
+    } else if(answer === "Use the bicycle lane to accomodate more cars in the road."){
+        const targetRow = 9;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
-        Animated.timing(scrollY, {
-          toValue: nextTarget,
-          duration: 3000,
-          useNativeDriver: true,
-        }).start(() => {
-          handleFeedback(answer);
-        });
-        return;
+
+        setTimeout(() => {
+            Animated.timing(scrollY, {
+                toValue: nextTarget,
+                duration: 4000,
+                useNativeDriver: true,
+            }).start(() => {
+                handleFeedback(answer);
+            });
+        }); // Simulate a 2-second yield time
     }
   };
 
@@ -254,26 +256,22 @@ export default function DrivingGame() {
     setCarFrame(0);
     carXAnim.setValue(width / 2 - (280 / 2));
     
-    // Reset traffic light to original state (red, no blinking)
-    setTrafficLightState('red');
-    
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('SignsS3P1');
+      router.push('/driver-game/signs');
       setQuestionIndex(0);
       setShowQuestion(false);
     }
   };
 
-  // Calculate traffic light position
-  const trafficLightLeft = trafficLightColIndex * tileSize + trafficLightXOffset;
-  const trafficLightTop = trafficLightRowIndex * tileSize;
+  const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;  
+  const trafficSignTop = trafficSignRowIndex * tileSize;
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct. Stopping before the line of the pedestrian lane gives pedestrian a clear way to pass and does not obstruct traffic."
+    ? "Correct! Warning signs require increased caution; you must be extra careful around bicycle lanes and cyclists."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
 
@@ -306,19 +304,34 @@ export default function DrivingGame() {
             />
           ))
         )}
+        {treePositions.map((tree, index) => (
+                  <Image
+                    key={`tree-${index}`}
+                    source={treeSprites[tree.type]}
+                    style={{
+                      position: "absolute",
+                      width: tileSize * 0.8,
+                      height: tileSize * 1.2,
+                      left: tree.col * tileSize,
+                      top: tree.row * tileSize,
+                      zIndex: 2,
+                    }}
+                    resizeMode="contain"
+                  />
+                ))}
 
-        {/* Traffic Light */}
+        {/*Traffic Sign */}
         <Image
-          source={trafficLightSprites[trafficLightState]}
-          style={{
-            width: tileSize * 1.5,
-            height: tileSize * 2,
+        source={trafficSign.sign}
+        style={{
+            width: tileSize * .8,
+            height: tileSize *.8,
             position: "absolute",
-            top: trafficLightTop,
-            left: trafficLightLeft,
-            zIndex: 10,
-          }}
-          resizeMode="contain"
+            top: trafficSignTop,
+            left: trafficSignLeft,
+            zIndex: 11,
+        }}
+        resizeMode="contain"
         />
 
         {/* Pedestrian (REMOVED) */}
@@ -357,7 +370,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../assets/dialog/LTO.png")}
+            source={require("../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -388,7 +401,7 @@ export default function DrivingGame() {
       {/* Feedback - moved to bottom */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
-          <Image source={require("../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -397,7 +410,7 @@ export default function DrivingGame() {
 
       {animationType === "wrong" && (
         <View style={styles.feedbackOverlay}>
-          <Image source={require("../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>
                 {feedbackMessage}
@@ -429,7 +442,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
     zIndex: 10,
   },
   ltoImage: {
@@ -443,7 +455,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "flex-end",
-    paddingBottom: height * 0.05,
   },
   questionTextContainer: {
     padding: width * 0.04,

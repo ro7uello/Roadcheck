@@ -9,15 +9,15 @@ import {
   StyleSheet,
   Easing,
 } from "react-native";
-import { useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
 // Responsive calculations
 const playerCarWidth = Math.min(width * 0.25, 280); // Renamed for clarity
 const playerCarHeight = playerCarWidth * (350/280);
-const busWidth = Math.min(width * 0.28, 300); // Slightly wider, renamed for clarity
-const busHeight = busWidth * (350/280);
+const jeepWidth = Math.min(width * 0.28, 300); // Slightly wider
+const jeepHeight = jeepWidth * (350/280); // Maintain aspect ratio
 const overlayTop = height * 0.4;
 const overlayHeight = height * 0.35;
 const ltoWidth = Math.min(width * 0.3, 240);
@@ -26,96 +26,90 @@ const sideMargin = width * 0.05;
 
 // Road tiles
 const roadTiles = {
-    road2: require("../assets/road/road2.png"),
-    road17: require("../assets/road/road17.png"),
-    road20: require("../assets/road/road20.png"),
-    road72: require("../assets/road/road72.png"),
-    road74: require("../assets/road/road74.png"),
-
+    road20: require("../../../../assets/road/road20.png"), // Straight road
+    road8: require("../../../../assets/road/road8.png"),   // Straight road with dashed lines
+    road69: require("../../../../assets/road/road69.png"), // Straight road with solid lines
     
 };
 
 // Map layout
 const mapLayout = [
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
-  ["road2", "road74", "road72", "road17", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
+  ["road20", "road8", "road69", "road20", "road20"],
 ];
 
 // Separated sprites for clarity and easier management
 const playerCarSprites = {
   NORTH: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
   NORTHWEST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
   ],
   WEST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
   ],
   NORTHEAST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
   ],
   EAST: [
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
   ],
   // Add other directions if needed for specific overtaking maneuvers
 };
 
-const busSprites ={
-    NORTH: [
-        require("../assets/car/BUS TOPDOWN/White/MOVE/NORTH/SEPARATED/White_BUS_CLEAN_NORTH_000.png"),
-        require("../assets/car/BUS TOPDOWN/White/MOVE/NORTH/SEPARATED/White_BUS_CLEAN_NORTH_001.png"),
-    ]
-}
+const jeepneySprites = {
+  NORTH: [
+    require("../../../../assets/car/MICRO TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_MICRO_CLEAN_NORTH_000.png"),
+    require("../../../../assets/car/MICRO TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_MICRO_CLEAN_NORTH_001.png"),
+  ],
+};
 
 // Updated question structure following S2P1 format
 const questions = [
   {
-    question: "You encounter broken yellow lines in the center of the road. You want to overtake a slow-moving bus.",
-    options: ["Overtake without additional precautions since lines are broken", "Don't overtake since yellow lines indicate opposite traffic", "Check for oncoming traffic, signal, and overtake when safe"],
-    correct: "Check for oncoming traffic, signal, and overtake when safe",
+    question: "You're on a narrow provincial road with a single solid yellow line on the opposite side and a broken line on your side. You want to overtake a car.",
+    options: ["Don't overtake since there's a solid yellow line.", "Overtake carefully since your side has a broken line", "Wait for both lines to become broken"],
+    correct: "Overtake carefully since your side has a broken line",
     wrongExplanation: {
-      "Overtake without additional precautions since lines are broken": "Accident prone! When overtaking, always practice defensive driving. Check if the other lane is clear and make proper signals.",
-      "Don't overtake since yellow lines indicate opposite traffic": "Wrong! Broken yellow lines specifically allow crossing and overtaking when safe, unlike solid yellow lines."
+      "Don't overtake since there's a solid yellow line.": "Wrong! The solid line on the opposite side doesn't prohibit you to overtake. It restricts theirs. You have a broken line on your side so you can overtake.",
+      "Wait for both lines to become broken": "Wrong! The solid line on the opposite side doesn't prohibit you to overtake. It restricts theirs. You have a broken line on your side so you can overtake."
     }
   },
 ];
 
 export default function DrivingGame() {
-  const navigation = useNavigation();
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
 
   const [isPlayerCarVisible, setIsPlayerCarVisible] = useState(true); // Renamed for clarity
-  const [isBusVisible, setIsBusVisible] = useState(true); // State for bus visibility
+  const [isJeepneyVisible, setIsJeepneyVisible] = useState(true); // State for jeep visibility
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const currentScroll = useRef(0);
@@ -136,16 +130,16 @@ export default function DrivingGame() {
   const [showAnswers, setShowAnswers] = useState(false);
   const [playerCarDirection, setPlayerCarDirection] = useState("NORTH"); // Renamed for clarity
   const [playerCarFrame, setPlayerCarFrame] = useState(0);
-  const [busFrame, setBusFrame] = useState(0); // Renamed for clarity
+  const [jeepneyFrame, setJeepneyFrame] = useState(0);
 
   const playerCarXAnim = useRef(new Animated.Value(width / 2 - playerCarWidth / 2)).current;
 
-  // Bus's X position: middle of the 'road5' tile (index 2 in the previous map, adjusted for new map if needed)
-  // Assuming the bus will still be in a central lane, let's pick lane index 2 (road67) for now.
-  const busInitialX = 2 * tileSize + (tileSize / 2 - busWidth / 2); // Center of the 3rd column (index 2)
-  // Bus's Y position: dynamically set based on scroll and its row
+  // Jeepney's X position: middle of the 'road5' tile (index 2 in the previous map, adjusted for new map if needed)
+  // Assuming the jeepney will still be in a central lane, let's pick lane index 2 (road67) for now.
+  const jeepneyInitialX = 2 * tileSize + (tileSize / 2 - jeepWidth / 2); // Center of the 3rd column (index 2)
+  // Jeepney's Y position: dynamically set based on scroll and its row
   // Starts off-screen TOP
-  const busYAnim = useRef(new Animated.Value(-busHeight)).current;
+  const jeepneyYAnim = useRef(new Animated.Value(-jeepHeight)).current;
 
 
   const correctAnim = useRef(new Animated.Value(0)).current;
@@ -161,28 +155,28 @@ export default function DrivingGame() {
     }
   }, [showQuestion, isPlayerCarVisible]);
 
-  // Animation for bus's sprite
+  // Animation for jeepney's sprite
   useEffect(() => {
-    if (!showQuestion && isBusVisible) {
+    if (!showQuestion && isJeepneyVisible) {
       const interval = setInterval(() => {
-        setBusFrame((prevFrame) => (prevFrame === 0 ? 1 : 0));
+        setJeepneyFrame((prevFrame) => (prevFrame === 0 ? 1 : 0));
       }, 250);
       return () => clearInterval(interval);
     }
-  }, [showQuestion, isBusVisible]);
+  }, [showQuestion, isJeepneyVisible]);
 
   const scrollAnimationRef = useRef(null);
-  const busAnimationRef = useRef(null); // Ref to hold the bus's entry animation
+  const jeepneyAnimationRef = useRef(null); // Ref to hold the jeepney's entry animation
 
   function startScrollAnimation() {
     scrollY.setValue(0);
-    busYAnim.setValue(-busHeight); // Reset bus to off-screen top
+    jeepneyYAnim.setValue(-jeepHeight); // Reset jeepney to off-screen top
 
     // Ensure player car is centered at the start
     playerCarXAnim.setValue(width / 2 - playerCarWidth / 2);
     setPlayerCarDirection("NORTH");
     setIsPlayerCarVisible(true);
-    setIsBusVisible(true);
+    setIsJeepneyVisible(true);
 
     // Continuous looping background scroll - MUCH FASTER
     scrollAnimationRef.current = Animated.loop(
@@ -195,32 +189,32 @@ export default function DrivingGame() {
     );
     scrollAnimationRef.current.start();
 
-    // Animate bus into view from the top, stopping it at a position relative to the player
+    // Animate jeepney into view from the top, stopping it at a position relative to the player
     // This example stops it a bit above the player to simulate being "in front"
-    busAnimationRef.current = Animated.timing(busYAnim, {
-      toValue: -height * 0.2, // Stop bus at this Y position (relative to its initial off-screen start)
-      duration: 3000, // Duration for bus to move into position
+    jeepneyAnimationRef.current = Animated.timing(jeepneyYAnim, {
+      toValue: -height * 0.2, // Stop jeepney at this Y position (relative to its initial off-screen start)
+      duration: 3000, // Duration for jeepney to move into position
       easing: Easing.linear,
       useNativeDriver: true,
     });
 
-    busAnimationRef.current.start(() => {
-      // After bus is in position, set a timeout to stop scrolling and show question
+    jeepneyAnimationRef.current.start(() => {
+      // After jeepney is in position, set a timeout to stop scrolling and show question
       setTimeout(() => {
         if (scrollAnimationRef.current) {
           scrollAnimationRef.current.stop(); // Stop the continuous scroll
         }
-        // Freeze car and bus sprite animations
+        // Freeze car and jeepney sprite animations
         setIsPlayerCarVisible(true);
-        setIsBusVisible(true);
+        setIsJeepneyVisible(true);
         setPlayerCarFrame(0);
-        setBusFrame(0);
+        setJeepneyFrame(0);
 
         setShowQuestion(true);
         setTimeout(() => {
           setShowAnswers(true);
         }, 1000);
-      }, 2000); // Time to drive before the question appears after bus is in view
+      }, 2000); // Time to drive before the question appears after jeepney is in view
     });
   }
 
@@ -230,8 +224,8 @@ export default function DrivingGame() {
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
       }
-      if (busAnimationRef.current) {
-          busAnimationRef.current.stop();
+      if (jeepneyAnimationRef.current) {
+          jeepneyAnimationRef.current.stop();
       }
     };
   }, []);
@@ -264,16 +258,16 @@ export default function DrivingGame() {
     }
   };
 
-  // NEW ANIMATION: Player stays in lane, bus remains in front
+  // NEW ANIMATION: Player stays in lane, jeepney remains in front
   const animateStayInLane = async () => {
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop(); // Stop for a moment
-    if (busAnimationRef.current) busAnimationRef.current.stop();
+    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
 
     setPlayerCarDirection("NORTH");
     setPlayerCarFrame(0);
-    setBusFrame(0);
+    setJeepneyFrame(0);
     setIsPlayerCarVisible(true);
-    setIsBusVisible(true); // Ensure bus remains visible
+    setIsJeepneyVisible(true); // Ensure jeepney remains visible
 
     // Simply restart the continuous scroll for a short duration
     // Both cars will appear to scroll forward together
@@ -293,75 +287,15 @@ export default function DrivingGame() {
     handleFeedback(selectedAnswer);
   };
 
-  // NEW ANIMATION: Sudden Overtake (for "Change lanes without signaling")
-  const animateSuddenOvertake = async () => {
-    if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-    if (busAnimationRef.current) busAnimationRef.current.stop();
-
-    setPlayerCarFrame(0);
-    setBusFrame(0);
-    setIsPlayerCarVisible(true);
-    setIsBusVisible(true); // Start with bus visible
-
-    const targetXLeftLane = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2); // Left lane (index 1)
-
-    // 1. Car faces Northwest and moves quickly left
-    await new Promise(resolve => {
-        setPlayerCarDirection("NORTHWEST");
-        Animated.parallel([
-            Animated.timing(playerCarXAnim, {
-                toValue: targetXLeftLane, // Move to left lane
-                duration: 400, // Fast
-                easing: Easing.easeOut,
-                useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-                toValue: scrollY._value - (tileSize * 0.8), // Move forward a bit
-                duration: 400,
-                easing: Easing.easeOut,
-                useNativeDriver: true,
-            })
-        ]).start(resolve);
-    });
-
-    // 2. Car faces North, continues forward rapidly, and bus falls behind
-    await new Promise(resolve => {
-        setPlayerCarDirection("NORTH"); // Face North
-        Animated.parallel([
-            Animated.timing(busYAnim, {
-                toValue: height + busHeight, // Move the bus off-screen bottom
-                duration: 800, // Quickly disappear
-                easing: Easing.easeIn, // Faster exit
-                useNativeDriver: true,
-            }),
-            Animated.timing(scrollY, { // Player car moves significantly forward
-                toValue: scrollY._value - (tileSize * 4), // More forward movement
-                duration: 800,
-                easing: Easing.easeOut,
-                useNativeDriver: true,
-            }),
-        ]).start(resolve);
-    });
-    setIsBusVisible(false); // Hide bus after it's out of view
-
-    // Player car stays in the left lane
-    setPlayerCarDirection("NORTH"); // Keep facing North in new lane
-
-    // Pause briefly before showing feedback
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    handleFeedback(selectedAnswer); // Pass the selected wrong answer to feedback
-  };
-
   // NEW ANIMATION: Careful Overtake (for "Signal, check mirrors...")
   const animateCarefulOvertake = async () => {
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-    if (busAnimationRef.current) busAnimationRef.current.stop();
+    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
 
     setPlayerCarFrame(0);
-    setBusFrame(0);
+    setJeepneyFrame(0);
     setIsPlayerCarVisible(true);
-    setIsBusVisible(true); // Start with bus visible
+    setIsJeepneyVisible(true); // Start with jeepney visible
 
     const targetXLeftLane = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2); // Left lane (index 1)
 
@@ -394,12 +328,12 @@ export default function DrivingGame() {
         ]).start(resolve);
     });
 
-    // 3. Car faces North, continues forward, and bus falls behind
+    // 3. Car faces North, continues forward, and jeepney falls behind
     await new Promise(resolve => {
         setPlayerCarDirection("NORTH"); // Face North
         Animated.parallel([
-            Animated.timing(busYAnim, {
-                toValue: height + busHeight, // Move the bus off-screen bottom
+            Animated.timing(jeepneyYAnim, {
+                toValue: height + jeepHeight, // Move the jeepney off-screen bottom
                 duration: 1200, // Smoothly disappear
                 easing: Easing.easeIn,
                 useNativeDriver: true,
@@ -412,7 +346,7 @@ export default function DrivingGame() {
             }),
         ]).start(resolve);
     });
-    setIsBusVisible(false); // Hide bus after it's out of view
+    setIsJeepneyVisible(false); // Hide jeepney after it's out of view
 
     // Player car stays in the left lane
     setPlayerCarDirection("NORTH"); // Keep facing North in new lane
@@ -431,31 +365,36 @@ export default function DrivingGame() {
 
     // Stop continuous scroll and sprite animations immediately
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-    if (busAnimationRef.current) busAnimationRef.current.stop();
+    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
     setIsPlayerCarVisible(true);
-    setIsBusVisible(true); // Ensure both are visible before animating
+    setIsJeepneyVisible(true); // Ensure both are visible before animating
     setPlayerCarFrame(0);
-    setBusFrame(0);
+    setJeepneyFrame(0);
 
     // Determine which animation to play based on the selected answer
     const actualCorrectAnswer = questions[questionIndex].correct;
 
     if (option === actualCorrectAnswer) {
-      if (option === "Check for oncoming traffic, signal, and overtake when safe") {
+      if (option === "Overtake carefully since your side has a broken line") {
         await animateCarefulOvertake();
-      } else if (option === "Don't overtake since yellow lines indicate opposite traffic") {
-        await animateStayInLane();
       }
-      handleFeedback(option);
-    } else if (option === "Overtake without additional precautions since lines are broken") {
-      await animateSuddenOvertake();
-      handleFeedback(option);
+      // If there were other correct answers with specific animations, add them here
+      // For this specific question, 'Stay on your lane' is the only correct answer.
     } else {
-        // Fallback for any other answer (e.g., the other wrong answer from the example)
-        // For now, just show feedback after a small delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        handleFeedback(option);
+        // This block handles all wrong answers
+        if (option === "Don't overtake since there's a solid yellow line.") {
+            await animateStayInLane();
+        } else if (option === "Wait for both lines to become broken") {
+            // This is also a wrong answer for this scenario (due to 'opposite lane' implying violation).
+            // So, we'll use an animation that shows a wrong/unsafe maneuver.
+            await animateStayInLane();
+        } else {
+            // Fallback for any other answer (if you add more wrong options later)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
     }
+    // After animation, always handle feedback
+    handleFeedback(option);
   };
 
   const handleNext = () => {
@@ -464,25 +403,25 @@ export default function DrivingGame() {
     setSelectedAnswer(null);
     setIsCorrectAnswer(null); // Reset feedback state from S2P1
     setPlayerCarFrame(0);
-    setBusFrame(0);
+    setJeepneyFrame(0);
 
     const centerX = width / 2 - playerCarWidth / 2;
     playerCarXAnim.setValue(centerX);
     setPlayerCarDirection("NORTH");
     setIsPlayerCarVisible(true);
-    setIsBusVisible(true);
+    setIsJeepneyVisible(true);
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S10P1');
+      router.push('/driver-game/road-markings/phase-1/S7P1');
       setShowQuestion(false);
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
       }
-      if (busAnimationRef.current) {
-          busAnimationRef.current.stop();
+      if (jeepneyAnimationRef.current) {
+          jeepneyAnimationRef.current.stop();
       }
     }
   };
@@ -490,7 +429,7 @@ export default function DrivingGame() {
   // Determine the feedback message based on whether the answer was correct or wrong (from S2P1)
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct. Even if it's permitted, always practice defensive driving for your safety and other drivers' safety as well."
+    ? "Correct! The broken line on your side allows overtaking if done safely, even if the opposite side has a solid line."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
 
 
@@ -535,16 +474,16 @@ export default function DrivingGame() {
         ))}
       </Animated.View>
 
-      {/* Responsive Bus */}
-      {isBusVisible && (
+      {/* Responsive Jeepney */}
+      {isJeepneyVisible && (
         <Animated.Image
-          source={busSprites.NORTH[busFrame]}
+          source={jeepneySprites.NORTH[jeepneyFrame]}
           style={{
-            width: busWidth,
-            height: busHeight,
+            width: jeepWidth,
+            height: jeepHeight,
             position: "absolute",
-            left: busInitialX, // Keep it in its lane
-            transform: [{ translateY: busYAnim }],
+            left: jeepneyInitialX, // Keep it in its lane
+            transform: [{ translateY: jeepneyYAnim }],
             zIndex: 4,
           }}
         />
@@ -569,7 +508,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../assets/dialog/LTO.png")}
+            source={require("../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -600,7 +539,7 @@ export default function DrivingGame() {
       {/* Responsive Feedback - Updated to use S2P1 format */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -662,7 +601,7 @@ const styles = StyleSheet.create({
     top: height * 0.4,
     right: sideMargin,
     width: width * 0.35,
-    height: height * 0.21,
+    height: height * 0.25,
     zIndex: 11,
   },
   answerButton: {
