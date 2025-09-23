@@ -1,10 +1,12 @@
-import { NavigationContainer } from "@react-navigation/native";
-import AppNavigator from "./navigation/AppNavigator";
+// App.js
+import React from 'react';
+import { View, Text } from 'react-native';
+
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <AppNavigator />
-    </NavigationContainer>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Minimal Test</Text>
+    </View>
   );
 }
