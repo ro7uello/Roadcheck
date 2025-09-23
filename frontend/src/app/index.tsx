@@ -73,7 +73,7 @@ export default function Home() {
 
   const handleStartPress = () => {
     // Navigate to login screen
-    router.push('/optionPage');
+    router.push('/login');
     console.log('Starting RoadCheck app...');
     console.log('All env vars:', process.env);
     console.log('API_URL specifically:', process.env.API_URL);

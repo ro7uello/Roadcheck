@@ -1,19 +1,9 @@
-import { useFonts } from 'expo-font';
-import * as Haptics from 'expo-haptics';
+// src/app/optionPage.tsx
+import React, { useRef, useEffect, useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, ImageBackground, SafeAreaView, Animated, Image, Alert, } from 'react-native';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  Dimensions,
-  Image,
-  ImageBackground,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { useFonts } from 'expo-font';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 const BACKGROUND_SPEED = 12000;
@@ -25,10 +15,10 @@ export default function OptionPage() {
   const [fontsLoaded] = useFonts({
     'pixel': require('../../assets/fonts/pixel3.ttf'),
   });
-  
+
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
   const carBounce = useRef(new Animated.Value(0)).current;
   const driverScale = useRef(new Animated.Value(1)).current;
@@ -58,14 +48,14 @@ export default function OptionPage() {
     try {
       const token = await AsyncStorage.getItem('access_token');
       if (token) {
-        const response = await fetch(${API_BASE_URL}/user/profile, {
+        const response = await fetch(`${API_BASE_URL}/user/profile`, {
           method: 'GET',
           headers: {
-            'Authorization': Bearer ${token},
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
         });
-        
+
         if (response.ok) {
           const profile = await response.json();
           setUserProfile(profile);
@@ -99,12 +89,12 @@ export default function OptionPage() {
       console.log('User ID from storage:', userId);
 
       if (!userId) {
-        userId = temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)};
+        userId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         await AsyncStorage.setItem('user_id', userId);
         console.log('Generated new user ID:', userId);
       }
 
-      console.log('About to make API call to:', ${API_BASE_URL}/user-progress);
+      console.log('About to make API call to:', `${API_BASE_URL}/user-progress`);
       console.log('Request body:', {
         user_id: userId,
         current_category_id: 1,
@@ -113,10 +103,10 @@ export default function OptionPage() {
       });
 
       // Call your backend's PUT /user-progress endpoint
-      const response = await fetch(${API_BASE_URL}/user-progress, {
+      const response = await fetch(`${API_BASE_URL}/user-progress`, {
         method: 'PUT',
         headers: {
-          'Authorization': Bearer ${token},
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -168,7 +158,7 @@ const handleCategorySelect = (category) => {
 const testBasicConnection = async () => {
   try {
     console.log('Testing basic connection...');
-    const response = await fetch(${process.env.API_URL}/categories);
+    const response = await fetch(`${process.env.API_URL}/categories`);
     console.log('Response status:', response.status);
     const data = await response.json();
     console.log('Response data:', data);
@@ -210,7 +200,7 @@ const testBasicConnection = async () => {
 
   const handleDriverPress = async () => {
     if (isLoading) return;
-    
+
     Animated.sequence([
       Animated.timing(driverScale, {
         toValue: 0.9,
@@ -235,7 +225,7 @@ const testBasicConnection = async () => {
 
   const handlePedestrianPress = async () => {
     if (isLoading) return;
-    
+
     Animated.sequence([
       Animated.timing(pedestrianScale, {
         toValue: 0.9,
@@ -345,7 +335,7 @@ const testBasicConnection = async () => {
             resizeMode="contain"
           />
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.iconButton} onPress={handleLibraryPress}>
           <Image
             source={require('../../assets/icon/Library.png')}
@@ -533,7 +523,7 @@ const styles = StyleSheet.create({
   },
   optionContainer: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.😎',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     borderRadius: 12,
     padding: 30,
     borderWidth: 3,
