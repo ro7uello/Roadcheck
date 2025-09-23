@@ -151,6 +151,7 @@ export default function LoginPage() {
       ];
 
       await AsyncStorage.multiSet(authData);
+      await AsyncStorage.setItem('user_data', JSON.stringify(data.user));
       console.log('💾 Authentication data saved');
       
       // Verify token was saved
