@@ -36,7 +36,11 @@ export default function OptionPage() {
   const pedestrianScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+      console.log('=== Environment Check ===');
+        console.log('API_URL from env:', process.env.API_URL);
+        console.log('All env vars:', process.env);
     if (fontsLoaded) {
+        testBasicConnection();
       startBackgroundAnimation();
       startCarAnimation();
       loadUserProfile();
@@ -62,7 +66,7 @@ export default function OptionPage() {
             'Content-Type': 'application/json',
           },
         });
-        
+
         if (response.ok) {
           const profile = await response.json();
           setUserProfile(profile);
@@ -75,36 +79,66 @@ export default function OptionPage() {
 
   // Save user progress to backend
   const saveUserProgress = async (selectedMode) => {
+    console.log('=== saveUserProgress called ===');
+    console.log('selectedMode:', selectedMode);
+    console.log('API_BASE_URL:', API_BASE_URL);
+
     try {
       setIsLoading(true);
+      console.log('Loading state set to true');
+
       const token = await AsyncStorage.getItem('access_token');
-      
+      console.log('Token from storage:', token ? 'exists' : 'null');
+
       if (!token) {
         console.log('No token found, proceeding without saving');
-        return true; // Allow offline usage
+        return true;
       }
-      
-      // Try to save progress
-      const response = await fetch(`${API_BASE_URL}/user/progress`, {
-        method: 'POST',
+
+      // Get or generate user ID
+      let userId = await AsyncStorage.getItem('user_id');
+      console.log('User ID from storage:', userId);
+
+      if (!userId) {
+        userId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        await AsyncStorage.setItem('user_id', userId);
+        console.log('Generated new user ID:', userId);
+      }
+
+      console.log('About to make API call to:', `${API_BASE_URL}/user-progress`);
+      console.log('Request body:', {
+        user_id: userId,
+        current_category_id: 1,
+        current_phase: 1,
+        current_scenario_index: 0
+      });
+
+      // Call your backend's PUT /user-progress endpoint
+      const response = await fetch(`${API_BASE_URL}/user-progress`, {
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'mode_selection',
-          selectedMode: selectedMode,
-          screen: 'option_page',
-          timestamp: new Date().toISOString(),
+          user_id: userId,
+          current_category_id: 1,
+          current_phase: 1,
+          current_scenario_index: 0
         }),
       });
-      
+
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
       if (response.ok) {
-        console.log('Progress saved successfully');
+        const result = await response.json();
+        console.log('Progress saved successfully:', result);
       } else {
-        console.log('Failed to save progress, but continuing...');
+        const errorText = await response.text();
+        console.log('Failed to save progress:', response.status, errorText);
       }
-      
+
       // Store locally as backup
       await AsyncStorage.setItem('selectedMode', selectedMode);
       await AsyncStorage.setItem('lastProgress', JSON.stringify({
@@ -112,17 +146,30 @@ export default function OptionPage() {
         selectedMode,
         timestamp: new Date().toISOString()
       }));
-      
+
       return true;
     } catch (error) {
       console.error('Error saving progress:', error);
-      // Don't block user if API fails - allow offline usage
+      console.log('Full error details:', error.message, error.stack);
       await AsyncStorage.setItem('selectedMode', selectedMode);
       return true;
     } finally {
+      console.log('Setting loading to false');
       setIsLoading(false);
     }
   };
+
+const testBasicConnection = async () => {
+  try {
+    console.log('Testing basic connection...');
+    const response = await fetch(`${process.env.API_URL}/categories`);
+    console.log('Response status:', response.status);
+    const data = await response.json();
+    console.log('Response data:', data);
+  } catch (error) {
+    console.error('Basic connection test failed:', error);
+  }
+};
 
   const startBackgroundAnimation = () => {
     backgroundAnimation.setValue(0);
@@ -170,8 +217,11 @@ export default function OptionPage() {
         useNativeDriver: true,
       }),
     ]).start(async () => {
+      console.log('Animation finished, calling saveUserProgress...');
       const success = await saveUserProgress('driver');
+      console.log('saveUserProgress result:', success);
       if (success) {
+          console.log('Navigating to categorySelectionScreen...');
         router.push('/categorySelectionScreen'); // Navigate to category selection
       }
     });
