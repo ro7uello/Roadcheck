@@ -1,17 +1,6 @@
 // src/app/optionPage.tsx
 import React, { useRef, useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  Dimensions,
-  ImageBackground,
-  SafeAreaView,
-  Animated,
-  Image,
-  Alert,
-} from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, ImageBackground, SafeAreaView, Animated, Image, Alert, } from 'react-native';
 import { router } from 'expo-router';
 import { useFonts } from 'expo-font';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -66,7 +55,6 @@ export default function OptionPage() {
             'Content-Type': 'application/json',
           },
         });
-
         if (response.ok) {
           const profile = await response.json();
           setUserProfile(profile);
@@ -158,6 +146,13 @@ export default function OptionPage() {
       setIsLoading(false);
     }
   };
+
+const handleCategorySelect = (category) => {
+  console.log('Selected category:', category);
+
+  // Force navigation to phase selection screen
+  router.push('/phaseSelectionScreen?categoryId=' + category.id + '&categoryName=' + category.name);
+};
 
 const testBasicConnection = async () => {
   try {

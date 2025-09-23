@@ -146,9 +146,11 @@ const saveUserProgress = async (categoryId, categoryName, route) => {
     ).start();
   };
 
+  // Replace the three handler functions in your categorySelectionScreen.tsx
+
   const handleRoadMarkingsPress = () => {
     if (isLoading) return;
-    
+
     Animated.sequence([
       Animated.timing(roadMarkingsScale, {
         toValue: 0.9,
@@ -161,13 +163,14 @@ const saveUserProgress = async (categoryId, categoryName, route) => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      saveUserProgress(1, 'Road Markings', '/scenarios/road-markings/phase1/S1P1');
+      // Navigate to phase selection with category parameters
+      saveUserProgress(1, 'Road Markings', '/phaseSelectionScreen?categoryId=1&categoryName=Road Markings&categorySlug=road-markings');
     });
   };
 
   const handleSignsPress = () => {
     if (isLoading) return;
-    
+
     Animated.sequence([
       Animated.timing(signsScale, {
         toValue: 0.9,
@@ -180,13 +183,14 @@ const saveUserProgress = async (categoryId, categoryName, route) => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      saveUserProgress(2, 'Traffic Signs', '/scenarios/traffic-signs/phase1/S1P1');
+      // Navigate to phase selection with category parameters
+      saveUserProgress(2, 'Traffic Signs', '/phaseSelectionScreen?categoryId=2&categoryName=Traffic Signs&categorySlug=traffic-signs');
     });
   };
 
   const handleIntersectionPress = () => {
     if (isLoading) return;
-    
+
     Animated.sequence([
       Animated.timing(intersectionScale, {
         toValue: 0.9,
@@ -199,7 +203,8 @@ const saveUserProgress = async (categoryId, categoryName, route) => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      saveUserProgress(3, 'Intersections', '/scenarios/intersections/phase1/S1P1');
+      // Navigate to phase selection with category parameters
+      saveUserProgress(3, 'Intersection and Others', '/phaseSelectionScreen?categoryId=3&categoryName=Intersection and Others&categorySlug=intersection-and-others');
     });
   };
 
