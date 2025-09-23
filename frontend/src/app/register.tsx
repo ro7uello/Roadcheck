@@ -219,6 +219,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 6,
     marginTop: -10,
+    bottom:4,
   },
   buttonText: {
     fontSize: 12,
@@ -226,10 +227,11 @@ const styles = StyleSheet.create({
     fontFamily: "pixel",
   },
   link: {
-    fontSize: 8,
+    fontSize: 9,
     color: "#4ef5a2",
     fontFamily: "pixel",
     marginTop: -10,
     textAlign: "center",
+    bottom:5,
   },
 });
