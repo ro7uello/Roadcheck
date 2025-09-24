@@ -569,23 +569,25 @@ export default function DrivingGame() {
     setShowNext(false);
     setSelectedAnswer(null);
     setIsCorrectAnswer(null);
-    setPlayerCarFrame(0);
-    setJeepneyFrame(0);
+    setPlayerCarFrame(0); // S9P1 uses playerCarFrame - this is correct
+    setBusFrame(0); // Reset bus frame, not jeepneyFrame
 
+    // S9P1 uses playerCarWidth and playerCarXAnim - these are correct
     const centerX = width / 2 - playerCarWidth / 2;
     playerCarXAnim.setValue(centerX);
-    setPlayerCarDirection("NORTH");
-    setIsPlayerCarVisible(true);
-    setIsJeepneyVisible(true);
+    setPlayerCarDirection("NORTH"); // S9P1 uses playerCarDirection - this is correct
+    setIsPlayerCarVisible(true); // S9P1 uses isPlayerCarVisible - this is correct
+    setIsBusVisible(true); // Reset bus visibility, not jeepney
+
+    // Reset bus position
+    busYAnim.setValue(-busHeight);
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      // FIXED: Use the next scenario number based on current file, not session context
-
-      // Get current scenario number from file name (S1P1 = 1, S2P1 = 2, etc.)
-      const currentFileScenario = getCurrentScenarioNumber(); // Helper function
+      // Get current scenario number from file name (S9P1 = 9)
+      const currentFileScenario = 9;
 
       if (currentFileScenario >= 10) {
         // Last scenario - complete session and go to results
@@ -602,15 +604,23 @@ export default function DrivingGame() {
         moveToNextScenario();
 
         // Navigate to next scenario using file-based numbering
-        const nextScenarioNumber = currentFileScenario + 1;
+        const nextScenarioNumber = currentFileScenario + 1; // Will be 10
         const phaseId = sessionData?.phase_id || 1;
-        const nextScreen = `S${nextScenarioNumber}P${phaseId}`;
+        const nextScreen = `S${nextScenarioNumber}P${phaseId}`; // Will be "S10P1"
 
+        console.log('S9P1 navigating to:', nextScreen);
         navigation.navigate(nextScreen);
       }
 
       setShowQuestion(false);
-      // ... cleanup code
+
+      // Cleanup animations
+      if (scrollAnimationRef.current) {
+        scrollAnimationRef.current.stop();
+      }
+      if (busAnimationRef.current) {
+        busAnimationRef.current.stop();
+      }
     }
   };
 

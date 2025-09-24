@@ -584,3 +584,264 @@ export default function ResultPage() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#87CEEB' },
+  backgroundContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  backgroundWrapper: { position: 'absolute', width, height },
+  backgroundImage: { flex: 1, width: '100%', height: '100%' },
+  backgroundImageStyle: { width: '100%', height: '100%', transform: [{ scale: 1.3 }] },
+  skyOverlay: { position: 'absolute', top: 0, left: 0, right: 0, height, backgroundColor: 'rgba(0,0,0,0)', zIndex: 0 },
+  carContainer: { position: 'absolute', bottom: -25, left: width * 0.05, zIndex: 2 },
+  carImage: { width: 400, height: 210 },
+  topRightIcons: { position: 'absolute', top: 40, right: 20, flexDirection: 'row', zIndex: 5 },
+  iconButton: {
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center', marginLeft: 10,
+  },
+  topIcon: { width: 24, height: 24 },
+
+  // Loading overlay
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 15,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: 'white',
+    fontFamily: 'pixel',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+
+  // Result panel styles
+  resultPanel: {
+    position: 'absolute',
+    top: height * 0.1,
+    alignSelf: 'center',
+    width: Math.min(width * 0.9, 400),
+    height: Math.min(height * 0.75, 500),
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    zIndex: 6,
+  },
+  resultTab: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  resultHeader: {
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  resultTitle: {
+    fontSize: 20,
+    color: 'black',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  categoryText: {
+    fontSize: 12,
+    color: '#666',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  resultStatus: {
+    fontSize: 16,
+    fontFamily: 'pixel',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  resultStats: {
+    width: '85%',
+    flex: 1,
+    justifyContent: 'center',
+    gap: 12,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: 'black',
+    fontFamily: 'pixel',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 12,
+    color: 'black',
+    fontFamily: 'pixel',
+    textAlign: 'right',
+    minWidth: 60,
+    fontWeight: 'bold',
+  },
+
+  // Detailed view toggle
+  detailToggleButton: {
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 5,
+    marginTop: 10,
+    marginBottom: 15,
+  },
+  detailToggleText: {
+    fontSize: 10,
+    color: 'white',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+  },
+
+  // Detailed view styles
+  detailedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '90%',
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  backButton: {
+    backgroundColor: '#666',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 3,
+    marginRight: 10,
+  },
+  backButtonText: {
+    fontSize: 8,
+    color: 'white',
+    fontFamily: 'pixel',
+  },
+  detailedTitle: {
+    fontSize: 14,
+    color: 'black',
+    fontFamily: 'pixel',
+    fontWeight: 'bold',
+  },
+  detailedContent: {
+    width: '90%',
+    flex: 1,
+    marginBottom: 20,
+  },
+  scenarioDetailItem: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  scenarioDetailHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  scenarioDetailNumber: {
+    fontSize: 10,
+    color: 'black',
+    fontFamily: 'pixel',
+    fontWeight: 'bold',
+  },
+  scenarioStatusBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  scenarioStatusText: {
+    fontSize: 8,
+    color: 'white',
+    fontFamily: 'pixel',
+    fontWeight: 'bold',
+  },
+  scenarioDetailContent: {
+    marginTop: 4,
+  },
+  scenarioDetailText: {
+    fontSize: 8,
+    color: '#333',
+    fontFamily: 'pixel',
+    marginBottom: 2,
+  },
+  scenarioDetailAnswer: {
+    fontSize: 8,
+    color: '#555',
+    fontFamily: 'pixel',
+    fontStyle: 'italic',
+  },
+
+  // Saving indicator
+  savingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  savingText: {
+    fontSize: 10,
+    color: '#666',
+    fontFamily: 'pixel',
+    marginLeft: 8,
+  },
+
+  finishButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+    marginBottom: 25,
+    borderWidth: 2,
+    borderColor: '#45a049',
+    minWidth: 120,
+  },
+  finishButtonText: {
+    fontSize: 14,
+    color: 'white',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+
+  // Settings panel styles
+  settingsPanel: {
+    position: 'absolute',
+    top: height * 0.15,
+    alignSelf: 'center',
+    width: Math.min(width * 0.9, 400),
+    height: Math.min(height * 0.6, 400),
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  settingsTab: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  settingsTitle: {
+    fontSize: 15,
+    color: 'black',
+    fontFamily: 'pixel',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  settingsOptionsColumn: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 25,
+  },
+  profileButton: { width: 147, height: 50, resizeMode: 'contain', marginBottom: -10, marginTop: 10 },
+  audioButton: { width: 120, height: 50, resizeMode: 'contain', marginBottom: -10 },
+  backButtonImage: { width: 100, height: 50, resizeMode: 'contain', marginBottom: 30 },
+});
