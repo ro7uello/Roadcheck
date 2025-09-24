@@ -498,7 +498,7 @@ const animateOvertake = async (targetX) => {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S8P1');
+      navigation.navigate('S2P1');
       setShowQuestion(false);
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
@@ -748,17 +748,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  // In-game responsive styles
-  questionOverlay: {
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -766,7 +765,7 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.05,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
@@ -776,7 +775,7 @@ const styles = StyleSheet.create({
   },
   questionTextContainer: {
     padding: -height * 0.04,
-    maxWidth: width * 0.6,
+    maxWidth: width * 0.7,
   },
   questionText: {
     flexWrap: "wrap",
@@ -787,7 +786,7 @@ const styles = StyleSheet.create({
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.35,
+    top: height * 0.2,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
@@ -811,7 +810,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",

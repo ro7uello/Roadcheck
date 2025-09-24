@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
   },
   // No intro styles (responsive)
   // In-game responsive styles
-  questionOverlay: {
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -741,7 +741,7 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.05,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
@@ -751,7 +751,7 @@ const styles = StyleSheet.create({
   },
   questionTextContainer: {
     padding: -height * 0.04,
-    maxWidth: width * 0.6,
+    maxWidth: width * 0.7,
   },
   questionText: {
     flexWrap: "wrap",
@@ -762,15 +762,15 @@ const styles = StyleSheet.create({
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.2,
+    top: height * 0.15,
     right: sideMargin,
     width: width * 0.35,
-    height: height * 0.21,
+    height: height * 0.23,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.02,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -778,7 +778,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 16),
+    fontSize: Math.min(width * 0.04, 18),
     textAlign: "center",
   },
   feedbackOverlay: {

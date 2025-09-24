@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   // Responsive styles for in-game elements
-  questionOverlay: {
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.05,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
@@ -629,7 +629,7 @@ const styles = StyleSheet.create({
   },
   questionTextContainer: {
     padding: -height * 0.04,
-    maxWidth: width * 0.6,
+    maxWidth: width * 0.7,
   },
   questionText: {
     flexWrap: "wrap",
@@ -640,9 +640,9 @@ const styles = StyleSheet.create({
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.35,
+    top: height * 0.2,
     right: sideMargin,
-    width: width * 0.35,
+    width: width * 0.37,
     height: height * 0.21,
     zIndex: 11,
   },
