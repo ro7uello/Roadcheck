@@ -1,6 +1,7 @@
 // src/app/optionPage.tsx
 import React, { useRef, useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, ImageBackground, SafeAreaView, Animated, Image, Alert, } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, ImageBackground, SafeAreaView, Animated, Image, Alert, ScrollView, Linking} from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useFonts } from 'expo-font';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,16 +14,19 @@ const API_BASE_URL = process.env.API_URL;
 
 export default function OptionPage() {
   const [fontsLoaded] = useFonts({
-    'pixel': require('../../assets/fonts/pixel3.ttf'),
+    pixel: require('../../assets/fonts/pixel3.ttf'),
   });
 
   const [userProfile, setUserProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [libraryVisible, setLibraryVisible] = useState(false);
 
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
   const carBounce = useRef(new Animated.Value(0)).current;
   const driverScale = useRef(new Animated.Value(1)).current;
   const pedestrianScale = useRef(new Animated.Value(1)).current;
+  const modalScale = useRef(new Animated.Value(0)).current;
+  const libraryModalScale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
       console.log('=== Environment Check ===');
@@ -40,6 +44,8 @@ export default function OptionPage() {
       carBounce.stopAnimation();
       driverScale.stopAnimation();
       pedestrianScale.stopAnimation();
+      modalScale.stopAnimation();
+      libraryModalScale.stopAnimation();
     };
   }, [fontsLoaded]);
 
@@ -94,7 +100,7 @@ export default function OptionPage() {
         console.log('Generated new user ID:', userId);
       }
 
-      console.log('About to make API call to:', `${API_BASE_URL}/user-progress`);
+      console.log(`About to make API call to:${API_BASE_URL}/user-progress`);
       console.log('Request body:', {
         user_id: userId,
         current_category_id: 1,
@@ -166,6 +172,16 @@ const testBasicConnection = async () => {
     console.error('Basic connection test failed:', error);
   }
 };
+
+  // Animate library modal in/out
+  useEffect(() => {
+    Animated.spring(libraryModalScale, {
+      toValue: libraryVisible ? 1 : 0,
+      tension: 100,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+  }, [libraryVisible]);
 
   const startBackgroundAnimation = () => {
     backgroundAnimation.setValue(0);
@@ -246,11 +262,16 @@ const testBasicConnection = async () => {
   };
 
   const handleSettingsPress = () => {
-    router.push('/settings');
+    router.push('/profile');
   };
 
-  const handleLibraryPress = () => {
-    router.push('/library');
+  const handleLibraryPress = async () => {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (error) {
+        // Haptics not available
+      }
+      setLibraryVisible(true);
   };
 
   const goBack = () => {
@@ -347,9 +368,6 @@ const testBasicConnection = async () => {
 
       <View style={styles.titleContainer}>
         <Text style={styles.title}>CHOOSE</Text>
-        {userProfile && (
-          <Text style={styles.welcomeText}>Welcome, {userProfile.name}!</Text>
-        )}
       </View>
 
       <View style={styles.selectionContainer}>
@@ -391,6 +409,63 @@ const testBasicConnection = async () => {
           </TouchableOpacity>
         </Animated.View>
       </View>
+
+      {libraryVisible && (
+              <Animated.View
+                style={[
+                  styles.libraryPanel,
+                  { transform: [{ scale: libraryModalScale }] },
+                ]}
+              >
+                <Image
+                  source={require('../../assets/background/settings-tab.png')}
+                  style={styles.settingsTab}
+                  resizeMode="stretch"
+                />
+      
+                <Text style={styles.libraryTitle}>REFERENCES</Text>
+      
+                <View style={styles.libraryContent}>
+                  <ScrollView 
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={true}
+                  >
+                    <View style={styles.referenceContainer}>
+                      <Text style={styles.referenceText}>
+                        Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
+                        <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
+                          <Text style={[styles.referenceText, styles.linkText]}>
+                            https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
+                          </Text>
+                        </TouchableOpacity>
+                      </Text>
+                    </View>
+      
+                    <View style={styles.referenceContainer}>
+                      <Text style={styles.referenceText}>
+                        National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
+                        <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
+                          <Text style={[styles.referenceText, styles.linkText]}>
+                            https://www.nhtsa.gov/road-safety/pedestrian-safety
+                          </Text>
+                        </TouchableOpacity>
+                      </Text>
+                    </View>
+                  </ScrollView>
+                </View>
+      
+                <TouchableOpacity
+                  style={styles.libraryBackButton}
+                  onPress={() => setLibraryVisible(false)}
+                >
+                  <Image
+                    source={require('../../assets/background/back.png')}
+                    style={styles.backButtonImage}
+                  />
+                </TouchableOpacity>
+              </Animated.View>
+            )}
     </SafeAreaView>
   );
 }
@@ -492,8 +567,8 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   title: {
-    fontSize: 78,
-    fontWeight: 'bold',
+    fontSize: 60,
+    fontWeight: 'normal',
     color: 'white',
     fontFamily: 'pixel',
     textShadowColor: '#000',
@@ -561,4 +636,68 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 5,
   },
+
+  backButtonImage: { width: 100, height: 30, resizeMode: 'contain', marginBottom:5 },
+
+  settingsTab: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+
+  linkText: {
+    color: '#0066CC',
+    textDecorationLine: 'underline',
+  },
+
+   libraryPanel: {
+    position: 'absolute',
+    top: height * 0.1,
+    alignSelf: 'center',
+    width: Math.min(width * 0.9, 450),
+    height: Math.min(height * 0.75, 500),
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  libraryTitle: {
+    fontSize: 15,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginTop: 10,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  libraryContent: {
+    flex: 1,
+    width: '85%',
+    marginBottom: 20,
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  referenceContainer: {
+    marginBottom: 20,
+    paddingHorizontal: 5,
+  },
+  referenceText: {
+    fontSize: 10,
+    color: 'black',
+    fontFamily: "Pixel3",
+    lineHeight: 14,
+    textAlign: 'justify',
+  },
+  libraryBackButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 25,
+  },
 });
+
+function setIsLoading(arg0: boolean) {
+    throw new Error('Function not implemented.');
+}
