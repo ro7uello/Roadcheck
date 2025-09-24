@@ -10,6 +10,7 @@ import {
   Easing,
 } from "react-native";
 import { useNavigation } from '@react-navigation/native';
+import { useSession } from '../../../SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
@@ -108,6 +109,15 @@ const fallbackQuestions = [
 export default function DrivingGame() {
   const navigation = useNavigation();
 
+  const {
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      getScenarioProgress,
+      sessionData
+    } = useSession();
+
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
@@ -197,32 +207,20 @@ export default function DrivingGame() {
   }, []);
 
   // Function to update user progress
-  const updateProgress = async (selectedAnswer, isCorrect) => {
+  const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      const progressData = {
-        user_id: 1, // Replace with actual user ID
-        scenario_id: 5, // S5P1 scenario ID
-        selected_answer: selectedAnswer,
-        is_correct: isCorrect,
-        attempts: 1,
-        completed_at: new Date().toISOString()
-      };
+      if (!sessionData) {
+        console.log('No session data available');
+        return;
+      }
 
-      console.log('Updating progress:', progressData);
-      
-      // Replace with your actual backend URL
-      const response = await fetch('http://localhost:3001/user-progress/scenario', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(progressData),
-      });
+      // Calculate the correct scenario ID for this phase and scenario number
+      const scenarioId = ((sessionData.phase_id - 1) * 10) + currentScenario;
 
-      const result = await response.json();
-      console.log('Progress updated successfully:', result);
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+      console.log(`Scenario ${currentScenario} progress updated successfully`);
     } catch (error) {
-      console.error('Error updating progress:', error);
+      console.log('Error updating progress:', error.message);
     }
   };
 

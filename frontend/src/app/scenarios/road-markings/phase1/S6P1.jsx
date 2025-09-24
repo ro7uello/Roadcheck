@@ -12,6 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
+import { useSession } from '../../../SessionManager';
 
 // Debug API_URL at module level
 console.log('S6P1 Module loaded. API_URL from env:', API_URL);
@@ -108,6 +109,15 @@ const fallbackQuestions = [
 
 export default function DrivingGame() {
   const navigation = useNavigation();
+
+  const {
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      getScenarioProgress,
+      sessionData
+    } = useSession();
 
   // ✅ DATABASE INTEGRATION - Added these 3 state variables
   const [questions, setQuestions] = useState(fallbackQuestions);
@@ -219,39 +229,20 @@ export default function DrivingGame() {
   }, []);
 
   // ✅ DATABASE INTEGRATION - Added updateProgress function
-  const updateProgress = async (scenarioId, selectedOption, isCorrect) => {
+  const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      const token = await AsyncStorage.getItem('access_token');
-      const userId = await AsyncStorage.getItem('user_id');
-      
-      if (!token || !userId) {
-        console.log('S6P1: No token or user_id found for progress update');
+      if (!sessionData) {
+        console.log('No session data available');
         return;
       }
 
-      // Record the attempt
-      const attemptResponse = await fetch(`${API_URL}/attempts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          user_id: parseInt(userId),
-          scenario_id: scenarioId,
-          selected_option: selectedOption,
-          is_correct: isCorrect,
-          completed_at: new Date().toISOString()
-        })
-      });
+      // Calculate the correct scenario ID for this phase and scenario number
+      const scenarioId = ((sessionData.phase_id - 1) * 10) + currentScenario;
 
-      if (attemptResponse.ok) {
-        console.log('S6P1: ✅ Progress updated successfully');
-      } else {
-        console.log('S6P1: ⚠️ Failed to update progress:', attemptResponse.status);
-      }
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+      console.log(`Scenario ${currentScenario} progress updated successfully`);
     } catch (error) {
-      console.log('S6P1: ❌ Error updating progress:', error.message);
+      console.log('Error updating progress:', error.message);
     }
   };
 
@@ -349,7 +340,7 @@ export default function DrivingGame() {
     const isCorrect = answerGiven === currentQuestion.correct;
     
     // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
-    updateProgress(6, answerGiven, isCorrect); // scenario_id = 6 for S6P1
+    updateProgress(answerGiven, isCorrect); // scenario_id = 6 for S6P1
     
     if (isCorrect) {
       setIsCorrectAnswer(true); // Set to true for correct feedback

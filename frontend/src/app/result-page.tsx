@@ -1,9 +1,23 @@
-// ===== app/result-page.jsx =====
+// Enhanced result-page.jsx
 import { useFonts } from 'expo-font';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Alert } from 'react-native';
+import {
+  Animated,
+  Dimensions,
+  Image,
+  ImageBackground,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  FlatList
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 
@@ -15,20 +29,24 @@ export default function ResultPage() {
     pixel: require('../../assets/fonts/pixel3.ttf'),
   });
 
-  // Get navigation parameters
+  // Get navigation parameters (now includes sessionId and detailed progress)
   const params = useLocalSearchParams();
   const {
+    sessionId,
     categoryId,
     phaseId,
     categoryName,
-    userAttempts, // JSON string of user attempts for this session
-    totalTime, // Total time spent on scenarios
-    scenarioCount = 10 // Number of scenarios completed
+    userAttempts,
+    totalTime,
+    scenarioCount = 10,
+    scenarioProgress // JSON string of detailed scenario progress
   } = params;
 
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showDetailedView, setShowDetailedView] = useState(false);
+
   const [resultData, setResultData] = useState({
     status: 'CALCULATING...',
     correctActs: 0,
@@ -36,7 +54,8 @@ export default function ResultPage() {
     totalTimeSpent: '00:00',
     totalScore: '0%',
     accuracy: 0,
-    averageTime: '00:00'
+    averageTime: '00:00',
+    scenarioDetails: [] // New: detailed scenario results
   });
 
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
@@ -59,7 +78,6 @@ export default function ResultPage() {
     };
   }, [fontsLoaded]);
 
-  // animate settings tab in/out
   useEffect(() => {
     Animated.spring(modalScale, {
       toValue: settingsVisible ? 1 : 0,
@@ -73,30 +91,44 @@ export default function ResultPage() {
     try {
       setLoading(true);
 
-      // Parse user attempts from navigation params
       let attempts = [];
+      let detailedProgress = [];
+
+      // Parse data from navigation params
       if (userAttempts) {
         attempts = JSON.parse(userAttempts);
       }
+      if (scenarioProgress) {
+        detailedProgress = JSON.parse(scenarioProgress);
+      }
 
-      console.log('Calculating results for:', {
-        categoryId,
-        phaseId,
-        attemptsCount: attempts.length,
-        totalTime
-      });
+      // If we have sessionId, fetch latest data from backend
+      if (sessionId) {
+        await fetchSessionDetails(sessionId);
+        return; // fetchSessionDetails will call showResultPanel
+      }
 
-      // Calculate statistics
+      // Fallback to calculate from passed data
       const correctAnswers = attempts.filter(attempt => attempt.is_correct).length;
       const incorrectAnswers = attempts.length - correctAnswers;
       const accuracy = attempts.length > 0 ? Math.round((correctAnswers / attempts.length) * 100) : 0;
-      const passingScore = 70; // 70% to pass
+      const passingScore = 70;
       const status = accuracy >= passingScore ? 'PASS' : 'FAIL';
 
-      // Format time
       const formattedTime = formatTime(totalTime || 0);
       const averageTimePerScenario = attempts.length > 0 ?
         formatTime(Math.round((totalTime || 0) / attempts.length)) : '00:00';
+
+      // Create scenario details from attempts
+      const scenarioDetails = attempts.map((attempt, index) => ({
+        scenarioNumber: index + 1,
+        scenarioId: attempt.scenario_id || index + 1,
+        isAttempted: true,
+        isCorrect: attempt.is_correct,
+        selectedAnswer: attempt.chosen_option || attempt.selected_answer,
+        timeTaken: formatTime(attempt.time_taken || 0),
+        status: attempt.is_correct ? 'CORRECT' : 'WRONG'
+      }));
 
       const newResultData = {
         status,
@@ -105,15 +137,11 @@ export default function ResultPage() {
         totalTimeSpent: formattedTime,
         totalScore: `${accuracy}%`,
         accuracy,
-        averageTime: averageTimePerScenario
+        averageTime: averageTimePerScenario,
+        scenarioDetails
       };
 
       setResultData(newResultData);
-
-      // Save results to backend
-      await saveResultsToBackend(attempts, newResultData);
-
-      // Show result panel after calculation
       showResultPanel();
 
     } catch (error) {
@@ -124,93 +152,58 @@ export default function ResultPage() {
     }
   };
 
-  const saveResultsToBackend = async (attempts, results) => {
+  const fetchSessionDetails = async (sessionId) => {
     try {
-      setSaving(true);
-
-      // Get user data
-      const userData = await AsyncStorage.getItem('user_data');
       const token = await AsyncStorage.getItem('access_token');
-
-      if (!userData || !token) {
-        console.warn('No user data or token found');
-        return;
-      }
-
-      const user = JSON.parse(userData);
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      };
-
-      console.log('Saving results to backend...');
-
-      // Save each attempt to the backend
-      for (const attempt of attempts) {
-        try {
-          const attemptPayload = {
-            user_id: user.id,
-            scenario_id: attempt.scenario_id,
-            selected_choice_id: attempt.selected_choice_id || null,
-            is_correct: attempt.is_correct,
-            time_taken: attempt.time_taken || 0,
-            category_id: parseInt(categoryId),
-            phase_id: parseInt(phaseId)
-          };
-
-          const attemptResponse = await fetch(`${API_URL}/attempts`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(attemptPayload)
-          });
-
-          if (!attemptResponse.ok) {
-            console.warn('Failed to save attempt:', attempt.scenario_id);
-          }
-        } catch (attemptError) {
-          console.error('Error saving individual attempt:', attemptError);
+      const response = await fetch(`${API_URL}/sessions/${sessionId}/progress`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
-      }
+      });
 
-      // Update user progress
-      try {
-        const progressPayload = {
-          user_id: user.id,
-          current_category_id: parseInt(categoryId),
-          current_phase: parseInt(phaseId),
-          current_scenario_index: attempts.length, // Last completed scenario
-          completed_scenarios: attempts.map(a => a.scenario_id),
-          total_score: results.accuracy,
-          phase_completed: true,
-          session_results: {
-            accuracy: results.accuracy,
-            total_time: totalTime,
-            correct_answers: results.correctActs,
-            total_questions: attempts.length,
-            category_name: categoryName,
-            completed_at: new Date().toISOString()
-          }
+      if (response.ok) {
+        const data = await response.json();
+        const { session, scenarios, summary } = data.data;
+
+        // Create detailed results from session data
+        const scenarioDetails = scenarios.map(scenario => ({
+          scenarioNumber: scenario.scenario_number,
+          scenarioId: scenario.scenario_id,
+          isAttempted: scenario.is_attempted,
+          isCorrect: scenario.is_correct,
+          selectedAnswer: scenario.selected_answer,
+          timeTaken: formatTime(scenario.time_taken_seconds || 0),
+          status: scenario.is_attempted
+            ? scenario.is_correct ? 'CORRECT' : 'WRONG'
+            : 'NOT ATTEMPTED'
+        }));
+
+        const passingScore = 70;
+        const status = summary.accuracy >= passingScore ? 'PASS' : 'FAIL';
+
+        const newResultData = {
+          status,
+          correctActs: summary.correct_scenarios,
+          violations: summary.attempted_scenarios - summary.correct_scenarios,
+          totalTimeSpent: formatTime(summary.total_time_seconds),
+          totalScore: `${summary.accuracy}%`,
+          accuracy: summary.accuracy,
+          averageTime: formatTime(Math.round(summary.total_time_seconds / Math.max(summary.attempted_scenarios, 1))),
+          scenarioDetails
         };
 
-        const progressResponse = await fetch(`${API_URL}/progress`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(progressPayload)
-        });
-
-        if (progressResponse.ok) {
-          console.log('Progress saved successfully');
-        } else {
-          console.warn('Failed to save progress');
-        }
-      } catch (progressError) {
-        console.error('Error saving progress:', progressError);
+        setResultData(newResultData);
+        showResultPanel();
+      } else {
+        console.error('Failed to fetch session details');
+        // Fallback to calculate from params
+        calculateResults();
       }
-
     } catch (error) {
-      console.error('Error saving results to backend:', error);
-    } finally {
-      setSaving(false);
+      console.error('Error fetching session details:', error);
+      calculateResults(); // Fallback
     }
   };
 
@@ -271,7 +264,6 @@ export default function ResultPage() {
   };
 
   const handleFinishPress = () => {
-    // Show confirmation if they want to continue to next phase or go back to category selection
     Alert.alert(
       'Session Complete!',
       `You've completed ${categoryName} Phase ${phaseId} with ${resultData.accuracy}% accuracy.\n\nWhat would you like to do next?`,
@@ -291,6 +283,41 @@ export default function ResultPage() {
       ]
     );
   };
+
+  const toggleDetailedView = () => {
+    setShowDetailedView(!showDetailedView);
+  };
+
+  const renderScenarioDetail = ({ item, index }) => (
+    <View style={styles.scenarioDetailItem}>
+      <View style={styles.scenarioDetailHeader}>
+        <Text style={styles.scenarioDetailNumber}>Scenario {item.scenarioNumber}</Text>
+        <View style={[
+          styles.scenarioStatusBadge,
+          {
+            backgroundColor:
+              item.status === 'CORRECT' ? '#4CAF50' :
+              item.status === 'WRONG' ? '#F44336' : '#666'
+          }
+        ]}>
+          <Text style={styles.scenarioStatusText}>{item.status}</Text>
+        </View>
+      </View>
+
+      {item.isAttempted && (
+        <View style={styles.scenarioDetailContent}>
+          <Text style={styles.scenarioDetailText}>
+            Time: {item.timeTaken}
+          </Text>
+          {item.selectedAnswer && (
+            <Text style={styles.scenarioDetailAnswer}>
+              Answer: {item.selectedAnswer}
+            </Text>
+          )}
+        </View>
+      )}
+    </View>
+  );
 
   if (!fontsLoaded) return null;
 
@@ -391,57 +418,88 @@ export default function ResultPage() {
           { transform: [{ scale: resultPanelScale }] },
         ]}
       >
-        {/* Tab Background */}
         <Image
           source={require('../../assets/background/settings-tab.png')}
           style={styles.resultTab}
           resizeMode="stretch"
         />
 
-        {/* Result Header */}
-        <View style={styles.resultHeader}>
-          <Text style={styles.resultTitle}>RESULT</Text>
-          <Text style={styles.categoryText}>{categoryName} - Phase {phaseId}</Text>
-          <Text style={[
-            styles.resultStatus,
-            { color: resultData.status === 'PASS' ? '#4CAF50' : '#F44336' }
-          ]}>
-            {resultData.status}
-          </Text>
-        </View>
+        {!showDetailedView ? (
+          // Summary View
+          <>
+            <View style={styles.resultHeader}>
+              <Text style={styles.resultTitle}>RESULT</Text>
+              <Text style={styles.categoryText}>{categoryName} - Phase {phaseId}</Text>
+              <Text style={[
+                styles.resultStatus,
+                { color: resultData.status === 'PASS' ? '#4CAF50' : '#F44336' }
+              ]}>
+                {resultData.status}
+              </Text>
+            </View>
 
-        {/* Result Stats */}
-        <View style={styles.resultStats}>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>CORRECT ACTS:</Text>
-            <Text style={[styles.statValue, {color: '#4CAF50'}]}>{resultData.correctActs}</Text>
-          </View>
+            <View style={styles.resultStats}>
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>CORRECT ACTS:</Text>
+                <Text style={[styles.statValue, {color: '#4CAF50'}]}>{resultData.correctActs}</Text>
+              </View>
 
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>VIOLATIONS:</Text>
-            <Text style={[styles.statValue, {color: '#F44336'}]}>{resultData.violations}</Text>
-          </View>
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>VIOLATIONS:</Text>
+                <Text style={[styles.statValue, {color: '#F44336'}]}>{resultData.violations}</Text>
+              </View>
 
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>TOTAL TIME:</Text>
-            <Text style={styles.statValue}>{resultData.totalTimeSpent}</Text>
-          </View>
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>TOTAL TIME:</Text>
+                <Text style={styles.statValue}>{resultData.totalTimeSpent}</Text>
+              </View>
 
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>AVG TIME/QUESTION:</Text>
-            <Text style={styles.statValue}>{resultData.averageTime}</Text>
-          </View>
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>AVG TIME/QUESTION:</Text>
+                <Text style={styles.statValue}>{resultData.averageTime}</Text>
+              </View>
 
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>ACCURACY:</Text>
-            <Text style={[
-              styles.statValue,
-              {color: resultData.accuracy >= 70 ? '#4CAF50' : '#F44336'}
-            ]}>
-              {resultData.totalScore}
-            </Text>
-          </View>
-        </View>
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>ACCURACY:</Text>
+                <Text style={[
+                  styles.statValue,
+                  {color: resultData.accuracy >= 70 ? '#4CAF50' : '#F44336'}
+                ]}>
+                  {resultData.totalScore}
+                </Text>
+              </View>
+            </View>
+
+            {/* Toggle to detailed view */}
+            <TouchableOpacity
+              style={styles.detailToggleButton}
+              onPress={toggleDetailedView}
+            >
+              <Text style={styles.detailToggleText}>View Scenario Details</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          // Detailed View
+          <>
+            <View style={styles.detailedHeader}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={toggleDetailedView}
+              >
+                <Text style={styles.backButtonText}>← Back</Text>
+              </TouchableOpacity>
+              <Text style={styles.detailedTitle}>Scenario Details</Text>
+            </View>
+
+            <ScrollView style={styles.detailedContent} showsVerticalScrollIndicator={false}>
+              {resultData.scenarioDetails.map((item, index) => (
+                <View key={index}>
+                  {renderScenarioDetail({ item, index })}
+                </View>
+              ))}
+            </ScrollView>
+          </>
+        )}
 
         {/* Saving indicator */}
         {saving && (
@@ -452,18 +510,20 @@ export default function ResultPage() {
         )}
 
         {/* Finish Button */}
-        <TouchableOpacity
-          style={[
-            styles.finishButton,
-            { backgroundColor: resultData.status === 'PASS' ? '#4CAF50' : '#FF9800' }
-          ]}
-          onPress={handleFinishPress}
-          disabled={loading || saving}
-        >
-          <Text style={styles.finishButtonText}>
-            {loading ? 'CALCULATING...' : saving ? 'SAVING...' : 'FINISH'}
-          </Text>
-        </TouchableOpacity>
+        {!showDetailedView && (
+          <TouchableOpacity
+            style={[
+              styles.finishButton,
+              { backgroundColor: resultData.status === 'PASS' ? '#4CAF50' : '#FF9800' }
+            ]}
+            onPress={handleFinishPress}
+            disabled={loading || saving}
+          >
+            <Text style={styles.finishButtonText}>
+              {loading ? 'CALCULATING...' : saving ? 'SAVING...' : 'FINISH'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </Animated.View>
 
       {/* Settings Panel */}
@@ -474,19 +534,15 @@ export default function ResultPage() {
             { transform: [{ scale: modalScale }] },
           ]}
         >
-          {/* Tab Background */}
           <Image
             source={require('../../assets/background/settings-tab.png')}
             style={styles.settingsTab}
             resizeMode="stretch"
           />
 
-          {/* Title */}
           <Text style={styles.settingsTitle}>SETTINGS</Text>
 
-          {/* Options */}
           <View style={styles.settingsOptionsColumn}>
-            {/* Profile */}
             <TouchableOpacity
               style={styles.settingsOption}
               onPress={() => handleSettingsOptionPress(() => {
@@ -500,7 +556,6 @@ export default function ResultPage() {
               />
             </TouchableOpacity>
 
-            {/* Audio */}
             <TouchableOpacity
               style={styles.settingsOption}
               onPress={() => handleSettingsOptionPress(() => {
@@ -514,7 +569,6 @@ export default function ResultPage() {
               />
             </TouchableOpacity>
 
-            {/* Back */}
             <TouchableOpacity
               style={styles.settingsOption}
               onPress={() => setSettingsVisible(false)}
@@ -530,170 +584,3 @@ export default function ResultPage() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#87CEEB' },
-  backgroundContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  backgroundWrapper: { position: 'absolute', width, height },
-  backgroundImage: { flex: 1, width: '100%', height: '100%' },
-  backgroundImageStyle: { width: '100%', height: '100%', transform: [{ scale: 1.3 }] },
-  skyOverlay: { position: 'absolute', top: 0, left: 0, right: 0, height, backgroundColor: 'rgba(0,0,0,0)', zIndex: 0 },
-  carContainer: { position: 'absolute', bottom: -25, left: width * 0.05, zIndex: 2 },
-  carImage: { width: 400, height: 210 },
-  topRightIcons: { position: 'absolute', top: 40, right: 20, flexDirection: 'row', zIndex: 5 },
-  iconButton: {
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center', marginLeft: 10,
-  },
-  topIcon: { width: 24, height: 24 },
-
-  // Loading overlay
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 15,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: 'white',
-    fontFamily: 'pixel',
-    marginTop: 10,
-    textAlign: 'center',
-  },
-
-  // Result panel styles
-  resultPanel: {
-    position: 'absolute',
-    top: height * 0.1,
-    alignSelf: 'center',
-    width: Math.min(width * 0.9, 400),
-    height: Math.min(height * 0.75, 500),
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    zIndex: 6,
-  },
-  resultTab: {
-    ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
-  },
-  resultHeader: {
-    alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  resultTitle: {
-    fontSize: 20,
-    color: 'black',
-    fontFamily: 'pixel',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  categoryText: {
-    fontSize: 12,
-    color: '#666',
-    fontFamily: 'pixel',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  resultStatus: {
-    fontSize: 16,
-    fontFamily: 'pixel',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  resultStats: {
-    width: '85%',
-    flex: 1,
-    justifyContent: 'center',
-    gap: 12,
-  },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: 'black',
-    fontFamily: 'pixel',
-    flex: 1,
-  },
-  statValue: {
-    fontSize: 12,
-    color: 'black',
-    fontFamily: 'pixel',
-    textAlign: 'right',
-    minWidth: 60,
-    fontWeight: 'bold',
-  },
-
-  // Saving indicator
-  savingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  savingText: {
-    fontSize: 10,
-    color: '#666',
-    fontFamily: 'pixel',
-    marginLeft: 8,
-  },
-
-  finishButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 5,
-    marginBottom: 25,
-    borderWidth: 2,
-    borderColor: '#45a049',
-    minWidth: 120,
-  },
-  finishButtonText: {
-    fontSize: 14,
-    color: 'white',
-    fontFamily: 'pixel',
-    textAlign: 'center',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-  },
-
-  // Settings panel styles (kept from original)
-  settingsPanel: {
-    position: 'absolute',
-    top: height * 0.15,
-    alignSelf: 'center',
-    width: Math.min(width * 0.9, 400),
-    height: Math.min(height * 0.6, 400),
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  settingsTab: {
-    ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
-  },
-  settingsTitle: {
-    fontSize: 15,
-    color: 'black',
-    fontFamily: 'pixel',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  settingsOptionsColumn: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 25,
-  },
-  profileButton: { width: 147, height: 50, resizeMode: 'contain', marginBottom: -10, marginTop: 10 },
-  audioButton: { width: 120, height: 50, resizeMode: 'contain', marginBottom: -10 },
-  backButtonImage: { width: 100, height: 50, resizeMode: 'contain', marginBottom: 30 },
-});

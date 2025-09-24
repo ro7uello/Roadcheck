@@ -1,3 +1,4 @@
+// S1P1.jsx
 import React, { useRef, useEffect, useState } from "react";
 import {
   View,
@@ -13,6 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
+import { useSession } from '../../../SessionManager';
 
 // Debug API_URL at module level
 console.log('S1P1 Module loaded. API_URL from env:', API_URL);
@@ -110,6 +112,15 @@ const fallbackQuestions = [
 
 export default function DrivingGame() {
   const navigation = useNavigation();
+
+  const {
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      getScenarioProgress,
+      sessionData
+    } = useSession();
 
   // ✅ DATABASE INTEGRATION - Added these state variables
   const [questions, setQuestions] = useState(fallbackQuestions);
@@ -224,39 +235,20 @@ export default function DrivingGame() {
   }, []);
 
   // ✅ DATABASE INTEGRATION - Added updateProgress function
-  const updateProgress = async (scenarioId, selectedOption, isCorrect) => {
+  const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      const token = await AsyncStorage.getItem('access_token');
-      const userId = await AsyncStorage.getItem('user_id');
-      
-      if (!token || !userId) {
-        console.log('S1P1: No token or user_id found for progress update');
+      if (!sessionData) {
+        console.log('No session data available');
         return;
       }
 
-      // Record the attempt
-      const attemptResponse = await fetch(`${API_URL}/attempts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          user_id: parseInt(userId),
-          scenario_id: scenarioId,
-          selected_option: selectedOption,
-          is_correct: isCorrect,
-          completed_at: new Date().toISOString()
-        })
-      });
+      // Calculate the correct scenario ID for this phase and scenario number
+      const scenarioId = ((sessionData.phase_id - 1) * 10) + currentScenario;
 
-      if (attemptResponse.ok) {
-        console.log('S1P1: ✅ Progress updated successfully');
-      } else {
-        console.log('S1P1: ⚠️ Failed to update progress:', attemptResponse.status);
-      }
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+      console.log(`Scenario ${currentScenario} progress updated successfully`);
     } catch (error) {
-      console.log('S1P1: ❌ Error updating progress:', error.message);
+      console.log('Error updating progress:', error.message);
     }
   };
 
@@ -346,7 +338,7 @@ export default function DrivingGame() {
     const isCorrect = answerGiven === currentQuestion.correct;
     
     // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
-    updateProgress(1, answerGiven, isCorrect); // scenario_id = 1 for S1P1
+    updateProgress(answerGiven, isCorrect); // scenario_id = 1 for S1P1
     
     if (isCorrect) {
       setIsCorrectAnswer(true); // Set to true for correct feedback
@@ -480,11 +472,11 @@ const animateOvertake = async (targetX) => {
       }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setIsCorrectAnswer(null); // Reset feedback state
+    setIsCorrectAnswer(null);
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
 
@@ -498,13 +490,35 @@ const animateOvertake = async (targetX) => {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S2P1');
+      // REPLACE THIS OLD LOGIC:
+      // navigation.navigate('S2P1');
+
+      // WITH THIS NEW LOGIC:
+      if (currentScenario >= 10) {
+        // Last scenario - complete session and go to results
+        const sessionResults = await completeSession();
+        if (sessionResults) {
+          navigation.navigate('ResultPage', {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts),
+            scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+          });
+        }
+      } else {
+        // Move to next scenario
+        moveToNextScenario();
+
+        // Navigate to next scenario screen
+        const nextScreen = `S${currentScenario + 1}P${sessionData?.phase_id}`;
+        navigation.navigate(nextScreen);
+      }
+
       setShowQuestion(false);
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
       }
       if (jeepneyAnimationRef.current) {
-          jeepneyAnimationRef.current.stop();
+        jeepneyAnimationRef.current.stop();
       }
     }
   };

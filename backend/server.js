@@ -667,6 +667,296 @@ app.get('/user-stats/:userId', async (req, res) => {
   }
 });
 
+// POST /sessions/start - Start a new session
+app.post('/sessions/start', async (req, res) => {
+  try {
+    const { user_id, category_id, phase_id } = req.body;
+
+    if (!user_id || !category_id || !phase_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: user_id, category_id, phase_id'
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('user_sessions')
+      .insert({
+        user_id,
+        category_id: parseInt(category_id),
+        phase_id: parseInt(phase_id),
+        status: 'in_progress'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Error creating session',
+        error: error.message
+      });
+    }
+
+    // Initialize scenario progress for all 10 scenarios
+    const scenarioProgressData = [];
+    for (let i = 1; i <= 10; i++) {
+      scenarioProgressData.push({
+        session_id: data.id,
+        scenario_id: i, // Assuming scenario IDs 1-10
+        scenario_number: i,
+        is_attempted: false,
+        is_correct: false
+      });
+    }
+
+    const { error: progressError } = await supabase
+      .from('scenario_progress')
+      .insert(scenarioProgressData);
+
+    if (progressError) {
+      console.warn('Error creating scenario progress records:', progressError);
+    }
+
+    res.json({
+      success: true,
+      data: data,
+      message: 'Session started successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in /sessions/start:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+// PUT /sessions/:sessionId/scenario/:scenarioNumber - Update specific scenario progress
+app.put('/sessions/:sessionId/scenario/:scenarioNumber', async (req, res) => {
+  try {
+    const { sessionId, scenarioNumber } = req.params;
+    const {
+      scenario_id,
+      selected_answer,
+      is_correct,
+      time_taken_seconds
+    } = req.body;
+
+    // Update scenario progress
+    const { data: progressData, error: progressError } = await supabase
+      .from('scenario_progress')
+      .update({
+        is_attempted: true,
+        is_correct,
+        selected_answer,
+        time_taken_seconds: parseInt(time_taken_seconds) || 0,
+        attempted_at: new Date().toISOString()
+      })
+      .eq('session_id', sessionId)
+      .eq('scenario_number', parseInt(scenarioNumber))
+      .select()
+      .single();
+
+    if (progressError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Error updating scenario progress',
+        error: progressError.message
+      });
+    }
+
+    // Also record in user_attempts for backward compatibility
+    const { data: userData } = await supabase
+      .from('user_sessions')
+      .select('user_id')
+      .eq('id', sessionId)
+      .single();
+
+    if (userData) {
+      await supabase
+        .from('user_attempts')
+        .insert({
+          user_id: userData.user_id,
+          scenario_id: parseInt(scenario_id),
+          chosen_option: selected_answer,
+          is_correct,
+          session_id: parseInt(sessionId),
+          scenario_number: parseInt(scenarioNumber),
+          time_taken_seconds: parseInt(time_taken_seconds) || 0
+        });
+    }
+
+    res.json({
+      success: true,
+      data: progressData,
+      message: 'Scenario progress updated successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in /sessions/:sessionId/scenario/:scenarioNumber:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+// GET /sessions/:sessionId/progress - Get detailed session progress
+app.get('/sessions/:sessionId/progress', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    // Get session data
+    const { data: session, error: sessionError } = await supabase
+      .from('user_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single();
+
+    if (sessionError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Error fetching session',
+        error: sessionError.message
+      });
+    }
+
+    // Get scenario progress
+    const { data: scenarios, error: scenariosError } = await supabase
+      .from('scenario_progress')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('scenario_number');
+
+    if (scenariosError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Error fetching scenario progress',
+        error: scenariosError.message
+      });
+    }
+
+    // Calculate summary statistics
+    const attemptedScenarios = scenarios.filter(s => s.is_attempted);
+    const correctScenarios = scenarios.filter(s => s.is_correct);
+    const totalTime = scenarios.reduce((sum, s) => sum + (s.time_taken_seconds || 0), 0);
+
+    const summary = {
+      total_scenarios: scenarios.length,
+      attempted_scenarios: attemptedScenarios.length,
+      correct_scenarios: correctScenarios.length,
+      accuracy: attemptedScenarios.length > 0
+        ? Math.round((correctScenarios.length / attemptedScenarios.length) * 100)
+        : 0,
+      total_time_seconds: totalTime,
+      current_scenario: attemptedScenarios.length + 1
+    };
+
+    res.json({
+      success: true,
+      data: {
+        session,
+        scenarios,
+        summary
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in /sessions/:sessionId/progress:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+// PUT /sessions/:sessionId/complete - Mark session as complete
+app.put('/sessions/:sessionId/complete', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { total_time_seconds, total_score } = req.body;
+
+    const { data, error } = await supabase
+      .from('user_sessions')
+      .update({
+        session_completed_at: new Date().toISOString(),
+        total_time_seconds: parseInt(total_time_seconds) || 0,
+        total_score: parseInt(total_score) || 0,
+        status: 'completed'
+      })
+      .eq('id', sessionId)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Error completing session',
+        error: error.message
+      });
+    }
+
+    res.json({
+      success: true,
+      data: data,
+      message: 'Session completed successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in /sessions/:sessionId/complete:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+// GET /users/:userId/recent-sessions - Get user's recent sessions
+app.get('/users/:userId/recent-sessions', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const { data, error } = await supabase
+      .from('user_sessions')
+      .select(`
+        *,
+        categories(name),
+        phases(name)
+      `)
+      .eq('user_id', userId)
+      .order('session_started_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Error fetching user sessions',
+        error: error.message
+      });
+    }
+
+    res.json({
+      success: true,
+      data: data
+    });
+
+  } catch (error) {
+    console.error('Error in /users/:userId/recent-sessions:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
 // ===========================
 // SERVER STARTUP
 // ===========================
