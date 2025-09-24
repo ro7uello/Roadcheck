@@ -313,31 +313,36 @@ export default function DrivingGame() {
 
   // Updated handleFeedback function from S2P1
   const handleFeedback = (answerGiven) => {
-    const currentQuestion = questions[questionIndex];
-    if (answerGiven === currentQuestion.correct) {
-      setIsCorrectAnswer(true); // Set to true for correct feedback
-      setAnimationType("correct");
-      Animated.timing(correctAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }).start(() => {
-        correctAnim.setValue(0);
-        setShowNext(true);
-      });
-    } else {
-      setIsCorrectAnswer(false); // Set to false for wrong feedback
-      setAnimationType("wrong");
-      Animated.timing(wrongAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }).start(() => {
-        wrongAnim.setValue(0);
-        setShowNext(true);
-      });
-    }
-  };
+      const currentQuestion = questions[questionIndex];
+      const isCorrect = answerGiven === currentQuestion.correct;
+      
+      // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
+      updateProgress(answerGiven, isCorrect); // scenario_id = 3 for S3P1
+      
+      if (isCorrect) {
+        setIsCorrectAnswer(true); // Set to true for correct feedback
+        setAnimationType("correct");
+        Animated.timing(correctAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }).start(() => {
+          correctAnim.setValue(0);
+          setShowNext(true);
+        });
+      } else {
+        setIsCorrectAnswer(false); // Set to false for wrong feedback
+        setAnimationType("wrong");
+        Animated.timing(wrongAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }).start(() => {
+          wrongAnim.setValue(0);
+          setShowNext(true);
+        });
+      }
+    };
 
   // NEW ANIMATION: Player stays in lane, jeepney remains in front
   const animateStayInLane = async () => {
@@ -536,7 +541,7 @@ export default function DrivingGame() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
@@ -554,7 +559,24 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S5P1');
+      if (currentScenario >= 10) {
+      // Last scenario - complete session and go to results
+      const sessionResults = await completeSession();
+      if (sessionResults) {
+        navigation.navigate('ResultPage', {
+          ...sessionResults,
+          userAttempts: JSON.stringify(sessionResults.attempts),
+          scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+        });
+      }
+    } else {
+      // Move to next scenario
+      moveToNextScenario();
+      
+      // Navigate to next scenario screen
+      const nextScreen = `S${currentScenario + 1}P${sessionData?.phase_id}`;
+      navigation.navigate(nextScreen);
+    }
       setShowQuestion(false);
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
