@@ -11,6 +11,8 @@ import {
 } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import { useSession } from '../../../SessionManager';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '@env';
 
 const { width, height } = Dimensions.get("window");
 
@@ -165,46 +167,67 @@ export default function DrivingGame() {
 
   // Database integration: Fetch scenario data
   useEffect(() => {
-    const fetchScenarioData = async () => {
-      try {
-        console.log('Fetching scenario data for S5P1...');
-        setLoading(true);
-        
-        // Replace with your actual backend URL
-        const response = await fetch('http://localhost:3001/scenarios/5');
-        console.log('Response status:', response.status);
-        
-        const data = await response.json();
-        console.log('Full response data:', JSON.stringify(data, null, 2));
-        
-        if (data.success) {
-          // Transform database response to match frontend format
-          const transformedQuestions = [{
-            question: data.data.question,
-            options: data.data.options,
-            correct: data.data.correct_answer,
-            wrongExplanation: data.data.wrong_explanations || {}
-          }];
-          
-          console.log('Setting questions from database:', transformedQuestions);
-          setQuestions(transformedQuestions);
-        } else {
-          console.log('Database response not successful, using fallback questions');
-          setQuestions(fallbackQuestions);
-        }
-      } catch (error) {
-        console.error('Error fetching scenario data:', error);
-        console.log('Using fallback questions due to error');
-        setQuestions(fallbackQuestions);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-        console.log('Setting loading to false');
-      }
-    };
+      const fetchScenarioData = async () => {
+        try {
+          console.log('S5P1: Fetching scenario data...');
+          console.log('S5P1: API_URL value:', API_URL);
 
-    fetchScenarioData();
-  }, []);
+          const token = await AsyncStorage.getItem('access_token');
+          console.log('S5P1: Token retrieved:', token ? 'Yes' : 'No');
+
+          const url = `${API_URL}/scenarios/5`;
+          console.log('S5P1: Fetching from URL:', url);
+
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          console.log('S5P1: Response status:', response.status);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          console.log('S5P1: Data received:', data);
+
+          if (data && data.scenario) {
+            // Transform database response to match your frontend format
+            const transformedQuestion = {
+              question: data.scenario.question_text,
+              options: data.choices.map(choice => choice.choice_text),
+              correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
+              wrongExplanation: {}
+            };
+
+            // Build wrong explanations
+            data.choices.forEach(choice => {
+              if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
+                transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
+              }
+            });
+
+            setQuestions([transformedQuestion]);
+            console.log('S5P1: ✅ Database questions loaded successfully');
+          } else {
+            console.log('S5P1: ⚠️ Invalid data structure, using fallback');
+            setQuestions(fallbackQuestions);
+          }
+        } catch (error) {
+          console.log('S5P1: ❌ Database error, using fallback questions:', error.message);
+          setQuestions(fallbackQuestions);
+          setError(error.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchScenarioData();
+    }, []);
 
   // Function to update user progress
   const updateProgress = async (selectedOption, isCorrect) => {
@@ -547,11 +570,12 @@ export default function DrivingGame() {
     handleFeedback(option);
   };
 
+  // Update handleNext in ALL scenario files
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setIsCorrectAnswer(null); // Reset feedback state from S2P1
+    setIsCorrectAnswer(null);
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
 
@@ -565,32 +589,51 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      if (currentScenario >= 10) {
-      // Last scenario - complete session and go to results
-      const sessionResults = await completeSession();
-      if (sessionResults) {
-        navigation.navigate('ResultPage', {
-          ...sessionResults,
-          userAttempts: JSON.stringify(sessionResults.attempts),
-          scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
-        });
+      // FIXED: Use the next scenario number based on current file, not session context
+
+      // Get current scenario number from file name (S1P1 = 1, S2P1 = 2, etc.)
+      const currentFileScenario = getCurrentScenarioNumber(); // Helper function
+
+      if (currentFileScenario >= 10) {
+        // Last scenario - complete session and go to results
+        const sessionResults = await completeSession();
+        if (sessionResults) {
+          navigation.navigate('ResultPage', {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts),
+            scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+          });
+        }
+      } else {
+        // Move to next scenario
+        moveToNextScenario();
+
+        // Navigate to next scenario using file-based numbering
+        const nextScenarioNumber = currentFileScenario + 1;
+        const phaseId = sessionData?.phase_id || 1;
+        const nextScreen = `S${nextScenarioNumber}P${phaseId}`;
+
+        navigation.navigate(nextScreen);
       }
-    } else {
-      // Move to next scenario
-      moveToNextScenario();
-      
-      // Navigate to next scenario screen
-      const nextScreen = `S${currentScenario + 1}P${sessionData?.phase_id}`;
-      navigation.navigate(nextScreen);
-    }
+
       setShowQuestion(false);
-      if (scrollAnimationRef.current) {
-        scrollAnimationRef.current.stop();
-      }
-      if (jeepneyAnimationRef.current) {
-          jeepneyAnimationRef.current.stop();
-      }
+      // ... cleanup code
     }
+  };
+
+  // Add this helper function to each scenario file
+  const getCurrentScenarioNumber = () => {
+    // Return the scenario number based on the current file
+    // For S1P1, return 1
+    // For S2P1, return 2
+    // For S3P1, return 3
+    // etc.
+
+    // You can hardcode this in each file:
+    return 5; // For S2P1.jsx
+    // return 3; // For S3P1.jsx
+    // return 4; // For S4P1.jsx
+    // etc.
   };
 
   // Determine the feedback message based on whether the answer was correct or wrong (from S2P1)

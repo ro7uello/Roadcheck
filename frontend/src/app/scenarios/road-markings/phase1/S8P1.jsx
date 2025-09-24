@@ -726,6 +726,7 @@ export default function DrivingGame() {
     }
   };
 
+  // Update handleNext in ALL scenario files
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
@@ -733,54 +734,62 @@ export default function DrivingGame() {
     setIsCorrectAnswer(null);
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
-    // NEW: Reset NPC car frames
-    setNpcCar1Frame(0);
-    setNpcCar2Frame(0);
-    setNpcCar3Frame(0);
-    setNpcCar4Frame(0);
 
     const centerX = width / 2 - playerCarWidth / 2;
     playerCarXAnim.setValue(centerX);
     setPlayerCarDirection("NORTH");
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
-    // NEW: Set NPC cars visible
-    setIsNpcCar1Visible(true);
-    setIsNpcCar2Visible(true);
-    setIsNpcCar3Visible(true);
-    setIsNpcCar4Visible(true);
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
-      startScrollAnimation(); // Restart full animation cycle for next question
+      startScrollAnimation();
     } else {
-      if (currentScenario >= 10) {
-      // Last scenario - complete session and go to results
-      const sessionResults = await completeSession();
-      if (sessionResults) {
-        navigation.navigate('ResultPage', {
-          ...sessionResults,
-          userAttempts: JSON.stringify(sessionResults.attempts),
-          scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
-        });
+      // FIXED: Use the next scenario number based on current file, not session context
+
+      // Get current scenario number from file name (S1P1 = 1, S2P1 = 2, etc.)
+      const currentFileScenario = getCurrentScenarioNumber(); // Helper function
+
+      if (currentFileScenario >= 10) {
+        // Last scenario - complete session and go to results
+        const sessionResults = await completeSession();
+        if (sessionResults) {
+          navigation.navigate('ResultPage', {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts),
+            scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+          });
+        }
+      } else {
+        // Move to next scenario
+        moveToNextScenario();
+
+        // Navigate to next scenario using file-based numbering
+        const nextScenarioNumber = currentFileScenario + 1;
+        const phaseId = sessionData?.phase_id || 1;
+        const nextScreen = `S${nextScenarioNumber}P${phaseId}`;
+
+        navigation.navigate(nextScreen);
       }
-    } else {
-      // Move to next scenario
-      moveToNextScenario();
-      
-      // Navigate to next scenario screen
-      const nextScreen = `S${currentScenario + 1}P${sessionData?.phase_id}`;
-      navigation.navigate(nextScreen);
-    }
+
       setShowQuestion(false);
-      // Ensure all animations are stopped when navigating away
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-      if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
-      if (npcCar1AnimationRef.current) npcCar1AnimationRef.current.stop();
-      if (npcCar2AnimationRef.current) npcCar2AnimationRef.current.stop();
-      if (npcCar3AnimationRef.current) npcCar3AnimationRef.current.stop();
-      if (npcCar4AnimationRef.current) npcCar4AnimationRef.current.stop();
+      // ... cleanup code
     }
+  };
+
+  // Add this helper function to each scenario file
+  const getCurrentScenarioNumber = () => {
+    // Return the scenario number based on the current file
+    // For S1P1, return 1
+    // For S2P1, return 2
+    // For S3P1, return 3
+    // etc.
+
+    // You can hardcode this in each file:
+    return 8; // For S2P1.jsx
+    // return 3; // For S3P1.jsx
+    // return 4; // For S4P1.jsx
+    // etc.
   };
 
   // ✅ DATABASE INTEGRATION - Show loading screen while fetching data

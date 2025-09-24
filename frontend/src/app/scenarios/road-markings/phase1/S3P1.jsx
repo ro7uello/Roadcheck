@@ -1,3 +1,4 @@
+// S3P1.jsx
 import React, { useRef, useEffect, useState } from "react";
 import {
   View,
@@ -425,44 +426,69 @@ export default function DrivingGame() {
     }
   };
 
+  // Update handleNext in ALL scenario files
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setIsCorrectAnswer(null); // Reset feedback state from S2P1
-    setCarFrame(0);
+    setIsCorrectAnswer(null);
+    setPlayerCarFrame(0);
+    setJeepneyFrame(0);
 
-    const centerX = width / 2 - carWidth / 2;
-    carXAnim.setValue(centerX);
-    setCarDirection("NORTH");
-    setIsCarVisible(true);
-    setIsJeepneyVisible(false); // Hide jeepney for next question
-    jeepneyYAnim.setValue(height * 1.5); // Reset jeepney position off-screen bottom
+    const centerX = width / 2 - playerCarWidth / 2;
+    playerCarXAnim.setValue(centerX);
+    setPlayerCarDirection("NORTH");
+    setIsPlayerCarVisible(true);
+    setIsJeepneyVisible(true);
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-       if (currentScenario >= 10) {
-      // Last scenario - complete session and go to results
-      const sessionResults = await completeSession();
-      if (sessionResults) {
-        navigation.navigate('ResultPage', {
-          ...sessionResults,
-          userAttempts: JSON.stringify(sessionResults.attempts),
-          scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
-        });
+      // FIXED: Use the next scenario number based on current file, not session context
+
+      // Get current scenario number from file name (S1P1 = 1, S2P1 = 2, etc.)
+      const currentFileScenario = getCurrentScenarioNumber(); // Helper function
+
+      if (currentFileScenario >= 10) {
+        // Last scenario - complete session and go to results
+        const sessionResults = await completeSession();
+        if (sessionResults) {
+          navigation.navigate('ResultPage', {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts),
+            scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+          });
+        }
+      } else {
+        // Move to next scenario
+        moveToNextScenario();
+
+        // Navigate to next scenario using file-based numbering
+        const nextScenarioNumber = currentFileScenario + 1;
+        const phaseId = sessionData?.phase_id || 1;
+        const nextScreen = `S${nextScenarioNumber}P${phaseId}`;
+
+        navigation.navigate(nextScreen);
       }
-    } else {
-      // Move to next scenario
-      moveToNextScenario();
-      
-      // Navigate to next scenario screen
-      const nextScreen = `S${currentScenario + 1}P${sessionData?.phase_id}`;
-      navigation.navigate(nextScreen);
-    }
+
       setShowQuestion(false);
+      // ... cleanup code
     }
+  };
+
+  // Add this helper function to each scenario file
+  const getCurrentScenarioNumber = () => {
+    // Return the scenario number based on the current file
+    // For S1P1, return 1
+    // For S2P1, return 2
+    // For S3P1, return 3
+    // etc.
+
+    // You can hardcode this in each file:
+    return 3; // For S3P1.jsx
+    // return 4; // For S4P1.jsx
+    // etc.
   };
 
   // ✅ DATABASE INTEGRATION - Show loading screen while fetching data
