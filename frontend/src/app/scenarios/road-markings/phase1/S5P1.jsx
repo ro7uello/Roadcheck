@@ -652,8 +652,6 @@ export default function DrivingGame() {
     );
   }
 
-  console.log('Rendering main game. Loading:', loading, 'Questions length:', questions.length);
-
   return (
     <View style={{ flex: 1, backgroundColor: "black", overflow: 'hidden' }}>
       {/* Map - Looping background */}

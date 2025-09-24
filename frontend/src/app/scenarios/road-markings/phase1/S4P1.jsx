@@ -270,6 +270,7 @@ export default function DrivingGame() {
   const jeepneyAnimationRef = useRef(null); // Ref to hold the jeepney's entry animation
 
   function startScrollAnimation() {
+      console.log('🎬 Starting scroll animation');
     scrollY.setValue(0);
     jeepneyYAnim.setValue(-jeepHeight); // Reset jeepney to off-screen top
 
@@ -283,7 +284,7 @@ export default function DrivingGame() {
     scrollAnimationRef.current = Animated.loop(
       Animated.timing(scrollY, {
         toValue: -mapHeight,
-        duration: mapHeight * 10, // Significantly reduced duration for faster scroll
+        duration: mapHeight * 10,
         easing: Easing.linear,
         useNativeDriver: true,
       })
@@ -300,19 +301,23 @@ export default function DrivingGame() {
     });
 
     jeepneyAnimationRef.current.start(() => {
+        console.log('🚛 Jeepney animation completed');
       // After jeepney is in position, set a timeout to stop scrolling and show question
       setTimeout(() => {
+          console.log('⏰ Timeout triggered - stopping animations');
         if (scrollAnimationRef.current) {
           scrollAnimationRef.current.stop(); // Stop the continuous scroll
+          console.log('🛑 Scroll animation stopped');
         }
         // Freeze car and jeepney sprite animations
         setIsPlayerCarVisible(true);
         setIsJeepneyVisible(true);
         setPlayerCarFrame(0);
         setJeepneyFrame(0);
-
+        console.log('❓ Showing question');
         setShowQuestion(true);
         setTimeout(() => {
+            console.log('📝 Showing answers');
           setShowAnswers(true);
         }, 1000);
       }, 2000); // Time to drive before the question appears after jeepney is in view
@@ -338,10 +343,10 @@ export default function DrivingGame() {
   const handleFeedback = (answerGiven) => {
       const currentQuestion = questions[questionIndex];
       const isCorrect = answerGiven === currentQuestion.correct;
-      
+
       // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
       updateProgress(answerGiven, isCorrect); // scenario_id = 3 for S3P1
-      
+
       if (isCorrect) {
         setIsCorrectAnswer(true); // Set to true for correct feedback
         setAnimationType("correct");
@@ -643,8 +648,6 @@ export default function DrivingGame() {
       </View>
     );
   }
-
-  console.log('Rendering main game. Loading:', loading, 'Questions length:', questions.length);
 
   return (
     <View style={{ flex: 1, backgroundColor: "black", overflow: 'hidden' }}>

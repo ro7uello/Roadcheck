@@ -432,23 +432,21 @@ export default function DrivingGame() {
     setShowNext(false);
     setSelectedAnswer(null);
     setIsCorrectAnswer(null);
-    setPlayerCarFrame(0);
-    setJeepneyFrame(0);
+    setCarFrame(0); // S3P1 uses carFrame, not playerCarFrame
 
-    const centerX = width / 2 - playerCarWidth / 2;
-    playerCarXAnim.setValue(centerX);
-    setPlayerCarDirection("NORTH");
-    setIsPlayerCarVisible(true);
-    setIsJeepneyVisible(true);
+    const centerX = width / 2 - carWidth / 2; // S3P1 uses carWidth, not playerCarWidth
+    carXAnim.setValue(centerX); // S3P1 uses carXAnim, not playerCarXAnim
+    setCarDirection("NORTH"); // S3P1 uses carDirection, not playerCarDirection
+    setIsCarVisible(true); // S3P1 uses isCarVisible, not isPlayerCarVisible
+    setIsJeepneyVisible(false); // Hide jeepney for next question
+    jeepneyYAnim.setValue(height * 1.5); // Reset jeepney position off-screen bottom
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      // FIXED: Use the next scenario number based on current file, not session context
-
-      // Get current scenario number from file name (S1P1 = 1, S2P1 = 2, etc.)
-      const currentFileScenario = getCurrentScenarioNumber(); // Helper function
+      // Get current scenario number from file name (S3P1 = 3)
+      const currentFileScenario = 3;
 
       if (currentFileScenario >= 10) {
         // Last scenario - complete session and go to results
@@ -465,15 +463,15 @@ export default function DrivingGame() {
         moveToNextScenario();
 
         // Navigate to next scenario using file-based numbering
-        const nextScenarioNumber = currentFileScenario + 1;
+        const nextScenarioNumber = currentFileScenario + 1; // Will be 4
         const phaseId = sessionData?.phase_id || 1;
-        const nextScreen = `S${nextScenarioNumber}P${phaseId}`;
+        const nextScreen = `S${nextScenarioNumber}P${phaseId}`; // Will be "S4P1"
 
+        console.log('S3P1 navigating to:', nextScreen);
         navigation.navigate(nextScreen);
       }
 
       setShowQuestion(false);
-      // ... cleanup code
     }
   };
 
