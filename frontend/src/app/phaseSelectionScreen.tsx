@@ -370,7 +370,6 @@ export default function PhaseSelectionScreen() {
       {/* Title */}
       <View style={styles.titleContainer}>
         <Text style={styles.title}>{categoryName?.toUpperCase()}</Text>
-        <Text style={styles.subtitle}>SELECT PHASE</Text>
       </View>
 
       {/* Phase Options */}
@@ -441,20 +440,23 @@ const styles = StyleSheet.create({
   backgroundImage: { flex: 1, width: '100%', height: '100%' },
   backgroundImageStyle: { width: '100%', height: '100%', transform: [{ scale: 1.3 }] },
   skyOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0)', zIndex: 0 },
-  carContainer: { position: 'absolute', bottom: height * 0.05, left: width * 0.05, zIndex: 2 },
-  carImage: { width: 200, height: 200, bottom: -50 },
+  carContainer: { position: 'absolute', bottom: -25, left: width * 0.05, zIndex: 2 },
+  carImage: { width: 400, height: 210},
 
   // Back button
   backButton: {
     position: 'absolute',
-    top: height * 0.05,
-    left: width * 0.05,
-    zIndex: 3,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 25,
-    padding: 10,
+    top: 40,
+    left: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 5,
   },
-  backButtonImage: { width: 30, height: 30 },
+  backButtonImage: { width: 100, height: 30, resizeMode: 'contain', marginBottom:5 },
 
   // Title
   titleContainer: { marginTop: height * 0.08, alignItems: 'center' },
@@ -467,51 +469,45 @@ const styles = StyleSheet.create({
     textShadowRadius: 6,
     letterSpacing: 3,
   },
-  subtitle: {
-    fontSize: 24,
-    fontFamily: 'pixel',
-    color: 'white',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-    letterSpacing: 2,
-    marginTop: 10,
-  },
 
   // Selection
   selectionContainer: {
     position: 'absolute',
-    top: height * 0.3,
+    top: height * 0.25,
     left: 0,
     right: 0,
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingHorizontal: 20,
+    zIndex: 3,
   },
   optionContainer: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     borderRadius: 12,
     padding: 15,
     borderWidth: 3,
     borderColor: '#666',
-    width: 180,
-    height: 180,
+    width: 200,
+    height: 200,
     justifyContent: 'center',
-    margin: 10,
+    position: 'relative',
   },
-  optionImage: { width: 120, height: 120 },
   optionLabel: {
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: 'normal',
     color: 'white',
     fontFamily: 'pixel',
     textAlign: 'center',
     textShadowColor: '#000',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
-    marginTop: 5,
+    bottom: -5,
+  },
+  optionImage: {
+    width: 150,
+    height: 150,
   },
 
   // Loading state

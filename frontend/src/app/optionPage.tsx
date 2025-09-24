@@ -344,9 +344,13 @@ const testBasicConnection = async () => {
         />
       </Animated.View>
 
-      <TouchableOpacity style={styles.backButton} onPress={goBack}>
-        <Text style={styles.backButtonText}>←</Text>
-      </TouchableOpacity>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
+              <Image
+                source={require('../../assets/icon/backButton.png')}
+                style={styles.backButtonImage}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
 
       <View style={styles.topRightIcons}>
         <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
@@ -525,7 +529,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     top: 40,
-    left: 20,
+    left: 40,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     width: 40,
     height: 40,

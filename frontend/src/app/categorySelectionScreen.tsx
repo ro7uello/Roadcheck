@@ -314,9 +314,13 @@ useEffect(() => {
       </Animated.View>
 
       {/* Back Button */}
-      <TouchableOpacity style={styles.backButton} onPress={goBack}>
-        <Text style={styles.backButtonText}>←</Text>
-      </TouchableOpacity>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
+              <Image
+                source={require('../../assets/icon/backButton.png')}
+                style={styles.backButtonImage}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
 
       {/* Top Right Icons */}
       <View style={styles.topRightIcons}>
@@ -545,7 +549,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     top: 40,
-    left: 20,
+    left: 40,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     width: 40,
     height: 40,
@@ -553,11 +557,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 5,
-  },
-  backButtonText: {
-    fontSize: 24,
-    color: 'white',
-    fontWeight: 'bold',
   },
   topRightIcons: {
     position: 'absolute',
@@ -596,15 +595,6 @@ const styles = StyleSheet.create({
     textShadowRadius: 6,
     letterSpacing: 4,
   },
-  subtitle: {
-    fontSize: 16,
-    color: 'white',
-    fontFamily: 'pixel',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-    marginTop: 5,
-  },
   selectionContainer: {
     position: 'absolute',
     top: height * 0.25,
@@ -640,7 +630,7 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     color: 'white',
     fontFamily: 'pixel',
     textAlign: 'center',
