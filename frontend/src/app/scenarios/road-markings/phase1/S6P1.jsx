@@ -505,7 +505,7 @@ export default function DrivingGame() {
     handleFeedback(option);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
@@ -523,7 +523,24 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S7P1');
+      if (currentScenario >= 10) {
+      // Last scenario - complete session and go to results
+      const sessionResults = await completeSession();
+      if (sessionResults) {
+        navigation.navigate('ResultPage', {
+          ...sessionResults,
+          userAttempts: JSON.stringify(sessionResults.attempts),
+          scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+        });
+      }
+    } else {
+      // Move to next scenario
+      moveToNextScenario();
+      
+      // Navigate to next scenario screen
+      const nextScreen = `S${currentScenario + 1}P${sessionData?.phase_id}`;
+      navigation.navigate(nextScreen);
+    }
       setShowQuestion(false);
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
