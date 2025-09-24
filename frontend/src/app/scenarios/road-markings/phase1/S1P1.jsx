@@ -498,7 +498,7 @@ const animateOvertake = async (targetX) => {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S2P1');
+      navigation.navigate('S8P1');
       setShowQuestion(false);
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();

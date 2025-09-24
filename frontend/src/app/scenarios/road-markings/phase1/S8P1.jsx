@@ -95,28 +95,32 @@ const jeepneySprites = {
   ],
 };
 
-const npcCar1 = { // Brown Sport Car (Northbound, Leftmost Lane)
-    NORTH: [
-        require("../../../../../assets/car/SPORT TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_SPORT_CLEAN_NORTH_000.png"),
-        require("../../../../../assets/car/SPORT TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_SPORT_CLEAN_NORTH_001.png"),
+// FIXED: Brown Sport Car (Southbound, Leftmost Lane - Lane 0)
+const npcCar1 = {
+    SOUTH: [
+        require("../../../../../assets/car/SPORT TOPDOWN/Brown/MOVE/SOUTH/SEPARATED/Brown_SPORT_CLEAN_SOUTH_000.png"),
+        require("../../../../../assets/car/SPORT TOPDOWN/Brown/MOVE/SOUTH/SEPARATED/Brown_SPORT_CLEAN_SOUTH_001.png"),
     ],
 };
-const npcCar2 = { // Red SUV (Northbound, Lane 3)
+
+// FIXED: Red SUV (Northbound, Lane 3)
+const npcCar2 = {
     NORTH: [
         require("../../../../../assets/car/SUV TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_SUV_CLEAN_NORTH_000.png"),
         require("../../../../../assets/car/SUV TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_SUV_CLEAN_NORTH_001.png"),
     ],
 };
+
 const npcCar3 = { // Green Sport Car (Southbound, Rightmost Lane)
     SOUTH: [
-        require("../../../../../assets/car/SPORT TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_SPORT_CLEAN_SOUTH_000.png"),
-        require("../../../../../assets/car/SPORT TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_SPORT_CLEAN_SOUTH_001.png"),
+        require("../../../../../assets/car/SPORT TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_SPORT_CLEAN_NORTH_000.png"),
+        require("../../../../../assets/car/SPORT TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_SPORT_CLEAN_NORTH_001.png"),
     ],
 };
-const npcCar4 = { // Magenta SUV (Southbound, Lane 4)
-    SOUTH: [
-        require("../../../../../assets/car/SUV TOPDOWN/Magenta/MOVE/SOUTH/SEPARATED/Magenta_SUV_CLEAN_SOUTH_000.png"),
-        require("../../../../../assets/car/SUV TOPDOWN/Magenta/MOVE/SOUTH/SEPARATED/Magenta_SUV_CLEAN_SOUTH_001.png"),
+const npcCar4 = { // Magenta SUV (Northbound, Lane 1)
+    NORTH: [
+        require("../../../../../assets/car/SUV TOPDOWN/Magenta/MOVE/NORTH/SEPARATED/Magenta_SUV_CLEAN_NORTH_000.png"),
+        require("../../../../../assets/car/SUV TOPDOWN/Magenta/MOVE/NORTH/SEPARATED/Magenta_SUV_CLEAN_NORTH_001.png"),
     ],
 };
 
@@ -184,18 +188,20 @@ export default function DrivingGame() {
   const jeepneyInitialX = 2 * tileSize + (tileSize / 2 - jeepWidth / 2);
   const jeepneyYAnim = useRef(new Animated.Value(-jeepHeight)).current;
 
-  // NEW: NPC Car initial X positions (center of their respective lanes)
-  const npcCar1InitialX = 0 * tileSize + (tileSize / 2 - npcCarWidth / 2); // Lane 0
-  const npcCar2InitialX = 3 * tileSize + (tileSize / 2 - npcCarWidth / 2); // Lane 3
+  // FIXED: NPC Car initial X positions (center of their respective lanes)
+  const npcCar1InitialX = 0 * tileSize + (tileSize / 2 - npcCarWidth / 2); // Lane 0 - Brown car (SOUTHBOUND)
+  const npcCar2InitialX = 3 * tileSize + (tileSize / 2 - npcCarWidth / 2); // Lane 3 - Red car (NORTHBOUND)
   const npcCar3InitialX = 4 * tileSize + (tileSize / 2 - npcCarWidth / 2); // Lane 4
   const npcCar4InitialX = 1 * tileSize + (tileSize / 2 - npcCarWidth / 2); // Lane 1
 
-  // NEW: NPC Car Y position animations (relative to scrollY)
-  // They should also scroll with the background, but might have different offsets or speeds
-  const npcCar1YAnim = useRef(new Animated.Value(-npcCarHeight * 2)).current; // Start further off-screen
-  const npcCar2YAnim = useRef(new Animated.Value(-npcCarHeight * 4)).current; // Start even further off-screen
+  // FIXED: NPC Car Y position animations
+  // Brown car (npcCar1) - SOUTHBOUND, starts from top
+  const npcCar1YAnim = useRef(new Animated.Value(-npcCarHeight * 2)).current;
+  // Red car (npcCar2) - NORTHBOUND, starts from bottom
+  const npcCar2YAnim = useRef(new Animated.Value(mapHeight + npcCarHeight * 2)).current;
   const npcCar3YAnim = useRef(new Animated.Value(mapHeight + npcCarHeight)).current; // Start off-screen bottom for southbound
-  const npcCar4YAnim = useRef(new Animated.Value(mapHeight + npcCarHeight * 3)).current; // Start even further off-screen bottom for southbound
+  // FIXED: Magenta car (npcCar4) - NORTHBOUND, starts from bottom
+  const npcCar4YAnim = useRef(new Animated.Value(mapHeight + npcCarHeight * 3)).current;
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
@@ -206,13 +212,13 @@ export default function DrivingGame() {
       try {
         console.log('S8P1: Fetching scenario data...');
         console.log('S8P1: API_URL value:', API_URL);
-        
+
         const token = await AsyncStorage.getItem('access_token');
         console.log('S8P1: Token retrieved:', token ? 'Yes' : 'No');
-        
+
         const url = `${API_URL}/scenarios/8`;
         console.log('S8P1: Fetching from URL:', url);
-        
+
         const response = await fetch(url, {
           method: 'GET',
           headers: {
@@ -220,16 +226,16 @@ export default function DrivingGame() {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         console.log('S8P1: Response status:', response.status);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
         console.log('S8P1: Data received:', data);
-        
+
         if (data && data.scenario) {
           // Transform database response to match your frontend format
           const transformedQuestion = {
@@ -238,14 +244,14 @@ export default function DrivingGame() {
             correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
             wrongExplanation: {}
           };
-          
+
           // Build wrong explanations
           data.choices.forEach(choice => {
             if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
               transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
             }
           });
-          
+
           setQuestions([transformedQuestion]);
           console.log('S8P1: ✅ Database questions loaded successfully');
         } else {
@@ -269,7 +275,7 @@ export default function DrivingGame() {
     try {
       const token = await AsyncStorage.getItem('access_token');
       const userId = await AsyncStorage.getItem('user_id');
-      
+
       if (!token || !userId) {
         console.log('S8P1: No token or user_id found for progress update');
         return;
@@ -355,10 +361,11 @@ export default function DrivingGame() {
   function startScrollAnimation() {
     scrollY.setValue(0);
     jeepneyYAnim.setValue(-jeepHeight);
-    // NEW: Reset NPC car positions
-    npcCar1YAnim.setValue(-npcCarHeight * 2);
-    npcCar2YAnim.setValue(-npcCarHeight * 4);
+    // FIXED: Reset NPC car positions based on their directions
+    npcCar1YAnim.setValue(-npcCarHeight * 2); // Brown car - southbound, starts from top
+    npcCar2YAnim.setValue(mapHeight + npcCarHeight * 2); // Red car - northbound, starts from bottom
     npcCar3YAnim.setValue(mapHeight + npcCarHeight);
+    // FIXED: Magenta car - northbound, starts from bottom
     npcCar4YAnim.setValue(mapHeight + npcCarHeight * 3);
 
     playerCarXAnim.setValue(width / 2 - playerCarWidth / 2);
@@ -410,22 +417,22 @@ export default function DrivingGame() {
       }, 2000);
     });
 
-    // NEW: NPC Car 1 animation (northbound, moves with scroll)
+    // FIXED: NPC Car 1 animation (Brown car - SOUTHBOUND)
     npcCar1AnimationRef.current = Animated.loop(
         Animated.timing(npcCar1YAnim, {
-            toValue: mapHeight + npcCarHeight, // Move off-screen bottom
-            duration: mapHeight * 15, // Slower than main scroll, so it appears to be moving against it
+            toValue: mapHeight + npcCarHeight, // Move off-screen bottom (southbound)
+            duration: mapHeight * 15,
             easing: Easing.linear,
             useNativeDriver: true,
         })
     );
     npcCar1AnimationRef.current.start();
 
-    // NEW: NPC Car 2 animation (northbound, moves with scroll)
+    // FIXED: NPC Car 2 animation (Red car - NORTHBOUND)
     npcCar2AnimationRef.current = Animated.loop(
         Animated.timing(npcCar2YAnim, {
-            toValue: mapHeight + npcCarHeight,
-            duration: mapHeight * 12, // Faster than npcCar1
+            toValue: -npcCarHeight, // Move off-screen top (northbound)
+            duration: mapHeight * 12,
             easing: Easing.linear,
             useNativeDriver: true,
         })
@@ -443,11 +450,11 @@ export default function DrivingGame() {
     );
     npcCar3AnimationRef.current.start();
 
-    // NEW: NPC Car 4 animation (southbound, moves against scroll)
+    // NEW: NPC Car 4 animation (NORTHBOUND, moves from bottom to top)
     npcCar4AnimationRef.current = Animated.loop(
         Animated.timing(npcCar4YAnim, {
-            toValue: -npcCarHeight,
-            duration: mapHeight * 12,
+            toValue: -npcCarHeight, // Move off-screen top (northbound)
+            duration: mapHeight * 4,
             easing: Easing.linear,
             useNativeDriver: true,
         })
@@ -474,10 +481,10 @@ export default function DrivingGame() {
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
     const isCorrect = answerGiven === currentQuestion.correct;
-    
+
     // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
     updateProgress(8, answerGiven, isCorrect); // scenario_id = 8 for S8P1
-    
+
     if (isCorrect) {
       setIsCorrectAnswer(true);
       setAnimationType("correct");
@@ -503,13 +510,13 @@ export default function DrivingGame() {
     }
   };
 
-  const animateStayInLane = async () => {
-    // Keep scroll animation running
+  const animateFollowTraffic = async () => {
+    // Keep scroll animation running but slower to show following behavior
     if (scrollAnimationRef.current) scrollAnimationRef.current.start();
     if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop(); // Jeepney stays put for feedback
-    // NEW: Keep NPC car animations running
+
+    // Keep NPC car animations running but modify the red car to be the one we follow
     if (npcCar1AnimationRef.current) npcCar1AnimationRef.current.start();
-    if (npcCar2AnimationRef.current) npcCar2AnimationRef.current.start();
     if (npcCar3AnimationRef.current) npcCar3AnimationRef.current.start();
     if (npcCar4AnimationRef.current) npcCar4AnimationRef.current.start();
 
@@ -518,14 +525,54 @@ export default function DrivingGame() {
     setJeepneyFrame(0);
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
-    // NEW: Ensure NPC cars are visible and their frames are reset
+    // Ensure NPC cars are visible and their frames are reset
     setIsNpcCar1Visible(true); setNpcCar1Frame(0);
     setIsNpcCar2Visible(true); setNpcCar2Frame(0);
     setIsNpcCar3Visible(true); setNpcCar3Frame(0);
     setIsNpcCar4Visible(true); setNpcCar4Frame(0);
 
-    // No specific player car movement for "stay in lane", just continue scrolling
-    await new Promise(resolve => setTimeout(resolve, 500)); // Small pause before feedback
+    // Move player car to follow behind the red SUV in lane 3
+    const targetXLane3 = 3 * tileSize + (tileSize / 2 - playerCarWidth / 2);
+
+    // First, move to lane 3 (where red SUV is)
+    await new Promise(resolve => {
+        setPlayerCarDirection("NORTHEAST");
+        Animated.timing(playerCarXAnim, {
+            toValue: targetXLane3,
+            duration: 800,
+            easing: Easing.easeOut,
+            useNativeDriver: false,
+        }).start(resolve);
+    });
+
+    // Now create a modified red car animation that moves slower so player can follow
+    if (npcCar2AnimationRef.current) npcCar2AnimationRef.current.stop();
+
+    // Reset red car position to be ahead of player
+    npcCar2YAnim.setValue(height * 0.3); // Position red car ahead of player
+    setIsNpcCar2Visible(true);
+
+    // Animate both player and red car moving together (following behavior)
+    await new Promise(resolve => {
+        setPlayerCarDirection("NORTH");
+
+        // Red car moves slowly northbound
+        const redCarAnimation = Animated.timing(npcCar2YAnim, {
+            toValue: -npcCarHeight,
+            duration: 2000,
+            easing: Easing.linear,
+            useNativeDriver: true,
+        });
+
+        redCarAnimation.start();
+
+        // Show following behavior for 1.5 seconds
+        setTimeout(resolve, 1500);
+    });
+
+    setPlayerCarDirection("NORTH");
+
+    await new Promise(resolve => setTimeout(resolve, 500));
     handleFeedback(selectedAnswer);
   };
 
@@ -675,8 +722,7 @@ export default function DrivingGame() {
     const actualCorrectAnswer = questions[questionIndex].correct;
 
     if (option === actualCorrectAnswer) {
-      await animateStayInLane();
-      handleFeedback(option)
+      await animateFollowTraffic(); // Changed from animateStayInLane to show following behavior
     } else if (option === "Follow other drivers and cross the lines since everyone is doing it") {
       await animateSuddenOvertake();
       handleFeedback(option)
@@ -717,7 +763,7 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation(); // Restart full animation cycle for next question
     } else {
-      navigation.navigate('S9P1');
+      navigation.navigate('S1P1');
       setShowQuestion(false);
       // Ensure all animations are stopped when navigating away
       if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
@@ -814,27 +860,25 @@ export default function DrivingGame() {
         />
       )}
 
-      {/* NEW: Responsive NPC Car 1 */}
-      {isNpcCar1Visible && (
+      {/* FIXED: Responsive NPC Car 1 - Brown Sport Car (SOUTHBOUND) */}
+      {isNpcCar1Visible && npcCar1.SOUTH && npcCar1.SOUTH[npcCar1Frame] && (
         <Animated.Image
-          source={npcCar1.NORTH[npcCar1Frame]}
+          source={npcCar1.SOUTH[npcCar1Frame]}
           style={{
             width: npcCarWidth,
             height: npcCarHeight,
             position: "absolute",
             left: npcCar1InitialX,
-            // NPC cars need to scroll with the background but also move independently
-            // This setup makes them appear to move "up" relative to the screen
             transform: [{
-                translateY:npcCar1YAnim
+                translateY: npcCar1YAnim
             }],
             zIndex: 3, // Behind player and jeepney
           }}
         />
       )}
 
-      {/* NEW: Responsive NPC Car 2 */}
-      {isNpcCar2Visible && (
+      {/* FIXED: Responsive NPC Car 2 - Red SUV (NORTHBOUND) */}
+      {isNpcCar2Visible && npcCar2.NORTH && npcCar2.NORTH[npcCar2Frame] && (
         <Animated.Image
           source={npcCar2.NORTH[npcCar2Frame]}
           style={{
@@ -843,7 +887,7 @@ export default function DrivingGame() {
             position: "absolute",
             left: npcCar2InitialX,
             transform: [{
-                translateY:npcCar2YAnim
+                translateY: npcCar2YAnim
             }],
             zIndex: 3,
           }}
@@ -851,7 +895,7 @@ export default function DrivingGame() {
       )}
 
       {/* NEW: Responsive NPC Car 3 */}
-      {isNpcCar3Visible && (
+      {isNpcCar3Visible && npcCar3.SOUTH && npcCar3.SOUTH[npcCar3Frame] && (
         <Animated.Image
           source={npcCar3.SOUTH[npcCar3Frame]} // Note: SOUTH sprite
           style={{
@@ -861,17 +905,17 @@ export default function DrivingGame() {
             left: npcCar3InitialX,
             // Southbound cars move "down" relative to the screen, against the scrollY
             transform: [{
-                translateY:npcCar3YAnim
+                translateY: npcCar3YAnim
             }],
             zIndex: 5,
           }}
         />
       )}
 
-      {/* NEW: Responsive NPC Car 4 */}
-      {isNpcCar4Visible && (
+      {/* FIXED: Responsive NPC Car 4 - Magenta SUV (NORTHBOUND) */}
+      {isNpcCar4Visible && npcCar4.NORTH && npcCar4.NORTH[npcCar4Frame] && (
         <Animated.Image
-          source={npcCar4.SOUTH[npcCar4Frame]} // Note: SOUTH sprite
+          source={npcCar4.NORTH[npcCar4Frame]} // Changed to NORTH sprite
           style={{
             width: npcCarWidth,
             height: npcCarHeight,
@@ -953,16 +997,16 @@ const styles = StyleSheet.create({
   },
   // No intro styles (responsive)
   // In-game responsive styles
-  questionOverlay: {
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -970,7 +1014,7 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
@@ -980,17 +1024,18 @@ const styles = StyleSheet.create({
   },
   questionTextContainer: {
     padding: -height * 0.04,
-    maxWidth: width * 0.6,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 28),
+    fontSize: Math.min(width * 0.045, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.4,
+    top: height * 0.15,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
@@ -1014,7 +1059,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -1029,7 +1074,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
