@@ -89,6 +89,14 @@ const ambulanceSprites = {
   ],
 };
 
+// NEW: NPC Car Sprites
+const npcCarSprites = {
+  NORTH: [
+    require("../../../../../assets/car/SUV TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_SUV_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/SUV TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_SUV_CLEAN_NORTH_001.png"),
+  ],
+};
+
 // Fallback questions - keep your original questions as backup
 const fallbackQuestions = [
   {
@@ -116,6 +124,7 @@ export default function DrivingGame() {
 
   const [isCarVisible, setIsCarVisible] = useState(true);
   const [isAmbulanceVisible, setIsAmbulanceVisible] = useState(false); // New state for ambulance visibility
+  const [isNpcCarVisible, setIsNpcCarVisible] = useState(true); // NEW: State for NPC car visibility
 
   const startOffset = -(mapHeight - height);
 
@@ -141,9 +150,13 @@ export default function DrivingGame() {
 
   // Responsive car positioning
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current; // Player car starts centered
-  const AmbulanceYAnim = useRef(new Animated.Value(height * 1.5)).current; // Start well below the screen
+  const AmbulanceYAnim = useRef(new Animated.Value(height * 3)).current; // Start well below the screen
   const AmbulanceXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2 - tileSize)).current; // Default lane to the left of player
-  // const AmbulanceXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2 + tileSize)).current; // Default lane to the right of player
+  
+  // UPDATED: NPC Car Y position, set to the very edge of the screen (negative value to ensure top edge)
+  const NpcCarYAnim = useRef(new Animated.Value(-30)).current;
+  const NpcCarXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2 + tileSize)).current; // Position NPC car in the right lane
+
   const AmbulanceEntryAnim = useRef(new Animated.Value(0)).current;
 
   const correctAnim = useRef(new Animated.Value(0)).current;
@@ -263,6 +276,8 @@ export default function DrivingGame() {
     carXAnim.setValue(width / 2 - carWidth / 2); // Reset car position to center lane
     setCarDirection("NORTH"); // Reset car direction
     setIsCarVisible(true); // Ensure car is visible
+    setIsNpcCarVisible(true); // NEW: Ensure NPC car is visible at the start of each animation cycle
+    NpcCarYAnim.setValue(-30); // UPDATED: Reset NPC car Y position to the very edge of the screen (-30)
 
     const stopRow = 6.5; // Row where the question appears
     const stopOffset = startOffset + stopRow * tileSize;
@@ -351,6 +366,7 @@ export default function DrivingGame() {
       // Correct Answer: Player moves right, Ambulance passes on left
       setIsCarVisible(true);
       setIsAmbulanceVisible(true); // Show ambulance for this scenario
+      setIsNpcCarVisible(true); // Keep NPC car visible
 
       Animated.sequence([
         // 1. Player car moves to the right lane
@@ -372,12 +388,12 @@ export default function DrivingGame() {
         Animated.parallel([
           Animated.timing(AmbulanceYAnim, {
             toValue: -carHeight, // Move off-screen to the top
-            duration: 1500, // Speed of ambulance passing
+            duration: 2000, // Speed of ambulance passing
             easing: Easing.linear,
             useNativeDriver: false,
           }),
           Animated.timing(AmbulanceXAnim, {
-            toValue: leftLaneX, // Ensure ambulance is in the left lane
+            toValue: originalLaneX, // Ensure ambulance is in the left lane (player's original lane)
             duration: 1, // Instantly set position
             useNativeDriver: false,
           }),
@@ -393,36 +409,39 @@ export default function DrivingGame() {
       });
 
     } else if (option === "Stay in your lane since crossing solid white lines is discouraged") {
-      // WRONG Answer: Ambulance overtakes from the right
+      // WRONG Answer: Ambulance follows closely behind player
       setIsAmbulanceVisible(true); // Show ambulance
+      setIsNpcCarVisible(true); // Keep NPC car visible
+    
+      // Ensure ambulance starts from behind the player in the same lane
+      const playerCarBottom = height * 0.1; // Player car's bottom edge
+      const playerCarVisualTop = height - playerCarBottom - carHeight; // Player car's visual top edge on screen
 
-      // Ensure ambulance starts from behind and in the right lane
-      AmbulanceXAnim.setValue(rightLaneX);
-      AmbulanceYAnim.setValue(height * 1.5); // Start off-screen bottom
-
+      AmbulanceXAnim.setValue(originalLaneX); // Ambulance in player's lane (center lane)
+      // Start ambulance visually behind the player, just touching or slightly below
+      AmbulanceYAnim.setValue(playerCarVisualTop + carHeight * 0.5); // Start position, adjust multiplier as needed
+    
       Animated.sequence([
-        // 1. Ambulance appears from behind and overtakes in the right lane
+        // Player and Ambulance continue moving forward together, ambulance remains behind
         Animated.parallel([
-          Animated.timing(AmbulanceYAnim, {
-            toValue: -carHeight, // Move off-screen to the top
-            duration: 2500, // Duration for ambulance to pass
-            easing: Easing.linear,
-            useNativeDriver: false,
-          }),
-          // Player car continues to scroll slowly during ambulance's appearance and pass
           Animated.timing(scrollY, {
             toValue: currentScroll.current + tileSize * 5, // Scroll for 5 tiles
-            duration: 2500, // Duration adjusted to match ambulance's pass
+            duration: 3000, // Duration for cars to move forward
             easing: Easing.linear,
             useNativeDriver: true,
           }),
+          // Ambulance maintains position relative to the player by effectively standing still on screen
+          // Its Y position remains constant because the whole map is scrolling
+          // We only need to set its initial Y and it will look like it's following due to map scroll
+          // (Unless we want it to drift closer/further, but "following closely" implies stable distance)
         ])
       ]).start(() => handleFeedback(option));
 
     } else if (option === "Speed up to clear the way without changing lanes") {
       // Wrong Answer: Player car speeds up (scrolls faster and further)
+      setIsNpcCarVisible(false); // Hide NPC car for this sequence as requested
       Animated.timing(scrollY, {
-        toValue: currentScroll.current + tileSize * 18, // Target row 18 (relative to current position)
+        toValue: currentScroll.current + tileSize * 14, // Target row 18 (relative to current position)
         duration: 4000, // Speed of 4 seconds
         easing: Easing.linear,
         useNativeDriver: true,
@@ -445,14 +464,16 @@ export default function DrivingGame() {
     setCarDirection("NORTH");
     setIsCarVisible(true);
     setIsAmbulanceVisible(false); // Hide ambulance for next question
+    setIsNpcCarVisible(true); // NEW: Show NPC car for next question start
     AmbulanceYAnim.setValue(height * 1.5); // Reset ambulance position off-screen bottom
     AmbulanceXAnim.setValue(width / 2 - carWidth / 2 - tileSize); // Reset ambulance X to left lane for next potential pass
+    NpcCarYAnim.setValue(-30); // UPDATED: Reset NPC car Y position to the very edge of the screen (-30)
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S8P1');
+      navigation.navigate('S6P1');
       setShowQuestion(false);
     }
   };
@@ -517,6 +538,21 @@ export default function DrivingGame() {
               { translateX: carXAnim }
             ],
             zIndex: 5,
+          }}
+        />
+      )}
+
+      {/* UPDATED: Responsive NPC Car - Now positioned at the very top of the screen */}
+      {isNpcCarVisible && (
+        <Animated.Image
+          source={npcCarSprites["NORTH"][carFrame]}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            top: NpcCarYAnim, // Position controlled by animation, now set to 0 (top of screen)
+            left: NpcCarXAnim, // Position in the right lane
+            zIndex: 4, // Always behind player car
           }}
         />
       )}
@@ -603,16 +639,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   // Responsive styles for in-game elements
-  questionOverlay: {
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -620,34 +656,36 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: height * 0.05,
   },
   questionTextContainer: {
-    maxWidth: width * 0.6,
+    padding: -height * 0.04,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: Math.min(width * 0.045, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.25,
+    top: height * 0.1,
     right: sideMargin,
     width: width * 0.35,
+    height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.02,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -663,7 +701,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -678,9 +716,9 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
-    textAlign: 'center', // Added for multi-line explanations
+    textAlign: "center",
   },
   nextButtonContainer: {
     position: "absolute",
