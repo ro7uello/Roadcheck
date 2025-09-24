@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Text,
   StyleSheet,
+  Easing, // <-- import Easing correctly
 } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,44 +29,45 @@ const sideMargin = width * 0.05;
 
 // --- assets and tiles (same as yours) ---
 const roadTiles = {
-    road1: require("../../../../../assets/road/road1.png"),
-    road2: require("../../../../../assets/road/road2.png"),
-    road3: require("../../../../../assets/road/road3.png"),
-    road4: require("../../../../../assets/road/road4.png"),
-    road9: require("../../../../../assets/road/road9.png"),
-    road10: require("../../../../../assets/road/road10.png"),
-    road11: require("../../../../../assets/road/road11.png"),
-    road13: require("../../../../../assets/road/road13.png"),
-    road15: require("../../../../../assets/road/road15.png"),
-    road16: require("../../../../../assets/road/road16.png"),
-    road17: require("../../../../../assets/road/road17.png"),
-    road20: require("../../../../../assets/road/road20.png"),
-    road22: require("../../../../../assets/road/road22.png"),
-    road23: require("../../../../../assets/road/road23.png"),
-    road24: require("../../../../../assets/road/road24.png"),
-    road31: require("../../../../../assets/road/road31.png"),
-    road37: require("../../../../../assets/road/road37.png"),
-    road43: require("../../../../../assets/road/road43.png"),
-    road47: require("../../../../../assets/road/road47.png"),
-    road48: require("../../../../../assets/road/road48.png"),
-    road50: require("../../../../../assets/road/road50.png"),
-    road51: require("../../../../../assets/road/road51.png"),
-    road52: require("../../../../../assets/road/road52.png"),
-    road53: require("../../../../../assets/road/road52.png"),
-    road54: require("../../../../../assets/road/road54.png"),
-    road55: require("../../../../../assets/road/road54.png"),
-    road56: require("../../../../../assets/road/road56.png"),
-    road61: require("../../../../../assets/road/road61.png"),
-    road62: require("../../../../../assets/road/road62.png"),
-    road63: require("../../../../../assets/road/road63.png"),
-    int1: require("../../../../../assets/road/int1.png"),
-    int4: require("../../../../../assets/road/int4.png"),
-    int9: require("../../../../../assets/road/int9.png"),
-    int10: require("../../../../../assets/road/int10.png"),
-    int12: require("../../../../../assets/road/int12.png"),
-    int13: require("../../../../../assets/road/int13.png"),
-    int14: require("../../../../../assets/road/int14.png"),
-    int15: require("../../../../../assets/road/int15.png"),
+  // ... (keep as you had it) ...
+  road1: require("../../../../../assets/road/road1.png"),
+  road2: require("../../../../../assets/road/road2.png"),
+  road3: require("../../../../../assets/road/road3.png"),
+  road4: require("../../../../../assets/road/road4.png"),
+  road9: require("../../../../../assets/road/road9.png"),
+  road10: require("../../../../../assets/road/road10.png"),
+  road11: require("../../../../../assets/road/road11.png"),
+  road13: require("../../../../../assets/road/road13.png"),
+  road15: require("../../../../../assets/road/road15.png"),
+  road16: require("../../../../../assets/road/road16.png"),
+  road17: require("../../../../../assets/road/road17.png"),
+  road20: require("../../../../../assets/road/road20.png"),
+  road22: require("../../../../../assets/road/road22.png"),
+  road23: require("../../../../../assets/road/road23.png"),
+  road24: require("../../../../../assets/road/road24.png"),
+  road31: require("../../../../../assets/road/road31.png"),
+  road37: require("../../../../../assets/road/road37.png"),
+  road43: require("../../../../../assets/road/road43.png"),
+  road47: require("../../../../../assets/road/road47.png"),
+  road48: require("../../../../../assets/road/road48.png"),
+  road50: require("../../../../../assets/road/road50.png"),
+  road51: require("../../../../../assets/road/road51.png"),
+  road52: require("../../../../../assets/road/road52.png"),
+  road53: require("../../../../../assets/road/road52.png"),
+  road54: require("../../../../../assets/road/road54.png"),
+  road55: require("../../../../../assets/road/road54.png"),
+  road56: require("../../../../../assets/road/road56.png"),
+  road61: require("../../../../../assets/road/road61.png"),
+  road62: require("../../../../../assets/road/road62.png"),
+  road63: require("../../../../../assets/road/road63.png"),
+  int1: require("../../../../../assets/road/int1.png"),
+  int4: require("../../../../../assets/road/int4.png"),
+  int9: require("../../../../../assets/road/int9.png"),
+  int10: require("../../../../../assets/road/int10.png"),
+  int12: require("../../../../../assets/road/int12.png"),
+  int13: require("../../../../../assets/road/int13.png"),
+  int14: require("../../../../../assets/road/int14.png"),
+  int15: require("../../../../../assets/road/int15.png"),
 };
 
 const mapLayout = [
@@ -167,7 +169,18 @@ export default function DrivingGame() {
   const [carFrame, setCarFrame] = useState(0);
 
   // Responsive car positioning
-  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+  const centerX = width / 2 - carWidth / 2;
+  const carXAnim = useRef(new Animated.Value(centerX)).current;
+
+  // keep a reliable ref of current car X without touching private fields
+  const carXCurrent = useRef(centerX);
+
+  useEffect(() => {
+    const id = carXAnim.addListener(({ value }) => {
+      carXCurrent.current = value;
+    });
+    return () => carXAnim.removeListener(id);
+  }, [carXAnim]);
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
@@ -178,13 +191,13 @@ export default function DrivingGame() {
       try {
         console.log('S10P1: Fetching scenario data...');
         console.log('S10P1: API_URL value:', API_URL);
-        
+
         const token = await AsyncStorage.getItem('access_token');
         console.log('S10P1: Token retrieved:', token ? 'Yes' : 'No');
-        
+
         const url = `${API_URL}/scenarios/10`;
         console.log('S10P1: Fetching from URL:', url);
-        
+
         const response = await fetch(url, {
           method: 'GET',
           headers: {
@@ -192,16 +205,16 @@ export default function DrivingGame() {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         console.log('S10P1: Response status:', response.status);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
         console.log('S10P1: Data received:', data);
-        
+
         if (data && data.scenario) {
           // Transform database response to match your frontend format
           const transformedQuestion = {
@@ -210,14 +223,14 @@ export default function DrivingGame() {
             correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
             wrongExplanation: {}
           };
-          
+
           // Build wrong explanations
           data.choices.forEach(choice => {
             if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
               transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
             }
           });
-          
+
           setQuestions([transformedQuestion]);
           console.log('S10P1: ✅ Database questions loaded successfully');
         } else {
@@ -241,7 +254,7 @@ export default function DrivingGame() {
     try {
       const token = await AsyncStorage.getItem('access_token');
       const userId = await AsyncStorage.getItem('user_id');
-      
+
       if (!token || !userId) {
         console.log('S10P1: No token or user_id found for progress update');
         return;
@@ -331,10 +344,10 @@ export default function DrivingGame() {
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
     const isCorrect = answerGiven === currentQuestion.correct;
-    
+
     // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
     updateProgress(10, answerGiven, isCorrect); // scenario_id = 10 for S10P1
-    
+
     if (isCorrect) {
       setIsCorrectAnswer(true); // Set to true for correct feedback
       setAnimationType("correct");
@@ -377,64 +390,98 @@ export default function DrivingGame() {
         useNativeDriver: true,
       }).start(() => handleFeedback(answer));
     } else if (answer === "Quickly change lanes before the intersection despite the solid lines") {
-      const turnStartRow = 7;
-      const turnEndRow = 9;
+      // FIXED lane change animation
+      const currentCarX = carXCurrent.current;
 
-      const initialScrollTarget =
-        currentScroll.current + (turnStartRow - currentRow) * tileSize;
+      // Calculate proper lane positions based on road layout
+      const centerLane = width / 2 - carWidth / 2;  // Current center position
+      const leftLane = width * 0.25 - carWidth / 2;  // Left lane position
+      const rightLane = width * 0.75 - carWidth / 2; // Right lane position
 
-      Animated.timing(scrollY, {
-        toValue: initialScrollTarget,
-        duration: 2000,
-        useNativeDriver: true,
-      }).start(() => {
-        const turnSequence = ["NORTHWEST", "NORTH"];
-        let currentTurnStep = 0;
+      console.log('Lane change - Current X:', currentCarX, 'Left lane:', leftLane, 'Right lane:', rightLane);
 
-        const animateTurnAndMove = () => {
-          if (currentTurnStep < turnSequence.length) {
-            setCarDirection(turnSequence[currentTurnStep]);
-            setCarFrame(0);
+      const performLaneChange = async () => {
+        // Stop any ongoing animations
+        setCarFrame(0);
 
-            let deltaX = 0;
-            let deltaYScroll = 0;
-
-            if (turnSequence[currentTurnStep] === "NORTHWEST") {
-              deltaX = -tileSize * 0.5;
-              deltaYScroll = tileSize * 0.5;
-            } else if (turnSequence[currentTurnStep] === "NORTH") {
-              deltaX = 0;
-              deltaYScroll = tileSize;
-            }
-
-            Animated.parallel([
-              Animated.timing(carXAnim, {
-                toValue: carXAnim._value + deltaX,
-                duration: 500,
-                useNativeDriver: false,
-              }),
-              Animated.timing(scrollY, {
-                toValue: scrollY._value + deltaYScroll,
-                duration: 500,
-                useNativeDriver: true,
-              }),
-            ]).start(() => {
-              currentTurnStep++;
-              animateTurnAndMove();
-            });
-          } else {
+        // 1. Quick lane change to left lane (dangerous move)
+        await new Promise(resolve => {
+          setCarDirection("NORTHWEST");
+          Animated.parallel([
             Animated.timing(carXAnim, {
-              toValue: -width,
-              duration: 2500,
+              toValue: leftLane,
+              duration: 800, // Quick but not too fast to be visible
+              easing: Easing.out(Easing.cubic), // Sharp easing for sudden movement
               useNativeDriver: false,
-            }).start(() => {
-              setIsCarVisible(false);
-              handleFeedback(answer);
-            });
-          }
-        };
-        animateTurnAndMove();
-      });
+            }),
+            Animated.timing(scrollY, {
+              toValue: currentScroll.current + (tileSize * 0.8), // Move forward during lane change
+              duration: 800,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            })
+          ]).start(resolve);
+        });
+
+        // 2. Straighten car in new lane briefly
+        await new Promise(resolve => {
+          setCarDirection("NORTH");
+          setCarFrame(0);
+
+          Animated.timing(scrollY, {
+            toValue: currentScroll.current + (tileSize * 1.2),
+            duration: 600,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          }).start(resolve);
+        });
+
+        // 3. Show dangerous driving - car starts to lose control
+        await new Promise(resolve => {
+          setCarDirection("WEST"); // Car turning too much
+          Animated.parallel([
+            Animated.timing(carXAnim, {
+              toValue: leftLane - (tileSize * 0.3), // Move further left (off road)
+              duration: 700,
+              easing: Easing.in(Easing.quad),
+              useNativeDriver: false,
+            }),
+            Animated.timing(scrollY, {
+              toValue: currentScroll.current + (tileSize * 1.5),
+              duration: 700,
+              easing: Easing.in(Easing.quad),
+              useNativeDriver: true,
+            })
+          ]).start(resolve);
+        });
+
+        // 4. Car continues off road and exits screen (accident consequence)
+        await new Promise(resolve => {
+          setCarDirection("WEST");
+          Animated.parallel([
+            Animated.timing(carXAnim, {
+              toValue: -carWidth * 1.5, // Completely off screen to the left
+              duration: 1200,
+              easing: Easing.in(Easing.cubic), // Accelerating off screen
+              useNativeDriver: false,
+            }),
+            Animated.timing(scrollY, {
+              toValue: currentScroll.current + (tileSize * 2),
+              duration: 1200,
+              easing: Easing.in(Easing.cubic),
+              useNativeDriver: true,
+            })
+          ]).start(() => {
+            setIsCarVisible(false);
+            resolve();
+          });
+        });
+
+        // Show feedback after animation completes
+        handleFeedback(answer);
+      };
+
+      performLaneChange();
       return;
     } else if (answer === "Stop and reverse to get in the correct lane") {
       const turnStartRow = 6.5;
@@ -452,11 +499,11 @@ export default function DrivingGame() {
         setCarFrame(0);
 
         Animated.timing(scrollY, {
-          toValue: scrollY._value - reverseAmount, // Scroll down to simulate car moving back
+          toValue: currentScroll.current - reverseAmount, // Scroll down to simulate car moving back
           duration: 1500, // Duration for reversing
           useNativeDriver: true,
         }).start(() => {handleFeedback(answer);});
-            });
+      });
     }
   };
 
@@ -467,8 +514,9 @@ export default function DrivingGame() {
     setIsCorrectAnswer(null); // Reset feedback state from S9P1
     setCarFrame(0);
 
-    const centerX = width / 2 - carWidth / 2;
-    carXAnim.setValue(centerX);
+    const centerXNow = width / 2 - carWidth / 2;
+    carXAnim.setValue(centerXNow);
+    carXCurrent.current = centerXNow;
     setCarDirection("NORTH");
     setIsCarVisible(true);
 
@@ -476,7 +524,7 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('driverGame');
+      navigation.navigate('result-page');
       setShowQuestion(false);
     }
   };
@@ -647,7 +695,7 @@ const styles = StyleSheet.create({
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.25,
+    top: height * .10,
     right: sideMargin,
     width: width * 0.35,
     zIndex: 11,

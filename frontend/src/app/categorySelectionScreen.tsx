@@ -10,9 +10,12 @@ import {
   SafeAreaView,
   Animated,
   Image,
+  ScrollView,
+  Linking,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useFonts } from 'expo-font';
+import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
@@ -31,13 +34,16 @@ export default function CategorySelectionScreen() {
   const [selectedMode, setSelectedMode] = useState('driver');
   const [isLoading, setIsLoading] = useState(false);
   const [userProgress, setUserProgress] = useState({});
-  
+  const [libraryVisible, setLibraryVisible] = useState(false);
+
   // Animations
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
   const carBounce = useRef(new Animated.Value(0)).current;
   const roadMarkingsScale = useRef(new Animated.Value(1)).current;
   const signsScale = useRef(new Animated.Value(1)).current;
   const intersectionScale = useRef(new Animated.Value(1)).current;
+  const modalScale = useRef(new Animated.Value(0)).current;
+  const libraryModalScale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -52,6 +58,8 @@ export default function CategorySelectionScreen() {
       roadMarkingsScale.stopAnimation();
       signsScale.stopAnimation();
       intersectionScale.stopAnimation();
+      modalScale.stopAnimation();
+      libraryModalScale.stopAnimation();
     };
   }, [fontsLoaded]);
 
@@ -114,6 +122,15 @@ const saveUserProgress = async (categoryId, categoryName, route) => {
     setIsLoading(false);
   }
 };
+
+useEffect(() => {
+    Animated.spring(libraryModalScale, {
+      toValue: libraryVisible ? 1 : 0,
+      tension: 100,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+  }, [libraryVisible]);
 
   const startBackgroundAnimation = () => {
     backgroundAnimation.setValue(0);
@@ -208,6 +225,20 @@ const saveUserProgress = async (categoryId, categoryName, route) => {
     });
   };
 
+    const handleSettingsPress = () => {
+      router.push('/profile');
+    };
+  
+    const handleLibraryPress = async () => {
+        try {
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } catch (error) {
+          // Haptics not available
+        }
+        setLibraryVisible(true);
+    };
+  
+
   const goBack = () => {
     router.back();
   };
@@ -283,33 +314,36 @@ const saveUserProgress = async (categoryId, categoryName, route) => {
       </Animated.View>
 
       {/* Back Button */}
-      <TouchableOpacity style={styles.backButton} onPress={goBack}>
-        <Text style={styles.backButtonText}>←</Text>
-      </TouchableOpacity>
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
+              <Image
+                source={require('../../assets/icon/backButton.png')}
+                style={styles.backButtonImage}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
 
       {/* Top Right Icons */}
       <View style={styles.topRightIcons}>
-        <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Settings pressed')}>
-          <Image
-            source={require('../../assets/icon/Settings.png')} // Fixed path
-            style={styles.topIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.iconButton} onPress={() => console.log('Dictionary pressed')}>
-          <Image
-            source={require('../../assets/icon/Library.png')} // Fixed path
-            style={styles.topIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-      </View>
+              <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
+                <Image
+                  source={require('../../assets/icon/Settings.png')}
+                  style={styles.topIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+      
+              <TouchableOpacity style={styles.iconButton} onPress={handleLibraryPress}>
+                <Image
+                  source={require('../../assets/icon/Library.png')}
+                  style={styles.topIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </View>
 
       {/* Title */}
       <View style={styles.titleContainer}>
         <Text style={styles.title}>CHOOSE</Text>
-        <Text style={styles.subtitle}>Mode: {selectedMode.toUpperCase()}</Text>
       </View>
 
       {/* Options Selection */}
@@ -399,6 +433,63 @@ const saveUserProgress = async (categoryId, categoryName, route) => {
           <Text style={styles.loadingText}>Saving progress...</Text>
         </View>
       )}
+
+      {libraryVisible && (
+                    <Animated.View
+                      style={[
+                        styles.libraryPanel,
+                        { transform: [{ scale: libraryModalScale }] },
+                      ]}
+                    >
+                      <Image
+                        source={require('../../assets/background/settings-tab.png')}
+                        style={styles.settingsTab}
+                        resizeMode="stretch"
+                      />
+            
+                      <Text style={styles.libraryTitle}>REFERENCES</Text>
+            
+                      <View style={styles.libraryContent}>
+                        <ScrollView 
+                          style={styles.scrollView}
+                          contentContainerStyle={styles.scrollContent}
+                          showsVerticalScrollIndicator={true}
+                        >
+                          <View style={styles.referenceContainer}>
+                            <Text style={styles.referenceText}>
+                              Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
+                              <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
+                                <Text style={[styles.referenceText, styles.linkText]}>
+                                  https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
+                                </Text>
+                              </TouchableOpacity>
+                            </Text>
+                          </View>
+            
+                          <View style={styles.referenceContainer}>
+                            <Text style={styles.referenceText}>
+                              National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
+                              <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
+                                <Text style={[styles.referenceText, styles.linkText]}>
+                                  https://www.nhtsa.gov/road-safety/pedestrian-safety
+                                </Text>
+                              </TouchableOpacity>
+                            </Text>
+                          </View>
+                        </ScrollView>
+                      </View>
+            
+                      <TouchableOpacity
+                        style={styles.libraryBackButton}
+                        onPress={() => setLibraryVisible(false)}
+                      >
+                        <Image
+                          source={require('../../assets/background/back.png')}
+                          style={styles.backButtonImage}
+                        />
+                      </TouchableOpacity>
+                    </Animated.View>
+                  )}
     </SafeAreaView>
   );
 }
@@ -447,18 +538,18 @@ const styles = StyleSheet.create({
   },
   carContainer: {
     position: 'absolute',
-    bottom: height * 0.05,
+    bottom: -25,
     left: width * 0.05,
     zIndex: 2,
   },
   carImage: {
-    width: 200,
-    height: 100,
+    width: 400,
+    height: 210,
   },
   backButton: {
     position: 'absolute',
     top: 40,
-    left: 20,
+    left: 40,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     width: 40,
     height: 40,
@@ -466,11 +557,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 5,
-  },
-  backButtonText: {
-    fontSize: 24,
-    color: 'white',
-    fontWeight: 'bold',
   },
   topRightIcons: {
     position: 'absolute',
@@ -500,23 +586,14 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
   title: {
-    fontSize: 60,
-    fontWeight: 'bold',
+    fontSize: 50,
+    fontWeight: 'normal',
     color: 'white',
     fontFamily: 'pixel',
     textShadowColor: '#000',
     textShadowOffset: { width: 3, height: 3 },
     textShadowRadius: 6,
     letterSpacing: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: 'white',
-    fontFamily: 'pixel',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-    marginTop: 5,
   },
   selectionContainer: {
     position: 'absolute',
@@ -553,7 +630,7 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: 'normal',
     color: 'white',
     fontFamily: 'pixel',
     textAlign: 'center',
@@ -597,5 +674,65 @@ const styles = StyleSheet.create({
     color: 'white',
     fontFamily: 'pixel',
     textAlign: 'center',
+  },
+
+  backButtonImage: { width: 100, height: 30, resizeMode: 'contain', marginBottom:5 },
+
+  settingsTab: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+
+  linkText: {
+    color: '#0066CC',
+    textDecorationLine: 'underline',
+  },
+
+   libraryPanel: {
+    position: 'absolute',
+    top: height * 0.1,
+    alignSelf: 'center',
+    width: Math.min(width * 0.9, 450),
+    height: Math.min(height * 0.75, 500),
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  libraryTitle: {
+    fontSize: 15,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginTop: 10,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  libraryContent: {
+    flex: 1,
+    width: '85%',
+    marginBottom: 20,
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  referenceContainer: {
+    marginBottom: 20,
+    paddingHorizontal: 5,
+  },
+  referenceText: {
+    fontSize: 10,
+    color: 'black',
+    fontFamily: "Pixel3",
+    lineHeight: 14,
+    textAlign: 'justify',
+  },
+  libraryBackButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 25,
   },
 });

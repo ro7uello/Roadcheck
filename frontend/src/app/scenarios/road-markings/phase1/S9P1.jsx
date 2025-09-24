@@ -146,13 +146,11 @@ export default function DrivingGame() {
   const [playerCarFrame, setPlayerCarFrame] = useState(0);
   const [busFrame, setBusFrame] = useState(0); // Renamed for clarity
 
-  const playerCarXAnim = useRef(new Animated.Value(width / 2 - playerCarWidth / 2)).current;
+  // CHANGED: Player car starts in Lane 1
+  const playerCarXAnim = useRef(new Animated.Value(1 * tileSize + (tileSize / 2 - playerCarWidth / 2))).current;
 
-  // Bus's X position: middle of the 'road5' tile (index 2 in the previous map, adjusted for new map if needed)
-  // Assuming the bus will still be in a central lane, let's pick lane index 2 (road67) for now.
-  const busInitialX = 2 * tileSize + (tileSize / 2 - busWidth / 2); // Center of the 3rd column (index 2)
-  // Bus's Y position: dynamically set based on scroll and its row
-  // Starts off-screen TOP
+  // CHANGED: Bus positioned in Lane 1
+  const busInitialX = 1 * tileSize + (tileSize / 2 - busWidth / 2); // Lane 1 position
   const busYAnim = useRef(new Animated.Value(-busHeight)).current;
 
   const correctAnim = useRef(new Animated.Value(0)).current;
@@ -164,13 +162,13 @@ export default function DrivingGame() {
       try {
         console.log('S9P1: Fetching scenario data...');
         console.log('S9P1: API_URL value:', API_URL);
-        
+
         const token = await AsyncStorage.getItem('access_token');
         console.log('S9P1: Token retrieved:', token ? 'Yes' : 'No');
-        
+
         const url = `${API_URL}/scenarios/9`;
         console.log('S9P1: Fetching from URL:', url);
-        
+
         const response = await fetch(url, {
           method: 'GET',
           headers: {
@@ -178,16 +176,16 @@ export default function DrivingGame() {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         console.log('S9P1: Response status:', response.status);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
         console.log('S9P1: Data received:', data);
-        
+
         if (data && data.scenario) {
           // Transform database response to match your frontend format
           const transformedQuestion = {
@@ -196,14 +194,14 @@ export default function DrivingGame() {
             correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
             wrongExplanation: {}
           };
-          
+
           // Build wrong explanations
           data.choices.forEach(choice => {
             if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
               transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
             }
           });
-          
+
           setQuestions([transformedQuestion]);
           console.log('S9P1: ✅ Database questions loaded successfully');
         } else {
@@ -227,7 +225,7 @@ export default function DrivingGame() {
     try {
       const token = await AsyncStorage.getItem('access_token');
       const userId = await AsyncStorage.getItem('user_id');
-      
+
       if (!token || !userId) {
         console.log('S9P1: No token or user_id found for progress update');
         return;
@@ -286,8 +284,8 @@ export default function DrivingGame() {
     scrollY.setValue(0);
     busYAnim.setValue(-busHeight); // Reset bus to off-screen top
 
-    // Ensure player car is centered at the start
-    playerCarXAnim.setValue(width / 2 - playerCarWidth / 2);
+    // CHANGED: Ensure player car is in Lane 1 at the start
+    playerCarXAnim.setValue(1 * tileSize + (tileSize / 2 - playerCarWidth / 2));
     setPlayerCarDirection("NORTH");
     setIsPlayerCarVisible(true);
     setIsBusVisible(true);
@@ -351,10 +349,10 @@ export default function DrivingGame() {
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
     const isCorrect = answerGiven === currentQuestion.correct;
-    
+
     // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
     updateProgress(9, answerGiven, isCorrect); // scenario_id = 9 for S9P1
-    
+
     if (isCorrect) {
       setIsCorrectAnswer(true); // Set to true for correct feedback
       setAnimationType("correct");
@@ -380,7 +378,7 @@ export default function DrivingGame() {
     }
   };
 
-  // NEW ANIMATION: Player stays in lane, bus remains in front
+  // ANIMATION: Player stays in lane, bus remains in front
   const animateStayInLane = async () => {
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop(); // Stop for a moment
     if (busAnimationRef.current) busAnimationRef.current.stop();
@@ -391,8 +389,7 @@ export default function DrivingGame() {
     setIsPlayerCarVisible(true);
     setIsBusVisible(true); // Ensure bus remains visible
 
-    // Simply restart the continuous scroll for a short duration
-    // Both cars will appear to scroll forward together
+    // Both cars stay in Lane 1 and move forward together
     await new Promise(resolve => {
         Animated.timing(scrollY, {
             toValue: scrollY._value - (tileSize * 2), // Move forward slightly more
@@ -409,7 +406,7 @@ export default function DrivingGame() {
     handleFeedback(selectedAnswer);
   };
 
-  // NEW ANIMATION: Sudden Overtake (for "Change lanes without signaling")
+  // UPDATED ANIMATION: Sudden Overtake - moves LEFT to Lane 0
   const animateSuddenOvertake = async () => {
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
     if (busAnimationRef.current) busAnimationRef.current.stop();
@@ -419,14 +416,15 @@ export default function DrivingGame() {
     setIsPlayerCarVisible(true);
     setIsBusVisible(true); // Start with bus visible
 
-    const targetXLeftLane = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2); // Left lane (index 1)
+    // From Lane 1, move LEFT to Lane 0
+    const targetXLeftLane = 0 * tileSize + (tileSize / 2 - playerCarWidth / 2); // Lane 0
 
-    // 1. Car faces Northwest and moves quickly left
+    // 1. Car faces WEST and moves quickly left
     await new Promise(resolve => {
-        setPlayerCarDirection("NORTHWEST");
+        setPlayerCarDirection("WEST"); // Pure left movement
         Animated.parallel([
             Animated.timing(playerCarXAnim, {
-                toValue: targetXLeftLane, // Move to left lane
+                toValue: targetXLeftLane, // Move to Lane 0
                 duration: 400, // Fast
                 easing: Easing.easeOut,
                 useNativeDriver: false,
@@ -460,7 +458,7 @@ export default function DrivingGame() {
     });
     setIsBusVisible(false); // Hide bus after it's out of view
 
-    // Player car stays in the left lane
+    // Player car stays in Lane 0
     setPlayerCarDirection("NORTH"); // Keep facing North in new lane
 
     // Pause briefly before showing feedback
@@ -469,7 +467,7 @@ export default function DrivingGame() {
     handleFeedback(selectedAnswer); // Pass the selected wrong answer to feedback
   };
 
-  // NEW ANIMATION: Careful Overtake (for "Signal, check mirrors...")
+  // UPDATED ANIMATION: Careful Overtake - moves RIGHT to Lane 2
   const animateCarefulOvertake = async () => {
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
     if (busAnimationRef.current) busAnimationRef.current.stop();
@@ -479,7 +477,8 @@ export default function DrivingGame() {
     setIsPlayerCarVisible(true);
     setIsBusVisible(true); // Start with bus visible
 
-    const targetXLeftLane = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2); // Left lane (index 1)
+    // From Lane 1, move RIGHT to Lane 2
+    const targetXRightLane = 2 * tileSize + (tileSize / 2 - playerCarWidth / 2); // Lane 2
 
     // 1. Scroll for 3 seconds first (simulating careful approach)
     await new Promise(resolve => {
@@ -491,12 +490,12 @@ export default function DrivingGame() {
         }).start(resolve);
     });
 
-    // 2. Car faces Northwest and moves smoothly left
+    // 2. Car faces NORTHEAST and moves smoothly right
     await new Promise(resolve => {
-        setPlayerCarDirection("NORTHWEST");
+        setPlayerCarDirection("NORTHEAST"); // Moving diagonally right
         Animated.parallel([
             Animated.timing(playerCarXAnim, {
-                toValue: targetXLeftLane, // Move to left lane
+                toValue: targetXRightLane, // Move to Lane 2
                 duration: 800, // Smooth duration
                 easing: Easing.easeOut,
                 useNativeDriver: false,
@@ -530,7 +529,7 @@ export default function DrivingGame() {
     });
     setIsBusVisible(false); // Hide bus after it's out of view
 
-    // Player car stays in the left lane
+    // Player car stays in Lane 2
     setPlayerCarDirection("NORTH"); // Keep facing North in new lane
 
     // Pause briefly before showing feedback
@@ -581,8 +580,9 @@ export default function DrivingGame() {
     setPlayerCarFrame(0);
     setBusFrame(0);
 
-    const centerX = width / 2 - playerCarWidth / 2;
-    playerCarXAnim.setValue(centerX);
+    // CHANGED: Reset player car to Lane 1
+    const lane1X = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2);
+    playerCarXAnim.setValue(lane1X);
     setPlayerCarDirection("NORTH");
     setIsPlayerCarVisible(true);
     setIsBusVisible(true);
@@ -591,7 +591,7 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S10P1');
+      navigation.navigate('S1P1');
       setShowQuestion(false);
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
@@ -658,7 +658,7 @@ export default function DrivingGame() {
         ))}
       </Animated.View>
 
-      {/* Responsive Bus */}
+      {/* Responsive Bus in Lane 1 */}
       {isBusVisible && (
         <Animated.Image
           source={busSprites.NORTH[busFrame]}
@@ -666,14 +666,14 @@ export default function DrivingGame() {
             width: busWidth,
             height: busHeight,
             position: "absolute",
-            left: busInitialX, // Keep it in its lane
+            left: busInitialX, // Lane 1 position
             transform: [{ translateY: busYAnim }],
             zIndex: 4,
           }}
         />
       )}
 
-      {/* Responsive Player Car */}
+      {/* Responsive Player Car in Lane 1 */}
       {isPlayerCarVisible && (
         <Animated.Image
           source={playerCarSprites[playerCarDirection][playerCarFrame]}
@@ -756,16 +756,16 @@ const styles = StyleSheet.create({
   },
   // No intro styles (responsive)
   // In-game responsive styles
-  questionOverlay: {
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -773,7 +773,7 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
@@ -783,17 +783,18 @@ const styles = StyleSheet.create({
   },
   questionTextContainer: {
     padding: -height * 0.04,
-    maxWidth: width * 0.6,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 28),
+    fontSize: Math.min(width * 0.045, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.4,
+    top: height * 0.1,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
@@ -817,7 +818,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -832,7 +833,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
