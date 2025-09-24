@@ -1,15 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  ActivityIndicator,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing,
-} from "react-native";
+import { View, Image, Animated, ActivityIndicator, Dimensions, TouchableOpacity, Text, StyleSheet, Easing } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
@@ -146,8 +136,12 @@ export default function DrivingGame() {
   const [playerCarDirection, setPlayerCarDirection] = useState("NORTH"); // Renamed for clarity
   const [playerCarFrame, setPlayerCarFrame] = useState(0);
   const [jeepneyFrame, setJeepneyFrame] = useState(0);
-
   const playerCarXAnim = useRef(new Animated.Value(width / 2 - playerCarWidth / 2)).current;
+
+  const [sessionAttempts, setSessionAttempts] = useState([]); // Track all attempts in this session
+  const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [currentScenarioStartTime, setCurrentScenarioStartTime] = useState(null);
+  const [totalSessionTime, setTotalSessionTime] = useState(0);
 
   // Jeepney's X position: middle of the 'road5' tile (index 2 in the previous map, adjusted for new map if needed)
   // Assuming the jeepney will still be in a central lane, let's pick lane index 2 (road67) for now.
@@ -163,52 +157,66 @@ export default function DrivingGame() {
   useEffect(() => {
     const fetchScenarioData = async () => {
       try {
+        setSessionStartTime(Date.now()); // Start session timer
+
         console.log('S1P1: Fetching scenario data...');
         console.log('S1P1: API_URL value:', API_URL);
-        
+
         const token = await AsyncStorage.getItem('access_token');
         console.log('S1P1: Token retrieved:', token ? 'Yes' : 'No');
-        
-        const url = `${API_URL}/scenarios/1`;
-        console.log('S1P1: Fetching from URL:', url);
-        
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        console.log('S1P1: Response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        console.log('S1P1: Data received:', data);
-        
-        if (data && data.scenario) {
-          // Transform database response to match your frontend format
-          const transformedQuestion = {
-            question: data.scenario.question_text,
-            options: data.choices.map(choice => choice.choice_text),
-            correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
-            wrongExplanation: {}
-          };
-          
-          // Build wrong explanations
-          data.choices.forEach(choice => {
-            if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
-              transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
+
+        // CHANGE: Fetch ALL scenarios for Phase 1 (scenarios 1-10)
+        const scenarios = [];
+        for (let i = 1; i <= 10; i++) {
+          try {
+            const url = `${API_URL}/scenarios/${i}`;
+            console.log(`S1P1: Fetching scenario ${i} from URL:`, url);
+
+            const response = await fetch(url, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              }
+            });
+
+            console.log(`S1P1: Response status for scenario ${i}:`, response.status);
+
+            if (!response.ok) {
+              console.warn(`Failed to fetch scenario ${i}: ${response.status}`);
+              continue;
             }
-          });
-          
-          setQuestions([transformedQuestion]);
-          console.log('S1P1: ✅ Database questions loaded successfully');
+
+            const data = await response.json();
+            console.log(`S1P1: Raw data for scenario ${i}:`, JSON.stringify(data, null, 2)); // ADD THIS LINE
+
+           if (data && data.success && data.data) {
+             // Transform database response to match your frontend format
+             const transformedQuestion = {
+               scenario_id: i, // IMPORTANT: Add scenario ID
+               question: data.data.question,
+               options: data.data.options.map((option, index) => ({
+                 text: option,
+                 choice_id: index + 1 // Generate choice IDs since they're not provided
+               })),
+               correct_choice_id: data.data.options.indexOf(data.data.correct_answer) + 1, // Find correct choice ID
+               correct: data.data.correct_answer,
+               wrongExplanation: data.data.wrong_explanations || {}
+             };
+
+             scenarios.push(transformedQuestion);
+             console.log(`S1P1: ✅ Transformed scenario ${i}:`, transformedQuestion);
+           }
+          } catch (error) {
+            console.warn(`Error fetching scenario ${i}:`, error.message);
+          }
+        }
+
+        if (scenarios.length > 0) {
+          setQuestions(scenarios);
+          console.log(`S1P1: ✅ Loaded ${scenarios.length} scenarios from database`);
         } else {
-          console.log('S1P1: ⚠️ Invalid data structure, using fallback');
+          console.log('S1P1: ⚠️ No scenarios loaded, using fallback');
           setQuestions(fallbackQuestions);
         }
       } catch (error) {
@@ -223,42 +231,68 @@ export default function DrivingGame() {
     fetchScenarioData();
   }, []);
 
-  // ✅ DATABASE INTEGRATION - Added updateProgress function
-  const updateProgress = async (scenarioId, selectedOption, isCorrect) => {
-    try {
-      const token = await AsyncStorage.getItem('access_token');
-      const userId = await AsyncStorage.getItem('user_id');
-      
-      if (!token || !userId) {
-        console.log('S1P1: No token or user_id found for progress update');
-        return;
-      }
-
-      // Record the attempt
-      const attemptResponse = await fetch(`${API_URL}/attempts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          user_id: parseInt(userId),
-          scenario_id: scenarioId,
-          selected_option: selectedOption,
-          is_correct: isCorrect,
-          completed_at: new Date().toISOString()
-        })
-      });
-
-      if (attemptResponse.ok) {
-        console.log('S1P1: ✅ Progress updated successfully');
-      } else {
-        console.log('S1P1: ⚠️ Failed to update progress:', attemptResponse.status);
-      }
-    } catch (error) {
-      console.log('S1P1: ❌ Error updating progress:', error.message);
+  useEffect(() => {
+    if (showQuestion && !currentScenarioStartTime) {
+      setCurrentScenarioStartTime(Date.now());
     }
-  };
+  }, [showQuestion]);
+
+  // ✅ DATABASE INTEGRATION - Added updateProgress function
+  const recordAttempt = (scenarioId, selectedOption, selectedChoiceId, isCorrect, timeTaken) => {
+    const attemptData = {
+      scenario_id: scenarioId,
+      selected_choice_id: selectedChoiceId,
+      selected_option: selectedOption,
+      is_correct: isCorrect,
+      time_taken: Math.round(timeTaken / 1000), // Convert to seconds
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('S1P1: Recording attempt:', attemptData);
+
+    setSessionAttempts(prevAttempts => [...prevAttempts, attemptData]);
+
+    updateIndividualProgress(scenarioId, selectedOption, isCorrect, timeTaken);
+    };
+
+    const updateIndividualProgress = async (scenarioId, selectedOption, isCorrect, timeTaken) => {
+      try {
+        const token = await AsyncStorage.getItem('access_token');
+        const userData = await AsyncStorage.getItem('user_data');
+
+        if (!token || !userData) {
+          console.log('S1P1: No token or user_data found for progress update');
+          return;
+        }
+
+        const user = JSON.parse(userData);
+
+        // Record the attempt
+        const attemptResponse = await fetch(`${API_URL}/attempts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            scenario_id: scenarioId,
+            selected_option: selectedOption,
+            is_correct: isCorrect,
+            time_taken: Math.round(timeTaken / 1000),
+            completed_at: new Date().toISOString()
+          })
+        });
+
+        if (attemptResponse.ok) {
+          console.log('S1P1: ✅ Individual progress updated successfully');
+        } else {
+          console.log('S1P1: ⚠️ Failed to update individual progress:', attemptResponse.status);
+        }
+      } catch (error) {
+        console.log('S1P1: ❌ Error updating individual progress:', error.message);
+      }
+    };
 
   // Animation for player's car sprite
   useEffect(() => {
@@ -343,13 +377,26 @@ export default function DrivingGame() {
 
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
-    const isCorrect = answerGiven === currentQuestion.correct;
-    
-    // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
-    updateProgress(1, answerGiven, isCorrect); // scenario_id = 1 for S1P1
-    
+    const selectedChoice = currentQuestion.options.find(opt => opt.text === answerGiven);
+    const isCorrect = selectedChoice?.choice_id === currentQuestion.correct_choice_id;
+
+    // Calculate time taken for this scenario
+    const timeTaken = currentScenarioStartTime ? Date.now() - currentScenarioStartTime : 0;
+
+    // Record this attempt in session data
+    recordAttempt(
+      currentQuestion.scenario_id,
+      answerGiven,
+      selectedChoice?.choice_id,
+      isCorrect,
+      timeTaken
+    );
+
+    // Reset scenario timer
+    setCurrentScenarioStartTime(null);
+
     if (isCorrect) {
-      setIsCorrectAnswer(true); // Set to true for correct feedback
+      setIsCorrectAnswer(true);
       setAnimationType("correct");
       Animated.timing(correctAnim, {
         toValue: 1,
@@ -360,7 +407,7 @@ export default function DrivingGame() {
         setShowNext(true);
       });
     } else {
-      setIsCorrectAnswer(false); // Set to false for wrong feedback
+      setIsCorrectAnswer(false);
       setAnimationType("wrong");
       Animated.timing(wrongAnim, {
         toValue: 1,
@@ -463,28 +510,28 @@ const animateOvertake = async (targetX) => {
 
     if (answer === questions[questionIndex].correct) {
       // Correct answer, no overtake action if it's "Don't overtake at all"
-      handleFeedback(answer); // Call feedback directly
-    } else if (answer === "Overtake by crossing the solid yellow lines to reach the faster lane") { // Adjusted option text
+      handleFeedback(answer);
+    } else if (answer === "Overtake by crossing the solid yellow lines to reach the faster lane") {
       // Overtake to the left lane (column 1) if this was a wrong answer
       const targetX = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2);
-      animateOvertake(targetX); // Call without turn directions, as they are now internal
-      handleFeedback(answer); // Call feedback here, or after animateOvertake completes
-    } else if (answer === "Honk for a long time to make the cars move faster.") { // Adjusted option text
-        setTimeout(() => {
-            // No specific car animation for this wrong answer, just feedback
-            handleFeedback(answer);
-        }, 1000); // A small delay before showing feedback
-      } else {
-        // Fallback for any other answer (e.g., if there were more options)
+      animateOvertake(targetX);
+      handleFeedback(answer);
+    } else if (answer === "Honk for a long time to make the cars move faster.") {
+      setTimeout(() => {
+        // No specific car animation for this wrong answer, just feedback
         handleFeedback(answer);
-      }
+      }, 1000);
+    } else {
+      // Fallback for any other answer
+      handleFeedback(answer);
+    }
   };
 
   const handleNext = () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setIsCorrectAnswer(null); // Reset feedback state
+    setIsCorrectAnswer(null);
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
 
@@ -495,17 +542,41 @@ const animateOvertake = async (targetX) => {
     setIsJeepneyVisible(true);
 
     if (questionIndex < questions.length - 1) {
+      // Continue to next scenario
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S2P1');
-      setShowQuestion(false);
-      if (scrollAnimationRef.current) {
-        scrollAnimationRef.current.stop();
-      }
-      if (jeepneyAnimationRef.current) {
-          jeepneyAnimationRef.current.stop();
-      }
+      // All scenarios completed - navigate to results page
+      navigateToResults();
+    }
+  };
+
+  const navigateToResults = () => {
+    const totalTime = sessionStartTime ? Math.round((Date.now() - sessionStartTime) / 1000) : 0;
+
+    console.log('S1P1: Navigating to results with data:', {
+      sessionAttempts: sessionAttempts.length,
+      totalTime,
+      categoryId: 1, // Road Markings
+      phaseId: 1
+    });
+
+    // Navigate to results page with session data
+    navigation.navigate('result-page', {
+      categoryId: '1',           // Road Markings category
+      phaseId: '1',              // Phase 1
+      categoryName: 'Road Markings',
+      userAttempts: JSON.stringify(sessionAttempts), // Pass attempts as JSON string
+      totalTime: totalTime,      // Total session time in seconds
+      scenarioCount: questions.length
+    });
+
+    // Clean up animations
+    if (scrollAnimationRef.current) {
+      scrollAnimationRef.current.stop();
+    }
+    if (jeepneyAnimationRef.current) {
+      jeepneyAnimationRef.current.stop();
     }
   };
 
@@ -643,13 +714,13 @@ const animateOvertake = async (targetX) => {
       {/* Responsive Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
-          {questions[questionIndex].options.map((option) => (
+          {questions[questionIndex].options.map((option, index) => (
             <TouchableOpacity
-              key={option}
+              key={option.choice_id || index} // Use index as fallback
               style={styles.answerButton}
-              onPress={() => handleAnswer(option)}
+              onPress={() => handleAnswer(option.text || option)} // Handle both structures
             >
-              <Text style={styles.answerText}>{option}</Text>
+              <Text style={styles.answerText}>{option.text || option}</Text>
             </TouchableOpacity>
           ))}
         </View>
