@@ -1,14 +1,6 @@
+// S7P1.jsx
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing, // Import Easing for more control over animations
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
@@ -192,21 +184,13 @@ export default function DrivingGame() {
         const data = await response.json();
         console.log('S7P1: Data received:', data);
         
-        if (data && data.scenario) {
-          // Transform database response to match your frontend format
+        if (data && data.success && data.data) {
           const transformedQuestion = {
-            question: data.scenario.question_text,
-            options: data.choices.map(choice => choice.choice_text),
-            correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
-            wrongExplanation: {}
+            question: data.data.question,
+            options: data.data.options,
+            correct: data.data.correct_answer,
+            wrongExplanation: data.data.wrong_explanations || {}
           };
-          
-          // Build wrong explanations
-          data.choices.forEach(choice => {
-            if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
-              transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
-            }
-          });
           
           setQuestions([transformedQuestion]);
           console.log('S7P1: ✅ Database questions loaded successfully');
@@ -271,7 +255,17 @@ export default function DrivingGame() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    console.log('S7P1: Animation useEffect triggered. Loading:', loading, 'Questions length:', questions.length);
+
+    if (!loading && questions.length > 0) {
+      console.log('S7P1: Starting scroll animation');
+      startScrollAnimation();
+    }
+  }, [loading, questions]);
+
   function startScrollAnimation() {
+    console.log('S7P1: startScrollAnimation called');
     scrollY.setValue(startOffset); // Ensure scroll starts from bottom for each game start
     carXAnim.setValue(width / 2 - carWidth / 2); // Reset car position to center lane
     setCarDirection("NORTH"); // Reset car direction
@@ -293,13 +287,6 @@ export default function DrivingGame() {
       }, 1000);
     });
   }
-
-  // ✅ DATABASE INTEGRATION - Modified useEffect to wait for data
-  useEffect(() => {
-    if (!loading) {
-      startScrollAnimation();
-    }
-  }, [loading]); // Added loading dependency
 
   // Updated handleFeedback function from S2P1
   const handleFeedback = (answerGiven) => {
@@ -473,7 +460,7 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S6P1');
+      navigation.navigate('S8P1');
       setShowQuestion(false);
     }
   };

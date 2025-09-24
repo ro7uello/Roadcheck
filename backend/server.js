@@ -167,24 +167,25 @@ app.get('/scenarios/:id', authenticate, async (req, res) => {
     
     if (scenarioError) throw scenarioError;
     
-    // Get scenario choices
+    // Get scenario choices WITH FULL TEXT
     const { data: choices, error: choicesError } = await supabase
       .from('scenario_choices')
       .select('*')
-      .eq('scenario_id', id);
-    
+      .eq('scenario_id', id)
+      .order('id'); // Make sure they're in consistent order
+
     if (choicesError) throw choicesError;
-    
-    // Transform data to match frontend format
+
+    // Transform data to return actual choice text
     const response = {
       success: true,
       data: {
         question: scenario.description,
-        options: choices.map(choice => choice.option),
-        correct_answer: choices.find(choice => choice.is_correct)?.option,
+        options: choices.map(choice => choice.text), // Use choice.text instead of choice.option
+        correct_answer: choices.find(choice => choice.is_correct)?.text, // Use .text
         wrong_explanations: choices.reduce((acc, choice) => {
           if (!choice.is_correct && choice.explanation) {
-            acc[choice.option] = choice.explanation;
+            acc[choice.text] = choice.explanation; // Use .text as key
           }
           return acc;
         }, {})

@@ -1,15 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  ActivityIndicator,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing
-} from "react-native";
+import { View, Image, Animated, ActivityIndicator, Dimensions, TouchableOpacity, Text, StyleSheet, Easing } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "@env";
@@ -159,24 +149,16 @@ export default function DrivingGame() {
         const data = await response.json();
         console.log('S2P1: Data received:', data);
 
-        if (data && data.scenario) {
-          // Transform database response to match your frontend format
+        if (data && data.success && data.data) {
           const transformedQuestion = {
-            question: data.scenario.question_text,
-            options: data.choices.map(choice => choice.choice_text),
-            correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
-            wrongExplanation: {}
+            question: data.data.question,
+            options: data.data.options,
+            correct: data.data.correct_answer,
+            wrongExplanation: data.data.wrong_explanations || {}
           };
 
-          // Build wrong explanations
-          data.choices.forEach(choice => {
-            if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
-              transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
-            }
-          });
-
           setQuestions([transformedQuestion]);
-          console.log('S2P1: ✅ Database questions loaded successfully');
+          console.log('S2P1: ✅ Database questions loaded successfully'); // Update log name for each file
         } else {
           console.log('S2P1: ⚠️ Invalid data structure, using fallback');
           setQuestions(fallbackQuestions);

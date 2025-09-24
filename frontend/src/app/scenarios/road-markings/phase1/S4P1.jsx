@@ -1,15 +1,8 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing } from "react-native";
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '@env';
 
 const { width, height } = Dimensions.get("window");
 
@@ -155,39 +148,52 @@ export default function DrivingGame() {
   useEffect(() => {
     const fetchScenarioData = async () => {
       try {
-        console.log('Fetching scenario data for S4P1...');
-        setLoading(true);
-        
-        // Replace with your actual backend URL
-        const response = await fetch('http://localhost:3001/scenarios/4');
-        console.log('Response status:', response.status);
-        
+        console.log('S4P1: Fetching scenario data...');
+        console.log('S4P1: API_URL value:', API_URL);
+
+        const token = await AsyncStorage.getItem('access_token');
+        console.log('S4P1: Token retrieved:', token ? 'Yes' : 'No');
+
+        const url = `${API_URL}/scenarios/4`;
+        console.log('S4P1: Fetching from URL:', url);
+
+        const response = await fetch(url, {
+                  method: 'GET',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  }
+                });
+
+        console.log('S4P1: Response status:', response.status);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
         const data = await response.json();
-        console.log('Full response data:', JSON.stringify(data, null, 2));
-        
-        if (data.success) {
-          // Transform database response to match frontend format
-          const transformedQuestions = [{
+        console.log('S4P1: Data received:', data);
+
+        if (data && data.success && data.data) {
+          const transformedQuestion = {  // ✅ Singular
             question: data.data.question,
             options: data.data.options,
             correct: data.data.correct_answer,
             wrongExplanation: data.data.wrong_explanations || {}
-          }];
-          
-          console.log('Setting questions from database:', transformedQuestions);
-          setQuestions(transformedQuestions);
+          };
+
+          setQuestions([transformedQuestion]); // ✅ Singular
+          console.log('S4P1: ✅ Database questions loaded successfully');
         } else {
-          console.log('Database response not successful, using fallback questions');
+          console.log('S4P1: ⚠️ Invalid data structure, using fallback');
           setQuestions(fallbackQuestions);
         }
       } catch (error) {
-        console.error('Error fetching scenario data:', error);
-        console.log('Using fallback questions due to error');
+        console.log('S4P1: ❌ Database error, using fallback questions:', error.message);
         setQuestions(fallbackQuestions);
         setError(error.message);
       } finally {
         setLoading(false);
-        console.log('Setting loading to false');
       }
     };
 
@@ -195,32 +201,38 @@ export default function DrivingGame() {
   }, []);
 
   // Function to update user progress
-  const updateProgress = async (selectedAnswer, isCorrect) => {
+  const updateProgress = async (scenarioId, selectedOption, isCorrect) => {
     try {
-      const progressData = {
-        user_id: 1, // Replace with actual user ID
-        scenario_id: 4, // S4P1 scenario ID
-        selected_answer: selectedAnswer,
-        is_correct: isCorrect,
-        attempts: 1,
-        completed_at: new Date().toISOString()
-      };
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('user_id');
 
-      console.log('Updating progress:', progressData);
-      
-      // Replace with your actual backend URL
-      const response = await fetch('http://localhost:3001/user-progress/scenario', {
+      if (!token || !userId) {
+        console.log('S4P1: No token or user_id found for progress update');
+        return;
+      }
+
+      const attemptResponse = await fetch(`${API_URL}/attempts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(progressData),
+        body: JSON.stringify({
+          user_id: parseInt(userId),
+          scenario_id: scenarioId, // Use 4 for S4P1, 5 for S5P1, etc.
+          selected_option: selectedOption,
+          is_correct: isCorrect,
+          completed_at: new Date().toISOString()
+        })
       });
 
-      const result = await response.json();
-      console.log('Progress updated successfully:', result);
+      if (attemptResponse.ok) {
+        console.log('S4P1: ✅ Progress updated successfully');
+      } else {
+        console.log('S4P1: ⚠️ Failed to update progress:', attemptResponse.status);
+      }
     } catch (error) {
-      console.error('Error updating progress:', error);
+      console.log('S4P1: ❌ Error updating progress:', error.message);
     }
   };
 
@@ -581,8 +593,6 @@ export default function DrivingGame() {
       </View>
     );
   }
-
-  console.log('Rendering main game. Loading:', loading, 'Questions length:', questions.length);
 
   return (
     <View style={{ flex: 1, backgroundColor: "black", overflow: 'hidden' }}>

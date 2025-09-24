@@ -1,15 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  ActivityIndicator,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing,
-} from "react-native";
+import { View, Image, Animated, ActivityIndicator, Dimensions, TouchableOpacity, Text, StyleSheet, Easing } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
@@ -129,6 +119,9 @@ export default function DrivingGame() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const currentScroll = useRef(0);
 
+  const [sessionAttempts, setSessionAttempts] = useState([]);
+  const [sessionStartTime, setSessionStartTime] = useState(Date.now());
+
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
       currentScroll.current = value;
@@ -189,22 +182,14 @@ export default function DrivingGame() {
         const data = await response.json();
         console.log('S1P1: Data received:', data);
         
-        if (data && data.scenario) {
-          // Transform database response to match your frontend format
+        if (data && data.success && data.data) {
           const transformedQuestion = {
-            question: data.scenario.question_text,
-            options: data.choices.map(choice => choice.choice_text),
-            correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
-            wrongExplanation: {}
+            question: data.data.question,
+            options: data.data.options,
+            correct: data.data.correct_answer,
+            wrongExplanation: data.data.wrong_explanations || {} // Use directly, don't forEach
           };
-          
-          // Build wrong explanations
-          data.choices.forEach(choice => {
-            if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
-              transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
-            }
-          });
-          
+
           setQuestions([transformedQuestion]);
           console.log('S1P1: ✅ Database questions loaded successfully');
         } else {
@@ -344,9 +329,17 @@ export default function DrivingGame() {
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
     const isCorrect = answerGiven === currentQuestion.correct;
-    
-    // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
-    updateProgress(1, answerGiven, isCorrect); // scenario_id = 1 for S1P1
+
+    // Record this attempt
+    const attempt = {
+      scenario_id: 1,
+      selected_option: answerGiven,
+      is_correct: isCorrect,
+      time_taken: Math.round((Date.now() - sessionStartTime) / 1000)
+    };
+    setSessionAttempts([attempt]); // S1P1 only has 1 attempt
+
+    updateProgress(1, answerGiven, isCorrect);
     
     if (isCorrect) {
       setIsCorrectAnswer(true); // Set to true for correct feedback
@@ -495,17 +488,14 @@ const animateOvertake = async (targetX) => {
     setIsJeepneyVisible(true);
 
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else {
-      navigation.navigate('S2P1');
-      setShowQuestion(false);
-      if (scrollAnimationRef.current) {
-        scrollAnimationRef.current.stop();
-      }
-      if (jeepneyAnimationRef.current) {
-          jeepneyAnimationRef.current.stop();
-      }
+        setQuestionIndex(questionIndex + 1);
+        startScrollAnimation();
+      } else {
+        // Pass session data to S2P1
+        navigation.navigate('S2P1', {
+          sessionAttempts: JSON.stringify(sessionAttempts),
+          sessionStartTime: sessionStartTime
+        });
     }
   };
 

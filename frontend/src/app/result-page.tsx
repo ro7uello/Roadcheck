@@ -151,11 +151,9 @@ export default function ResultPage() {
           const attemptPayload = {
             user_id: user.id,
             scenario_id: attempt.scenario_id,
-            selected_choice_id: attempt.selected_choice_id || null,
-            is_correct: attempt.is_correct,
-            time_taken: attempt.time_taken || 0,
-            category_id: parseInt(categoryId),
-            phase_id: parseInt(phaseId)
+            selected_option: attempt.selected_option, // ✅ Changed from selected_choice_id
+            is_correct: attempt.is_correct
+            // ✅ Removed time_taken, category_id, phase_id since your server doesn't use them
           };
 
           const attemptResponse = await fetch(`${API_URL}/attempts`, {

@@ -1,14 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing, // <-- import Easing correctly
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
@@ -524,8 +515,14 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('result-page');
-      setShowQuestion(false);
+      navigation.navigate('result-page', {
+        categoryId: '1',
+        phaseId: '1',
+        categoryName: 'Road Markings',
+        userAttempts: JSON.stringify(sessionAttempts),
+        totalTime: Math.round((Date.now() - sessionStartTime) / 1000),
+        scenarioCount: 10
+      });
     }
   };
 

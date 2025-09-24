@@ -1,15 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing, // Import Easing for more control over animations
-} from "react-native";
-import { useNavigation } from '@react-navigation/native';
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing } from "react-native";
+import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 
@@ -122,6 +113,15 @@ export default function DrivingGame() {
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
+  const route = useRoute();
+  const { sessionAttempts: prevSessionAttempts, sessionStartTime: prevSessionStartTime } = route.params || {};
+
+  // Initialize with previous session data:
+  const [sessionAttempts, setSessionAttempts] = useState(
+    prevSessionAttempts ? JSON.parse(prevSessionAttempts) : []
+  );
+  const [sessionStartTime] = useState(prevSessionStartTime || Date.now());
+
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
       currentScroll.current = value;
@@ -140,7 +140,7 @@ export default function DrivingGame() {
   const [carFrame, setCarFrame] = useState(0);
 
   // Responsive car positioning
-  const carXAnim = useRef(new Animated.Value(0)).current;
+  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
   const jeepneyYAnim = useRef(new Animated.Value(height * 1.5)).current; // Start well below the screen
   const jeepneyXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2 + tileSize)).current; // Default lane to the right of player
   const jeepneyEntryAnim = useRef(new Animated.Value(0)).current;
@@ -154,13 +154,13 @@ export default function DrivingGame() {
       try {
         console.log('S3P1: Fetching scenario data...');
         console.log('S3P1: API_URL value:', API_URL);
-        
+
         const token = await AsyncStorage.getItem('access_token');
         console.log('S3P1: Token retrieved:', token ? 'Yes' : 'No');
-        
+
         const url = `${API_URL}/scenarios/3`;
         console.log('S3P1: Fetching from URL:', url);
-        
+
         const response = await fetch(url, {
           method: 'GET',
           headers: {
@@ -168,32 +168,24 @@ export default function DrivingGame() {
             'Authorization': `Bearer ${token}`
           }
         });
-        
+
         console.log('S3P1: Response status:', response.status);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
         console.log('S3P1: Data received:', data);
-        
-        if (data && data.scenario) {
-          // Transform database response to match your frontend format
+
+        if (data && data.success && data.data) {
           const transformedQuestion = {
-            question: data.scenario.question_text,
-            options: data.choices.map(choice => choice.choice_text),
-            correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
-            wrongExplanation: {}
+            question: data.data.question,
+            options: data.data.options,
+            correct: data.data.correct_answer,
+            wrongExplanation: data.data.wrong_explanations || {}
           };
-          
-          // Build wrong explanations
-          data.choices.forEach(choice => {
-            if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
-              transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
-            }
-          });
-          
+
           setQuestions([transformedQuestion]);
           console.log('S3P1: ✅ Database questions loaded successfully');
         } else {
@@ -205,10 +197,10 @@ export default function DrivingGame() {
         setQuestions(fallbackQuestions);
         setError(error.message);
       } finally {
+        console.log('S3P1: Setting loading to false');
         setLoading(false);
       }
     };
-
     fetchScenarioData();
   }, []);
 
@@ -250,13 +242,6 @@ export default function DrivingGame() {
   };
 
   // Car animation frame cycling
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCarFrame((prevFrame) => (prevFrame === 0 ? 1 : 0));
-    }, 200); // Adjust speed of car animation
-    return () => clearInterval(interval);
-  }, []);
-
   function startScrollAnimation() {
     scrollY.setValue(startOffset); // Ensure scroll starts from bottom for each game start
     carXAnim.setValue(width / 2 - carWidth / 2); // Reset car position
@@ -278,20 +263,68 @@ export default function DrivingGame() {
     });
   }
 
+    function startScrollAnimation() {
+      console.log('S3P1: startScrollAnimation called');
+      scrollY.setValue(startOffset);
+      carXAnim.setValue(width / 2 - carWidth / 2);
+      setCarDirection("NORTH");
+      setIsCarVisible(true);
+
+      const stopRow = 6.5;
+      const stopOffset = startOffset + stopRow * tileSize;
+      console.log('S3P1: Animation will stop at offset:', stopOffset);
+
+      Animated.timing(scrollY, {
+        toValue: stopOffset,
+        duration: 4000,
+        useNativeDriver: true,
+      }).start(() => {
+        console.log('S3P1: Animation completed, showing question');
+        setShowQuestion(true);
+        setTimeout(() => {
+          setShowAnswers(true);
+        }, 1000);
+      });
+    }
+
   // ✅ DATABASE INTEGRATION - Modified useEffect to wait for data
   useEffect(() => {
-    if (!loading) {
+    console.log('S3P1: Animation useEffect triggered. Loading:', loading, 'Questions length:', questions.length);
+
+    if (!loading && questions.length > 0) {
+      console.log('S3P1: Starting scroll animation');
       startScrollAnimation();
     }
-  }, [loading]); // Added loading dependency
+  }, [loading, questions]);
+
+  useEffect(() => {
+    console.log('S3P1: State - Loading:', loading, 'Questions:', questions.length, 'ShowQuestion:', showQuestion);
+    }, [loading, questions, showQuestion]);
+
+ useEffect(() => {
+   if (!showQuestion && isCarVisible) {
+     const interval = setInterval(() => {
+       setCarFrame((prevFrame) => (prevFrame === 0 ? 1 : 0));
+     }, 200);
+     return () => clearInterval(interval);
+   }
+ }, [showQuestion, isCarVisible]);
 
   // Updated handleFeedback function from S2P1
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
     const isCorrect = answerGiven === currentQuestion.correct;
-    
-    // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
-    updateProgress(3, answerGiven, isCorrect); // scenario_id = 3 for S3P1
+
+    // Record this attempt in session data
+    const attempt = {
+      scenario_id: 3,
+      selected_option: answerGiven,
+      is_correct: isCorrect,
+      time_taken: Math.round((Date.now() - sessionStartTime) / 1000)
+    };
+    setSessionAttempts([...sessionAttempts, attempt]); // Add to existing attempts
+
+    updateProgress(3, answerGiven, isCorrect);
     
     if (isCorrect) {
       setIsCorrectAnswer(true); // Set to true for correct feedback
@@ -336,7 +369,7 @@ export default function DrivingGame() {
     }).start(callback);
   };
 
-  const handleAnswer = (option) => {
+ const handleAnswer = (option) => {
     setSelectedAnswer(option);
     setShowQuestion(false);
     setShowAnswers(false);
@@ -451,16 +484,28 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('S4P1');
-      setShowQuestion(false);
+      navigation.navigate('S4P1', {
+        sessionAttempts: JSON.stringify(sessionAttempts),
+        sessionStartTime: sessionStartTime
+      });
     }
   };
 
   // ✅ DATABASE INTEGRATION - Show loading screen while fetching data
   if (loading) {
+    console.log('S3P1: Showing loading screen. Loading:', loading, 'Questions length:', questions.length);
     return (
       <View style={[styles.loadingContainer, { backgroundColor: 'black' }]}>
         <Text style={styles.loadingText}>Loading scenario...</Text>
+      </View>
+    );
+  }
+
+  if (questions.length === 0) {
+    console.log('S3P1: No questions available, showing error');
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: 'black' }]}>
+        <Text style={styles.loadingText}>Error loading scenario. Please try again.</Text>
       </View>
     );
   }

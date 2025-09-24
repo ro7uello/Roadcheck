@@ -1,14 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
@@ -236,21 +227,13 @@ export default function DrivingGame() {
         const data = await response.json();
         console.log('S8P1: Data received:', data);
 
-        if (data && data.scenario) {
-          // Transform database response to match your frontend format
+        if (data && data.success && data.data) {
           const transformedQuestion = {
-            question: data.scenario.question_text,
-            options: data.choices.map(choice => choice.choice_text),
-            correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
-            wrongExplanation: {}
+            question: data.data.question,
+            options: data.data.options,
+            correct: data.data.correct_answer,
+            wrongExplanation: data.data.wrong_explanations || {}
           };
-
-          // Build wrong explanations
-          data.choices.forEach(choice => {
-            if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
-              transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
-            }
-          });
 
           setQuestions([transformedQuestion]);
           console.log('S8P1: ✅ Database questions loaded successfully');
@@ -763,7 +746,7 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation(); // Restart full animation cycle for next question
     } else {
-      navigation.navigate('S1P1');
+      navigation.navigate('S9P1');
       setShowQuestion(false);
       // Ensure all animations are stopped when navigating away
       if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
