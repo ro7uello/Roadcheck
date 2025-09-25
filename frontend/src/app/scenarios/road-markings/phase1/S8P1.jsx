@@ -472,7 +472,7 @@ export default function DrivingGame() {
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
     const isCorrect = answerGiven === currentQuestion.correct;
-
+    
     console.log('Answer given:', answerGiven);
     console.log('Correct answer:', currentQuestion.correct);
     console.log('Is correct:', isCorrect);
@@ -537,59 +537,72 @@ const animateFollowTraffic = async () => {
 };
 
 const animateSuddenOvertake = async () => {
-    // Keep scroll animation running
-    if (scrollAnimationRef.current) scrollAnimationRef.current.start();
-    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop(); // Jeepney stays put
-    // NEW: Keep NPC car animations running
-    if (npcCar1AnimationRef.current) npcCar1AnimationRef.current.start();
-    if (npcCar2AnimationRef.current) npcCar2AnimationRef.current.start();
-    if (npcCar3AnimationRef.current) npcCar3AnimationRef.current.start();
-    if (npcCar4AnimationRef.current) npcCar4AnimationRef.current.start();
+  // Keep scroll animation running (don't stop it like your version does)
+  if (scrollAnimationRef.current) scrollAnimationRef.current.start();
+  if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
+  // Keep NPC car animations running
+  if (npcCar1AnimationRef.current) npcCar1AnimationRef.current.start();
+  if (npcCar2AnimationRef.current) npcCar2AnimationRef.current.start();
+  if (npcCar3AnimationRef.current) npcCar3AnimationRef.current.start();
+  if (npcCar4AnimationRef.current) npcCar4AnimationRef.current.start();
 
-    setPlayerCarFrame(0);
-    setJeepneyFrame(0);
-    setIsPlayerCarVisible(true);
-    setIsJeepneyVisible(true);
-    // NEW: Ensure NPC cars are visible and their frames are reset
-    setIsNpcCar1Visible(true); setNpcCar1Frame(0);
-    setIsNpcCar2Visible(true); setNpcCar2Frame(0);
-    setIsNpcCar3Visible(true); setNpcCar3Frame(0);
-    setIsNpcCar4Visible(true); setNpcCar4Frame(0);
+  setPlayerCarFrame(0);
+  setJeepneyFrame(0);
+  setIsPlayerCarVisible(true);
+  setIsJeepneyVisible(true);
+  // Ensure NPC cars are visible and their frames are reset
+  setIsNpcCar1Visible(true); setNpcCar1Frame(0);
+  setIsNpcCar2Visible(true); setNpcCar2Frame(0);
+  setIsNpcCar3Visible(true); setNpcCar3Frame(0);
+  setIsNpcCar4Visible(true); setNpcCar4Frame(0);
 
-    const targetXLeftLane = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2);
+  const targetXLeftLane = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2);
 
-    await new Promise(resolve => {
-        setPlayerCarDirection("NORTHWEST");
-        Animated.parallel([
-            Animated.timing(playerCarXAnim, {
-                toValue: targetXLeftLane,
-                duration: 400,
-                easing: Easing.easeOut,
-                useNativeDriver: false,
-            }),
-            // Only scrollY is handled by the loop, no additional scroll here
-        ]).start(resolve);
-    });
+  // 1. Car faces Northwest and moves quickly left (using your preferred timing)
+  await new Promise(resolve => {
+    setPlayerCarDirection("NORTHWEST");
+    Animated.parallel([
+      Animated.timing(playerCarXAnim, {
+        toValue: targetXLeftLane, // Move to left lane
+        duration: 300, // Your preferred fast duration
+        easing: Easing.easeOut,
+        useNativeDriver: false,
+      }),
+      Animated.timing(scrollY, {
+        toValue: scrollY._value - (tileSize * 0.8), // Move forward a bit
+        duration: 700,
+        easing: Easing.easeOut,
+        useNativeDriver: true,
+      })
+    ]).start(resolve);
+  });
 
-    await new Promise(resolve => {
-        setPlayerCarDirection("NORTH");
-        Animated.parallel([
-            Animated.timing(jeepneyYAnim, {
-                toValue: jeepneyYAnim._value + height + jeepHeight, // Move jeepney far down relative to its current pos
-                duration: 800,
-                easing: Easing.easeIn,
-                useNativeDriver: true,
-            }),
-            // Only scrollY is handled by the loop, no additional scroll here
-        ]).start(resolve);
-    });
-    setIsJeepneyVisible(false);
-
+  // 2. Car faces North and moves further forward (overtaking acceleration)
+  await new Promise(resolve => {
     setPlayerCarDirection("NORTH");
+    Animated.parallel([
+      Animated.timing(jeepneyYAnim, {
+        toValue: jeepneyYAnim._value + height + jeepHeight, // Move jeepney down
+        duration: 1600,
+        easing: Easing.easeIn,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scrollY, {
+        toValue: scrollY._value - (tileSize * 4), // More forward movement
+        duration: 1000,
+        easing: Easing.easeOut,
+        useNativeDriver: true,
+      })
+    ]).start(resolve);
+  });
+  setIsJeepneyVisible(false);
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    handleFeedback(selectedAnswer);
-  };
+  // 3. Car faces North and continues straight in the left lane
+  setPlayerCarDirection("NORTH");
+
+  await new Promise(resolve => setTimeout(resolve, 500));
+  handleFeedback(selectedAnswer);
+};
 
   const animateCarefulOvertake = async () => {
     // Keep scroll animation running
@@ -620,7 +633,7 @@ const animateSuddenOvertake = async () => {
         Animated.parallel([
             Animated.timing(playerCarXAnim, {
                 toValue: targetXLeftLane,
-                duration: 300,
+                duration: 400,
                 easing: Easing.easeOut,
                 useNativeDriver: false,
             }),
@@ -633,7 +646,7 @@ const animateSuddenOvertake = async () => {
         Animated.parallel([
             Animated.timing(jeepneyYAnim, {
                 toValue: jeepneyYAnim._value + height + jeepHeight, // Move jeepney far down relative to its current pos
-                duration: 1000,
+                duration: 800,
                 easing: Easing.easeIn,
                 useNativeDriver: true,
             }),
@@ -685,6 +698,9 @@ const animateSuddenOvertake = async () => {
       await animateFollowTraffic(); // Changed from animateStayInLane to show following behavior
     } else if (option === "Follow other drivers and cross the lines since everyone is doing it") {
       await animateSuddenOvertake();
+      handleFeedback(option)
+    } else if (option === "Cross only if no traffic enforcers are visible") { // Assuming this also triggers an overtake
+        await animateCarefulOvertake();
     } else {
         // Fallback for any other wrong answer if not handled by specific animations
         await new Promise(resolve => setTimeout(resolve, 1000));
