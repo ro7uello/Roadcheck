@@ -416,7 +416,7 @@ export default function DrivingGame() {
         Animated.parallel([
             Animated.timing(playerCarXAnim, {
                 toValue: targetXLeftLane, // Move to Lane 0
-                duration: 400, // Fast
+                duration: 300, // Fast
                 easing: Easing.easeOut,
                 useNativeDriver: false,
             }),
@@ -604,7 +604,7 @@ export default function DrivingGame() {
         moveToNextScenario();
 
         // Navigate to next scenario using file-based numbering
-        const nextScenarioNumber = currentFileScenario + 1; // Will be 10
+        const nextScenarioNumber = currentFileScenario -1 ; // Will be 10
         const phaseId = sessionData?.phase_id || 1;
         const nextScreen = `S${nextScenarioNumber}P${phaseId}`; // Will be "S10P1"
 
