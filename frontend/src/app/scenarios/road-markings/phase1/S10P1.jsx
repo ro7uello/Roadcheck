@@ -386,7 +386,7 @@ export default function DrivingGame() {
 
       // Calculate proper lane positions based on road layout
       const centerLane = width / 2 - carWidth / 2;  // Current center position
-      const leftLane = width * 0.25 - carWidth / 2;  // Left lane position
+      const leftLane = width * 0.29 - carWidth / 2;  // Left lane position
       const rightLane = width * 0.75 - carWidth / 2; // Right lane position
 
       console.log('Lane change - Current X:', currentCarX, 'Left lane:', leftLane, 'Right lane:', rightLane);
@@ -401,13 +401,13 @@ export default function DrivingGame() {
           Animated.parallel([
             Animated.timing(carXAnim, {
               toValue: leftLane,
-              duration: 800, // Quick but not too fast to be visible
+              duration: 600, // Quick but not too fast to be visible
               easing: Easing.out(Easing.cubic), // Sharp easing for sudden movement
               useNativeDriver: false,
             }),
             Animated.timing(scrollY, {
               toValue: currentScroll.current + (tileSize * 0.8), // Move forward during lane change
-              duration: 800,
+              duration: 1000,
               easing: Easing.out(Easing.cubic),
               useNativeDriver: true,
             })
@@ -421,52 +421,13 @@ export default function DrivingGame() {
 
           Animated.timing(scrollY, {
             toValue: currentScroll.current + (tileSize * 1.2),
-            duration: 600,
+            duration: 800,
             easing: Easing.linear,
             useNativeDriver: true,
           }).start(resolve);
         });
 
-        // 3. Show dangerous driving - car starts to lose control
-        await new Promise(resolve => {
-          setCarDirection("WEST"); // Car turning too much
-          Animated.parallel([
-            Animated.timing(carXAnim, {
-              toValue: leftLane - (tileSize * 0.3), // Move further left (off road)
-              duration: 700,
-              easing: Easing.in(Easing.quad),
-              useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-              toValue: currentScroll.current + (tileSize * 1.5),
-              duration: 700,
-              easing: Easing.in(Easing.quad),
-              useNativeDriver: true,
-            })
-          ]).start(resolve);
-        });
 
-        // 4. Car continues off road and exits screen (accident consequence)
-        await new Promise(resolve => {
-          setCarDirection("WEST");
-          Animated.parallel([
-            Animated.timing(carXAnim, {
-              toValue: -carWidth * 1.5, // Completely off screen to the left
-              duration: 1200,
-              easing: Easing.in(Easing.cubic), // Accelerating off screen
-              useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-              toValue: currentScroll.current + (tileSize * 2),
-              duration: 1200,
-              easing: Easing.in(Easing.cubic),
-              useNativeDriver: true,
-            })
-          ]).start(() => {
-            setIsCarVisible(false);
-            resolve();
-          });
-        });
 
         // Show feedback after animation completes
         handleFeedback(answer);

@@ -412,7 +412,7 @@ export default function DrivingGame() {
 
     // 1. Car faces WEST and moves quickly left
     await new Promise(resolve => {
-        setPlayerCarDirection("WEST"); // Pure left movement
+        setPlayerCarDirection("NORTHWEST"); // Pure left movement
         Animated.parallel([
             Animated.timing(playerCarXAnim, {
                 toValue: targetXLeftLane, // Move to Lane 0
@@ -422,7 +422,7 @@ export default function DrivingGame() {
             }),
             Animated.timing(scrollY, {
                 toValue: scrollY._value - (tileSize * 0.8), // Move forward a bit
-                duration: 400,
+                duration: 700,
                 easing: Easing.easeOut,
                 useNativeDriver: true,
             })
@@ -435,13 +435,13 @@ export default function DrivingGame() {
         Animated.parallel([
             Animated.timing(busYAnim, {
                 toValue: height + busHeight, // Move the bus off-screen bottom
-                duration: 800, // Quickly disappear
+                duration: 1400, // Quickly disappear
                 easing: Easing.easeIn, // Faster exit
                 useNativeDriver: true,
             }),
             Animated.timing(scrollY, { // Player car moves significantly forward
                 toValue: scrollY._value - (tileSize * 4), // More forward movement
-                duration: 800,
+                duration: 1000,
                 easing: Easing.easeOut,
                 useNativeDriver: true,
             }),
@@ -487,13 +487,13 @@ export default function DrivingGame() {
         Animated.parallel([
             Animated.timing(playerCarXAnim, {
                 toValue: targetXRightLane, // Move to Lane 2
-                duration: 800, // Smooth duration
+                duration: 400, // Smooth duration
                 easing: Easing.easeOut,
                 useNativeDriver: false,
             }),
             Animated.timing(scrollY, {
                 toValue: scrollY._value - (tileSize * 1), // Move forward a bit during change
-                duration: 800,
+                duration: 500,
                 easing: Easing.easeOut,
                 useNativeDriver: true,
             })
@@ -604,7 +604,7 @@ export default function DrivingGame() {
         moveToNextScenario();
 
         // Navigate to next scenario using file-based numbering
-        const nextScenarioNumber = currentFileScenario + 1; // Will be 10
+        const nextScenarioNumber = currentFileScenario + 1 ; // Will be 10
         const phaseId = sessionData?.phase_id || 1;
         const nextScreen = `S${nextScenarioNumber}P${phaseId}`; // Will be "S10P1"
 
