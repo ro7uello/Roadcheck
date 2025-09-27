@@ -498,36 +498,82 @@ export default function DrivingGame() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
+
+    console.log('=== S10P1 HANDLE NEXT DEBUG ===');
+      console.log('Current scenario from session:', currentScenario);
+      console.log('Question index:', questionIndex);
+      console.log('Questions length:', questions.length);
+      console.log('Session data:', sessionData);
+      console.log('================================');
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setIsCorrectAnswer(null); // Reset feedback state from S9P1
-    setCarFrame(0);
+    setIsCorrectAnswer(null);
+    setPlayerCarFrame(0);
+    setBusFrame(0);
 
-    const centerXNow = width / 2 - carWidth / 2;
-    carXAnim.setValue(centerXNow);
-    carXCurrent.current = centerXNow;
-    setCarDirection("NORTH");
-    setIsCarVisible(true);
+    const centerX = width / 2 - playerCarWidth / 2;
+    playerCarXAnim.setValue(centerX);
+    setPlayerCarDirection("NORTH");
+    setIsPlayerCarVisible(true);
+    setIsBusVisible(true);
 
-    if (questionIndex < questions.length - 1) {
+    busYAnim.setValue(-busHeight);
+
+    if (currentScenario >= 10 || true) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      navigation.navigate('result-page');
+      // This is the last scenario (S10P1)
+      try {
+        const sessionResults = await completeSession();
+
+        if (sessionResults) {
+          console.log('Session results to pass:', sessionResults);
+
+          navigation.navigate('ResultPage', {
+            sessionId: sessionResults.sessionId,
+            categoryId: sessionResults.categoryId,
+            phaseId: sessionResults.phaseId,
+            categoryName: sessionResults.categoryName,
+            totalTime: sessionResults.totalTime,
+            userAttempts: JSON.stringify(sessionResults.attempts),
+            scenarioProgress: JSON.stringify(sessionResults.scenarioProgress),
+            scenarioCount: '10'
+          });
+        } else {
+          console.error('No session results received');
+          // Fallback navigation
+          navigation.navigate('ResultPage', {
+            categoryId: sessionData?.category_id || '1',
+            phaseId: sessionData?.phase_id || '1',
+            categoryName: categoryName || 'Road Markings',
+            scenarioCount: '10'
+          });
+        }
+      } catch (error) {
+        console.error('Error completing session:', error);
+        // Fallback navigation
+        navigation.navigate('ResultPage', {
+          categoryId: sessionData?.category_id || '1',
+          phaseId: sessionData?.phase_id || '1',
+          categoryName: categoryName || 'Road Markings',
+          scenarioCount: '10'
+        });
+      }
+
       setShowQuestion(false);
+
+      // Cleanup animations
+      if (scrollAnimationRef.current) {
+        scrollAnimationRef.current.stop();
+      }
+      if (busAnimationRef.current) {
+        busAnimationRef.current.stop();
+      }
     }
   };
-
-  // ✅ DATABASE INTEGRATION - Show loading screen while fetching data
-  if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: 'black' }]}>
-        <Text style={styles.loadingText}>Loading scenario...</Text>
-      </View>
-    );
-  }
 
   // Determine the feedback message based on whether the answer was correct or wrong (from S9P1)
   const currentQuestionData = questions[questionIndex];

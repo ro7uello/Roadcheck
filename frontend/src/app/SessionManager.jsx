@@ -123,10 +123,12 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
   };
 
   const moveToNextScenario = () => {
+      console.log('Moving from scenario', currentScenario, 'to', currentScenario + 1);
     if (currentScenario < 10) {
       setCurrentScenario(currentScenario + 1);
       setScenarioStartTime(Date.now()); // Reset timer for next scenario
     }
+console.log('New current scenario:', currentScenario + 1);
   };
 
   const completeSession = async () => {

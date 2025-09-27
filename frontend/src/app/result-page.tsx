@@ -1,4 +1,3 @@
-// Enhanced result-page.jsx
 import { useFonts } from 'expo-font';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -90,34 +89,89 @@ export default function ResultPage() {
   const calculateResults = async () => {
     try {
       setLoading(true);
+      console.log('🔍 DEBUG: Starting calculateResults');
+      console.log('🔍 DEBUG: Params received:', { sessionId, categoryId, phaseId, categoryName, userAttempts, totalTime, scenarioProgress });
 
       let attempts = [];
       let detailedProgress = [];
 
-      // Parse data from navigation params
-      if (userAttempts) {
-        attempts = JSON.parse(userAttempts);
+      // Parse data from navigation params with better error handling
+      try {
+        if (userAttempts && typeof userAttempts === 'string') {
+          attempts = JSON.parse(userAttempts);
+          console.log('🔍 DEBUG: Parsed attempts:', attempts);
+        } else if (Array.isArray(userAttempts)) {
+          attempts = userAttempts;
+        }
+      } catch (parseError) {
+        console.error('❌ Error parsing userAttempts:', parseError);
+        attempts = [];
       }
-      if (scenarioProgress) {
-        detailedProgress = JSON.parse(scenarioProgress);
+
+      try {
+        if (scenarioProgress && typeof scenarioProgress === 'string') {
+          detailedProgress = JSON.parse(scenarioProgress);
+          console.log('🔍 DEBUG: Parsed scenarioProgress:', detailedProgress);
+        } else if (Array.isArray(scenarioProgress)) {
+          detailedProgress = scenarioProgress;
+        }
+      } catch (parseError) {
+        console.error('❌ Error parsing scenarioProgress:', parseError);
+        detailedProgress = [];
       }
 
       // If we have sessionId, fetch latest data from backend
       if (sessionId) {
+        console.log('🔍 DEBUG: Fetching session details for sessionId:', sessionId);
         await fetchSessionDetails(sessionId);
         return; // fetchSessionDetails will call showResultPanel
       }
 
       // Fallback to calculate from passed data
+      console.log('🔍 DEBUG: Calculating from passed data, attempts count:', attempts.length);
+
+      if (attempts.length === 0) {
+        // No attempts data - create mock data based on scenarioCount
+        console.log('⚠️ No attempts data, creating default results');
+        const scenarioDetails = Array.from({ length: parseInt(scenarioCount) || 10 }, (_, index) => ({
+          scenarioNumber: index + 1,
+          scenarioId: index + 1,
+          isAttempted: false,
+          isCorrect: false,
+          selectedAnswer: null,
+          timeTaken: '00:00',
+          status: 'NOT ATTEMPTED'
+        }));
+
+        const newResultData = {
+          status: 'FAIL',
+          correctActs: 0,
+          violations: 0,
+          totalTimeSpent: '00:00',
+          totalScore: '0%',
+          accuracy: 0,
+          averageTime: '00:00',
+          scenarioDetails
+        };
+
+        setResultData(newResultData);
+        showResultPanel();
+        return;
+      }
+
       const correctAnswers = attempts.filter(attempt => attempt.is_correct).length;
       const incorrectAnswers = attempts.length - correctAnswers;
       const accuracy = attempts.length > 0 ? Math.round((correctAnswers / attempts.length) * 100) : 0;
       const passingScore = 70;
       const status = accuracy >= passingScore ? 'PASS' : 'FAIL';
 
-      const formattedTime = formatTime(totalTime || 0);
+      // Better time formatting
+      const totalTimeNum = parseInt(totalTime) || 0;
+      const formattedTime = formatTime(totalTimeNum);
       const averageTimePerScenario = attempts.length > 0 ?
-        formatTime(Math.round((totalTime || 0) / attempts.length)) : '00:00';
+        formatTime(Math.round(totalTimeNum / attempts.length)) : '00:00';
+
+      console.log('🔍 DEBUG: Calculated results:', { correctAnswers, incorrectAnswers, accuracy, status, totalTimeNum });
 
       // Create scenario details from attempts
       const scenarioDetails = attempts.map((attempt, index) => ({
@@ -125,8 +179,8 @@ export default function ResultPage() {
         scenarioId: attempt.scenario_id || index + 1,
         isAttempted: true,
         isCorrect: attempt.is_correct,
-        selectedAnswer: attempt.chosen_option || attempt.selected_answer,
-        timeTaken: formatTime(attempt.time_taken || 0),
+        selectedAnswer: attempt.chosen_option || attempt.selected_answer || attempt.selected_option,
+        timeTaken: formatTime(attempt.time_taken_seconds || attempt.time_taken || 0),
         status: attempt.is_correct ? 'CORRECT' : 'WRONG'
       }));
 
@@ -141,11 +195,12 @@ export default function ResultPage() {
         scenarioDetails
       };
 
+      console.log('🔍 DEBUG: Final result data:', newResultData);
       setResultData(newResultData);
       showResultPanel();
 
     } catch (error) {
-      console.error('Error calculating results:', error);
+      console.error('❌ Error calculating results:', error);
       Alert.alert('Error', 'Failed to calculate results. Please try again.');
     } finally {
       setLoading(false);
