@@ -95,8 +95,18 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
       const currentTime = Date.now();
       const timeTaken = Math.round((currentTime - scenarioStartTime) / 1000);
 
+      console.log('🔍 API CALL:', {
+        url: `${API_URL}/sessions/${sessionData.id}/scenario/${scenarioId}`,
+        body: {
+          scenario_id: scenarioId,
+          selected_answer: selectedAnswer,
+          is_correct: isCorrect,
+          time_taken_seconds: timeTaken
+        }
+      });
+
       const response = await fetch(
-        `${API_URL}/sessions/${sessionData.id}/scenario/${currentScenario}`,
+        `${API_URL}/sessions/${sessionData.id}/scenario/${scenarioId}`,
         {
           method: 'PUT',
           headers: {
@@ -112,13 +122,17 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
         }
       );
 
+      const responseText = await response.text();
+      console.log('🔍 API RESPONSE:', response.status, responseText);
+
       if (response.ok) {
-        // Reload progress to get updated state
         await loadSessionProgress(sessionData.id);
         console.log(`Scenario ${currentScenario} progress updated`);
+      } else {
+        console.error('❌ API ERROR:', response.status, responseText);
       }
     } catch (error) {
-      console.error('Error updating scenario progress:', error);
+      console.error('❌ Error updating scenario progress:', error);
     }
   };
 
@@ -164,7 +178,7 @@ console.log('New current scenario:', currentScenario + 1);
           totalTime,
           totalScore,
           correctCount,
-          scenarioProgress: sessionProgress,
+          scenarioProgress: JSON.stringify(sessionProgress),
           attempts: sessionProgress.map(s => ({
             scenario_id: s.scenario_id,
             is_correct: s.is_correct,

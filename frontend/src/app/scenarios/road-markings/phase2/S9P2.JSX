@@ -1,13 +1,6 @@
+import { useSession } from '../../../SessionManager';
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
 import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
@@ -22,27 +15,27 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 const roadTiles = {
-  road3: require("../../../../assets/road/road3.png"),
-  road4: require("../../../../assets/road/road4.png"),
-  road16: require("../../../../assets/road/road16.png"),
-  road17: require("../../../../assets/road/road17.png"),
-  road18: require("../../../../assets/road/road18.png"),
-  road19: require("../../../../assets/road/road19.png"),
-  road59: require("../../../../assets/road/road59.png"),
-  road20: require("../../../../assets/road/road20.png"),
-  road23: require("../../../../assets/road/road23.png"),
-  road24: require("../../../../assets/road/road24.png"),
-  road49: require("../../../../assets/road/road49.png"),
-  road50: require("../../../../assets/road/road50.png"),
-  road51: require("../../../../assets/road/road51.png"),
-  road52: require("../../../../assets/road/road52.png"),
-  road57: require("../../../../assets/road/road57.png"),
-  road58: require("../../../../assets/road/road58.png"),
-  road60: require("../../../../assets/road/road60.png"),
-  int1: require("../../../../assets/road/int1.png"),
-  int2: require("../../../../assets/road/int2.png"),
-  int3: require("../../../../assets/road/int3.png"),
-  int4: require("../../../../assets/road/int4.png"),
+  road3: require("../../../../../assets/road/road3.png"),
+  road4: require("../../../../../assets/road/road4.png"),
+  road16: require("../../../../../assets/road/road16.png"),
+  road17: require("../../../../../assets/road/road17.png"),
+  road18: require("../../../../../assets/road/road18.png"),
+  road19: require("../../../../../assets/road/road19.png"),
+  road59: require("../../../../../assets/road/road59.png"),
+  road20: require("../../../../../assets/road/road20.png"),
+  road23: require("../../../../../assets/road/road23.png"),
+  road24: require("../../../../../assets/road/road24.png"),
+  road49: require("../../../../../assets/road/road49.png"),
+  road50: require("../../../../../assets/road/road50.png"),
+  road51: require("../../../../../assets/road/road51.png"),
+  road52: require("../../../../../assets/road/road52.png"),
+  road57: require("../../../../../assets/road/road57.png"),
+  road58: require("../../../../../assets/road/road58.png"),
+  road60: require("../../../../../assets/road/road60.png"),
+  int1: require("../../../../../assets/road/int1.png"),
+  int2: require("../../../../../assets/road/int2.png"),
+  int3: require("../../../../../assets/road/int3.png"),
+  int4: require("../../../../../assets/road/int4.png"),
 };
 
 const mapLayout = [
@@ -69,56 +62,56 @@ const mapLayout = [
 // Player car sprites (Blue)
 const carSprites = {
   NORTH: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
   NORTHWEST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
   ],
   WEST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
   ],
   NORTHEAST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
   ],
   EAST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
   ],
 };
 
 // Red car sprites (for the car ahead)
 const otherCarSprites = {
   NORTH: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
   ],
   NORTHWEST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTHWEST/SEPARATED/Red_CIVIC_CLEAN_NORTHWEST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTHWEST/SEPARATED/Red_CIVIC_CLEAN_NORTHWEST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTHWEST/SEPARATED/Red_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTHWEST/SEPARATED/Red_CIVIC_CLEAN_NORTHWEST_001.png"),
   ],
   WEST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/WEST/SEPARATED/Red_CIVIC_CLEAN_WEST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/WEST/SEPARATED/Red_CIVIC_CLEAN_WEST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/WEST/SEPARATED/Red_CIVIC_CLEAN_WEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/WEST/SEPARATED/Red_CIVIC_CLEAN_WEST_001.png"),
   ],
   NORTHEAST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTHEAST/SEPARATED/Red_CIVIC_CLEAN_NORTHEAST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTHEAST/SEPARATED/Red_CIVIC_CLEAN_NORTHEAST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTHEAST/SEPARATED/Red_CIVIC_CLEAN_NORTHEAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTHEAST/SEPARATED/Red_CIVIC_CLEAN_NORTHEAST_001.png"),
   ],
   EAST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/EAST/SEPARATED/Red_CIVIC_CLEAN_EAST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/EAST/SEPARATED/Red_CIVIC_CLEAN_EAST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/EAST/SEPARATED/Red_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/EAST/SEPARATED/Red_CIVIC_CLEAN_EAST_001.png"),
   ],
 };
 
 // Traffic light sprites
 const trafficLightSprites = {
-  normal: require("../../../../assets/traffic light/traffic_light_green2.png"),
-  yellow: require("../../../../assets/traffic light/traffic_light_yellow2.png"),
-  red: require("../../../../assets/traffic light/traffic_light_red2.png"),
+  normal: require("../../../../../assets/traffic light/traffic_light_green2.png"),
+  yellow: require("../../../../../assets/traffic light/traffic_light_yellow2.png"),
+  red: require("../../../../../assets/traffic light/traffic_light_red2.png"),
 };
 
 const questions = [
@@ -138,6 +131,31 @@ const questions = [
 ];
 
 export default function DrivingGame() {
+
+  const {
+  updateScenarioProgress,
+  moveToNextScenario,
+  completeSession,
+  currentScenario,
+  sessionData
+} = useSession();
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      const scenarioId = 10 + currentScenario;
+      console.log('🔍 SCENARIO DEBUG:', {
+        currentScenario,
+        calculatedScenarioId: scenarioId,
+        selectedOption,
+        isCorrect
+      });
+
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
+
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
@@ -355,11 +373,13 @@ export default function DrivingGame() {
     });
   };
 
-  const handleAnswer = (answer) => {
+  const handleAnswer = async (answer) => {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
-
+    const currentQuestion = questions[questionIndex];
+      const isCorrect = answer === currentQuestion.correct;
+      await updateProgress(answer, isCorrect);
     if (answer === "Also cross the stop line to keep traffic moving") {
       // Animation: Blue car moves to road4 (2nd column, row 11) then to road57 (column 2, row 10) beside red car
       setCarDirection("WEST");
@@ -430,7 +450,7 @@ export default function DrivingGame() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
@@ -458,11 +478,27 @@ export default function DrivingGame() {
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-    } else {
-      router.push('/driver-game/road-markings/phase2/s10p2');
-      setShowQuestion(false);
-    }
-  };
+    } else if (currentScenario >= 10) {
+              // Last scenario in phase - complete session
+              try {
+                const sessionResults = await completeSession();
+                router.push({
+                  pathname: '/result',
+                  params: {
+                    ...sessionResults,
+                    userAttempts: JSON.stringify(sessionResults.attempts)
+                  }
+                });
+              } catch (error) {
+                console.error('Error completing session:', error);
+                Alert.alert('Error', 'Failed to save session results');
+              }
+            } else {
+              moveToNextScenario();
+              const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
+              router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+            }
+      };
 
   // Calculate traffic light position
   const trafficLightLeft = trafficLightColIndex * tileSize + trafficLightXOffset;
@@ -573,7 +609,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../assets/dialog/Dialog.png")}
+            source={require("../../../../../assets/dialog/Dialog.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -604,7 +640,7 @@ export default function DrivingGame() {
       {/* Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>

@@ -735,71 +735,72 @@ app.post('/sessions/start', async (req, res) => {
 });
 
 // PUT /sessions/:sessionId/scenario/:scenarioNumber - Update specific scenario progress
-app.put('/sessions/:sessionId/scenario/:scenarioNumber', async (req, res) => {
+app.put('/sessions/:sessionId/scenario/:scenarioId', async (req, res) => {
+  const { sessionId, scenarioId } = req.params;
+  const { selected_answer, is_correct, time_taken_seconds } = req.body;
+
   try {
-    const { sessionId, scenarioNumber } = req.params;
-    const {
-      scenario_id,
+    console.log('Updating scenario progress:', {
+      sessionId,
+      scenarioId,
       selected_answer,
       is_correct,
       time_taken_seconds
-    } = req.body;
+    });
 
-    // Update scenario progress
-    const { data: progressData, error: progressError } = await supabase
+    // Calculate scenario_number from scenarioId
+    // Phase 1: scenarioId 1-10 → scenario_number 1-10
+    // Phase 2: scenarioId 11-20 → scenario_number 1-10
+    // Phase 3: scenarioId 21-30 → scenario_number 1-10
+    const scenarioNumber = ((parseInt(scenarioId) - 1) % 10) + 1;
+
+    console.log('Calculated scenario_number:', scenarioNumber);
+
+    // Update the scenario_progress table
+    const { data, error } = await supabase
       .from('scenario_progress')
       .update({
-        is_attempted: true,
-        is_correct,
+        scenario_id: parseInt(scenarioId), // Store the actual scenario ID
         selected_answer,
-        time_taken_seconds: parseInt(time_taken_seconds) || 0,
+        is_correct,
+        time_taken_seconds,
+        is_attempted: true,
         attempted_at: new Date().toISOString()
       })
       .eq('session_id', sessionId)
-      .eq('scenario_number', parseInt(scenarioNumber))
+      .eq('scenario_number', scenarioNumber)
       .select()
       .single();
 
-    if (progressError) {
-      return res.status(400).json({
-        success: false,
-        message: 'Error updating scenario progress',
-        error: progressError.message
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+
+    console.log('Updated scenario progress:', data);
+
+    // Also insert into user_attempts table for detailed tracking
+    const { data: attemptData, error: attemptError } = await supabase
+      .from('user_attempts')
+      .insert({
+        user_id: data.user_id || req.user?.id, // You may need to adjust this
+        scenario_id: parseInt(scenarioId),
+        chosen_option: selected_answer,
+        is_correct
       });
+
+    if (attemptError) {
+      console.error('Error inserting user attempt:', attemptError);
+      // Don't fail the whole request for this
     }
 
-    // Also record in user_attempts for backward compatibility
-    const { data: userData } = await supabase
-      .from('user_sessions')
-      .select('user_id')
-      .eq('id', sessionId)
-      .single();
-
-    if (userData) {
-      await supabase
-        .from('user_attempts')
-        .insert({
-          user_id: userData.user_id,
-          scenario_id: parseInt(scenario_id),
-          chosen_option: selected_answer,
-          is_correct,
-          session_id: parseInt(sessionId),
-          scenario_number: parseInt(scenarioNumber),
-          time_taken_seconds: parseInt(time_taken_seconds) || 0
-        });
-    }
-
-    res.json({
-      success: true,
-      data: progressData,
-      message: 'Scenario progress updated successfully'
-    });
+    res.json({ success: true, data });
 
   } catch (error) {
-    console.error('Error in /sessions/:sessionId/scenario/:scenarioNumber:', error);
-    res.status(500).json({
+    console.error('Error updating scenario progress:', error);
+    res.status(400).json({
       success: false,
-      message: 'Internal server error',
+      message: 'Error updating scenario progress',
       error: error.message
     });
   }
@@ -954,6 +955,100 @@ app.get('/users/:userId/recent-sessions', async (req, res) => {
       message: 'Internal server error',
       error: error.message
     });
+  }
+});
+
+app.get('/api/scenarios', async (req, res) => {
+  try {
+    const { start_id, end_id } = req.query;
+
+    const { data, error } = await supabase
+      .from('scenarios')
+      .select(`
+        id,
+        title,
+        description,
+        phases(
+          id,
+          name,
+          categories(
+            id,
+            name
+          )
+        )
+      `)
+      .gte('id', start_id || 1)
+      .lte('id', end_id || 100)
+      .order('id');
+
+    if (error) throw error;
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching scenarios:', error);
+    res.status(500).json({ error: 'Failed to fetch scenarios' });
+  }
+});
+
+// 2. Get scenario choices by ID range
+app.get('/api/scenario-choices', async (req, res) => {
+  try {
+    const { start_id, end_id, scenario_ids } = req.query;
+
+    let query = supabase
+      .from('scenario_choices')
+      .select('*');
+
+    if (scenario_ids) {
+      // If specific scenario IDs provided (e.g., "41,42,43,44,45")
+      const ids = scenario_ids.split(',').map(id => parseInt(id));
+      query = query.in('scenario_id', ids);
+    } else if (start_id && end_id) {
+      // If ID range provided
+      query = query.gte('id', start_id).lte('id', end_id);
+    }
+
+    const { data, error } = await query.order('scenario_id').order('id');
+
+    if (error) throw error;
+
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching scenario choices:', error);
+    res.status(500).json({ error: 'Failed to fetch scenario choices' });
+  }
+});
+
+// 3. Get complete scenario with choices (recommended)
+app.get('/api/scenarios-with-choices', async (req, res) => {
+  try {
+    const { scenario_start, scenario_end } = req.query;
+
+    // Get scenarios 41-50
+    const { data: scenarios, error: scenariosError } = await supabase
+      .from('scenarios')
+      .select(`
+        id,
+        title,
+        description,
+        scenario_choices(
+          id,
+          option,
+          text,
+          is_correct,
+          explanation
+        )
+      `)
+      .gte('id', scenario_start || 41)
+      .lte('id', scenario_end || 50)
+      .order('id');
+
+    if (scenariosError) throw scenariosError;
+
+    res.json(scenarios);
+  } catch (error) {
+    console.error('Error fetching scenarios with choices:', error);
+    res.status(500).json({ error: 'Failed to fetch scenarios with choices' });
   }
 });
 

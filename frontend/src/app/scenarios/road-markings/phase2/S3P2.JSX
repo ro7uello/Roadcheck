@@ -1,21 +1,13 @@
+import { useSession } from '../../../SessionManager';
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
 import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
 // Responsive calculations
-const playerCarWidth = Math.min(width * 0.25, 280);
-const playerCarHeight = playerCarWidth * (350/280);
+const carWidth = Math.min(width * 0.25, 280);
+const carHeight = carWidth * (350/280);
 const jeepWidth = Math.min(width * 0.28, 300);
 const jeepHeight = jeepWidth * (350/280);
 const overlayTop = height * 0.4;
@@ -25,13 +17,13 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 const roadTiles = {
-  road8: require("../../../../assets/road/road8.png"),
-  road3: require("../../../../assets/road/road3.png"),
-  road4: require("../../../../assets/road/road4.png"),
-  road17: require("../../../../assets/road/road17.png"),
-  road62: require("../../../../assets/road/road62.png"),
-  road70: require("../../../../assets/road/road70.png"),
-  road73: require("../../../../assets/road/road73.png"),
+  road8: require("../../../../../assets/road/road8.png"),
+  road3: require("../../../../../assets/road/road3.png"),
+  road4: require("../../../../../assets/road/road4.png"),
+  road17: require("../../../../../assets/road/road17.png"),
+  road62: require("../../../../../assets/road/road62.png"),
+  road70: require("../../../../../assets/road/road70.png"),
+  road73: require("../../../../../assets/road/road73.png"),
 };
 
 const mapLayout = [
@@ -66,28 +58,28 @@ const mapLayout = [
 // Player car sprites (blue car)
 const playerCarSprites = {
   NORTH: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
   WEST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
   ],
   EAST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
   ],
 };
 
 // Jeepney sprites
 const jeepneySprites = {
   NORTH: [
-    require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
-    require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/JEEP TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/JEEP TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
   ],
   SOUTH: [
-    require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/SOUTH/SEPARATED/Brown_JEEP_CLEAN_SOUTH_000.png"),
-    require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/SOUTH/SEPARATED/Brown_JEEP_CLEAN_SOUTH_001.png"),
+    require("../../../../../assets/car/JEEP TOPDOWN/Brown/MOVE/SOUTH/SEPARATED/Brown_JEEP_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/JEEP TOPDOWN/Brown/MOVE/SOUTH/SEPARATED/Brown_JEEP_CLEAN_SOUTH_001.png"),
   ],
 };
 
@@ -108,6 +100,31 @@ const questions = [
 ];
 
 export default function DrivingGame() {
+
+  const {
+  updateScenarioProgress,
+  moveToNextScenario,
+  completeSession,
+  currentScenario,
+  sessionData
+} = useSession();
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      const scenarioId = 10 + currentScenario;
+      console.log('🔍 SCENARIO DEBUG:', {
+        currentScenario,
+        calculatedScenarioId: scenarioId,
+        selectedOption,
+        isCorrect
+      });
+
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
+
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
@@ -141,8 +158,8 @@ export default function DrivingGame() {
   // Player car starts in the right lane (lane 3)
   // Player car starts in the rightmost lane (lane 3)
     const playerCarLane = 2;
-    const playerCarInitialX = playerCarLane * tileSize + (tileSize / 2 - playerCarWidth / 2);
-    const playerCarXAnim = useRef(new Animated.Value(playerCarInitialX)).current;
+    const playerCarInitialX = playerCarLane * tileSize + (tileSize / 2 - carWidth / 2);
+    const carXAnim = useRef(new Animated.Value(playerCarInitialX)).current;
 
   // Jeepney ahead in the same lane as player (right lane - lane 3) - positioned further ahead
   const jeepneyLane = 2;
@@ -341,8 +358,8 @@ export default function DrivingGame() {
       // 2. Signal and move to passing lane (center-right lane - lane 2)
       await new Promise(resolve => {
         setPlayerCarDirection("WEST");
-        Animated.timing(playerCarXAnim, {
-          toValue: 2 * tileSize + (tileSize / 2 - playerCarWidth / 2),
+        Animated.timing(carXAnim, {
+          toValue: 2 * tileSize + (tileSize / 2 - carWidth / 2),
           duration: 1500,
           easing: Easing.easeInOut,
           useNativeDriver: false,
@@ -374,7 +391,7 @@ export default function DrivingGame() {
       await new Promise(resolve => {
         setPlayerCarDirection("EAST");
         Animated.parallel([
-          Animated.timing(playerCarXAnim, {
+          Animated.timing(carXAnim, {
             toValue: playerCarInitialX,
             duration: 1200,
             easing: Easing.easeInOut,
@@ -434,11 +451,13 @@ export default function DrivingGame() {
   };
 
   // Updated handleAnswer function
-  const handleAnswer = (answer) => {
+  const handleAnswer = async (answer) => {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
-
+    const currentQuestion = questions[questionIndex];
+      const isCorrect = answer === currentQuestion.correct;
+      await updateProgress(answer, isCorrect);
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
     setIsOncomingJeepneyVisible(true);
@@ -455,7 +474,7 @@ export default function DrivingGame() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
@@ -465,7 +484,7 @@ export default function DrivingGame() {
     setOncomingJeepneyFrame(0);
 
     // Reset player car to rightmost lane
-    playerCarXAnim.setValue(playerCarInitialX);
+    carXAnim.setValue(playerCarInitialX);
     setPlayerCarDirection("NORTH");
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
@@ -474,9 +493,26 @@ export default function DrivingGame() {
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-    } else {
-      router.push('/driver-game/road-markings/phase2/s4p2');
-      setShowQuestion(false);
+    } else if (currentScenario >= 10) {
+          // Last scenario in phase - complete session
+          try {
+            const sessionResults = await completeSession();
+            router.push({
+              pathname: '/result',
+              params: {
+                ...sessionResults,
+                userAttempts: JSON.stringify(sessionResults.attempts)
+              }
+            });
+          } catch (error) {
+            console.error('Error completing session:', error);
+            Alert.alert('Error', 'Failed to save session results');
+          }
+        } else {
+          moveToNextScenario();
+          const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
+          router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+        }
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
       }
@@ -486,7 +522,6 @@ export default function DrivingGame() {
       if (oncomingJeepneyAnimationRef.current) {
         oncomingJeepneyAnimationRef.current.stop();
       }
-    }
   };
 
   const currentQuestionData = questions[questionIndex];
@@ -570,11 +605,11 @@ export default function DrivingGame() {
         <Animated.Image
           source={playerCarSprites[playerCarDirection][playerCarFrame]}
           style={{
-            width: playerCarWidth,
-            height: playerCarHeight,
+            width: carWidth,
+            height: carHeight,
             position: "absolute",
             bottom: height * 0.1,
-            left: playerCarXAnim,
+            left: carXAnim,
             zIndex: 5,
           }}
         />
@@ -584,7 +619,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../assets/dialog/Dialog.png")}
+            source={require("../../../../../assets/dialog/Dialog.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -615,7 +650,7 @@ export default function DrivingGame() {
       {/* Feedback - Correct/Wrong */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
