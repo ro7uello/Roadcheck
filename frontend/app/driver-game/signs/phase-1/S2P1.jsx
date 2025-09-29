@@ -188,7 +188,7 @@ export default function DrivingGame() {
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
     if (answer === "Stop before the line of the pedestrian lane.") {
-      const targetRow = 6.8;
+      const targetRow = 6.5;
       const rowsToMove = targetRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
       
@@ -401,19 +401,30 @@ export default function DrivingGame() {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
-
-  questionOverlay: {
+  // ✅ DATABASE INTEGRATION - Added loading styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  // No intro styles (responsive)
+  // In-game responsive styles
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -421,19 +432,20 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
+    bottom: height * 0.1,
     alignItems: "center",
-    justifyContent: "flex-end",
-    paddingBottom: height * 0.05,
+    justifyContent: "center",
   },
   questionTextContainer: {
-    padding: width * 0.04,
-    maxWidth: width * 0.6,
+    padding: -height * 0.04,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
     fontSize: Math.min(width * 0.045, 20),
     fontWeight: "bold",
@@ -441,14 +453,15 @@ const styles = StyleSheet.create({
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.4,
+    top: height * 0.16,
     right: sideMargin,
     width: width * 0.35,
+    height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.02,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -456,7 +469,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 18),
+    fontSize: Math.min(width * 0.04, 16),
     textAlign: "center",
   },
   feedbackOverlay: {
@@ -464,7 +477,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -479,13 +492,15 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
+    textAlign: "center",
   },
   nextButtonContainer: {
     position: "absolute",
-    bottom: height * 0.45,
+    top: height * 0.50,
     right: sideMargin,
+    width: width * 0.2,
     alignItems: "center",
     zIndex: 11,
   },

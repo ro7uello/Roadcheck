@@ -524,8 +524,8 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-    //intro
-    introContainer: {
+  // Intro styles (responsive)
+  introContainer: {
     flex: 1,
     backgroundColor: "black",
     justifyContent: "center",
@@ -580,7 +580,8 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
-  //end intro
+
+  // In-game responsive styles
   questionOverlay: {
     position: "absolute",
     bottom: 0,
@@ -602,30 +603,31 @@ const styles = StyleSheet.create({
   },
   questionBox: {
     flex: 1,
+    bottom: height * 0.1,
     alignItems: "center",
-    justifyContent: "flex-end",
-    paddingBottom: height * 0.05,
+    justifyContent: "center",
   },
   questionTextContainer: {
-    padding: width * 0.04,
+    padding: -height * 0.04,
     maxWidth: width * 0.6,
   },
   questionText: {
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: Math.min(width * 0.045, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.4,
+    top: height * 0.16,
     right: sideMargin,
     width: width * 0.35,
+    height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.02,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -656,13 +658,14 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
   },
   nextButtonContainer: {
     position: "absolute",
-    bottom: height * 0.45,
+    top: height * 0.50,
     right: sideMargin,
+    width: width * 0.2,
     alignItems: "center",
     zIndex: 11,
   },

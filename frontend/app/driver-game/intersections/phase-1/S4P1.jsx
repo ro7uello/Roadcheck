@@ -37,6 +37,9 @@ const roadTiles = {
     road51: require("../../../../assets/road/road51.png"),
     road52: require("../../../../assets/road/road52.png"),
     road76: require("../../../../assets/road/road76.png"),
+    road77: require("../../../../assets/road/road77.png"),
+    road78: require("../../../../assets/road/road78.png"),
+    road62: require("../../../../assets/road/road62.png"),
 };
 
 const mapLayout = [
@@ -131,11 +134,11 @@ const trafficSign = {
 const questions = [
   {
     question: "While driving up to Baguio, you encounter a Y-Junction ahead warning sign. The road splits with signs showing Session Road ⬅ and Burnham Park ➡. You're heading to Session Road, and there's a bus coming from the opposite direction.",
-    options: ["Speed up to pass before the jeepney enters", "Maintain speed since you have the right of way on the main road", "Be prepared to slow down and give way if necessary for safety"],
-    correct: "Be prepared to slow down and give way if necessary for safety",
+    options: ["Take the left fork immediately without signaling", "Signal left, slow down, and yield to oncoming traffic before turning", "Follow the bus since it's bigger and knows the way"],
+    correct: "Signal left, slow down, and yield to oncoming traffic before turning",
     wrongExplanation: {
-      "Speed up to pass before the jeepney enters": "Accident Prone! Speeding up near junctions is dangerous and could cause an accident if the jeepney doesn't see you.",
-      "Maintain speed since you have the right of way on the main road": "Not the best answer! While you have the legal right of way, defensive driving requires being prepared for other vehicles that might not yield properly."
+      "Take the left fork immediately without signaling": "Wrong! Not signaling is dangerous. Other drivers need to know your intentions.",
+      "Follow the bus since it's bigger and knows the way": "Wrong! Following another vehicle without making your own traffic safety decisions is dangerous and may lead you to the wrong destination."
     }
   },
   // Add more questions here as needed
@@ -248,7 +251,7 @@ export default function DrivingGame() {
 
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
-    if (answer === "Speed up to pass before the jeepney enters") {
+    if (answer === "Take the left fork immediately without signaling") {
       const turnStartRow = 10;
       const turnEndRow = 11;
 
@@ -311,7 +314,7 @@ export default function DrivingGame() {
         animateTurnAndMove();
       });
       return;
-    } else if (answer === "Maintain speed since you have the right of way on the main road") {
+    } else if (answer === "Signal left, slow down, and yield to oncoming traffic before turning") {
         const targetRow = 8;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
@@ -327,7 +330,7 @@ export default function DrivingGame() {
                 handleFeedback(answer);
             });
         }); // Added delay duration
-    } else if(answer === "Be prepared to slow down and give way if necessary for safety"){
+    } else if(answer === "Follow the bus since it's bigger and knows the way"){
         const turnStartRow = 10;
         const turnEndRow = 11;
 
@@ -574,17 +577,29 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-
-  questionOverlay: {
+  // ✅ DATABASE INTEGRATION - Added loading styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  // No intro styles (responsive)
+  // In-game responsive styles
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -592,34 +607,36 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
+    bottom: height * 0.1,
     alignItems: "center",
-    justifyContent: "flex-end",
-    paddingBottom: height * 0.05,
+    justifyContent: "center",
   },
   questionTextContainer: {
-    padding: width * 0.04,
-    maxWidth: width * 0.6,
+    padding: -height * 0.04,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: Math.min(width * 0.045, 18),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.4,
+    top: height * 0.2,
     right: sideMargin,
     width: width * 0.35,
+    height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.02,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -627,7 +644,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 18),
+    fontSize: Math.min(width * 0.04, 16),
     textAlign: "center",
   },
   feedbackOverlay: {
@@ -635,7 +652,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -650,13 +667,15 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 20),
     fontWeight: "bold",
+    textAlign: "center",
   },
   nextButtonContainer: {
     position: "absolute",
-    bottom: height * 0.45,
+    top: height * 0.50,
     right: sideMargin,
+    width: width * 0.2,
     alignItems: "center",
     zIndex: 11,
   },
