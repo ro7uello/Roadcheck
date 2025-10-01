@@ -47,7 +47,7 @@ const mapLayout = [
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
-  ["road49", "road59", "road57", "road50", "road52"],
+  ["road49", "road57", "road57", "road50", "road52"],
   ["road60", "int3", "int4", "road60", "road24"],
   ["road58", "int2", "int1", "road58", "road23"],
   ["road19", "road57", "road57", "road16", "road51"],
@@ -155,21 +155,21 @@ export default function DrivingGame() {
     {
       id: 1,
       xAnim: useRef(new Animated.Value(-pedestrianWidth)).current,
-      yPos: height * 0.52, // Crosswalk level
+      yPos: height * 0.32, // Crosswalk level
       color: pedestrianColors[0],
       moving: false,
     },
     {
       id: 2,
       xAnim: useRef(new Animated.Value(-pedestrianWidth * 2)).current,
-      yPos: height * 0.54,
+      yPos: height * 0.32,
       color: pedestrianColors[1],
       moving: false,
     },
     {
       id: 3,
       xAnim: useRef(new Animated.Value(-pedestrianWidth * 3)).current,
-      yPos: height * 0.50,
+      yPos: height * 0.34,
       color: pedestrianColors[2],
       moving: false,
     },
@@ -202,7 +202,7 @@ export default function DrivingGame() {
 
     // Start continuous map scrolling
     scrollAnimationRef.current = Animated.timing(scrollY, {
-      toValue: startOffset + 6.5 * tileSize, // Stop before intersection
+      toValue: startOffset + 5 * tileSize, // Stop before intersection
       duration: 4000,
       useNativeDriver: true,
     });
@@ -228,7 +228,7 @@ export default function DrivingGame() {
       setTimeout(() => {
         Animated.timing(ped.xAnim, {
           toValue: width + pedestrianWidth,
-          duration: 6000 + (index * 1000), // Staggered timing
+          duration: 6000 + (index * 500), // Staggered timing
           useNativeDriver: true,
         }).start();
       }, index * 800);
@@ -276,80 +276,85 @@ export default function DrivingGame() {
     const currentQuestion = questions[questionIndex];
       const isCorrect = answer === currentQuestion.correct;
       await updateProgress(answer, isCorrect);
-    if (answer === "Proceed with your turn since vehicles have right of way over pedestrians") {
-      // Animation: Car proceeds to turn right, potentially hitting pedestrians
-      setCarDirection("NORTHEAST");
-      
-      Animated.parallel([
-        // Car moves right and forward
-        Animated.timing(carXAnim, {
-          toValue: (width / 2 - carWidth / 2) + carWidth * 1.2,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 2,
-          duration: 2000,
-          useNativeDriver: true,
-        })
-      ]).start(() => {
+if (answer === "Proceed with your turn since vehicles have right of way over pedestrians") {
+      // Animation: Car proceeds north into intersection, turns east, then goes east
+      // Step 1: Move north into intersection
+      Animated.timing(scrollY, {
+        toValue: currentScroll.current + tileSize * 1.5,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        // Step 2: Turn to face east
         setCarDirection("EAST");
-        // Show danger - car almost hits pedestrians
         setTimeout(() => {
-          handleFeedback(answer);
-        }, 1000);
+          // Step 3: Move east (only horizontal movement, no map scroll)
+          Animated.timing(carXAnim, {
+            toValue: (width / 2 - carWidth / 2) + tileSize * 2,
+            duration: 1500,
+            useNativeDriver: false,
+          }).start(() => {
+            // Show danger - car didn't yield to pedestrians
+            setTimeout(() => {
+              handleFeedback(answer);
+            }, 500);
+          });
+        }, 300);
       });
 
     } else if (answer === "Stop at the stop line, yield to pedestrians, then complete your turn when safe") {
-      // Animation: Car stops, waits for pedestrians to clear, then turns
+      // Animation: Car stops, waits for pedestrians to clear, then turns properly
       setCarPaused(true);
       
       // Wait for pedestrians to cross (simulate waiting)
       setTimeout(() => {
-        // After pedestrians clear, car makes the turn
+        // After pedestrians clear, proceed with turn
         setCarPaused(false);
-        setCarDirection("NORTHEAST");
         
-        Animated.parallel([
-          Animated.timing(carXAnim, {
-            toValue: (width / 2 - carWidth / 2) + carWidth * 1.2,
-            duration: 2500, // Slower, more careful turn
-            useNativeDriver: false,
-          }),
-          Animated.timing(scrollY, {
-            toValue: currentScroll.current + tileSize * 2,
-            duration: 2500,
-            useNativeDriver: true,
-          })
-        ]).start(() => {
+        // Step 1: Move north into intersection
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + tileSize * 1.5,
+          duration: 1200,
+          useNativeDriver: true,
+        }).start(() => {
+          // Step 2: Turn to face east
           setCarDirection("EAST");
-          handleFeedback(answer);
+          setTimeout(() => {
+            // Step 3: Move east (only horizontal movement, no map scroll)
+            Animated.timing(carXAnim, {
+              toValue: (width / 2 - carWidth / 2) + tileSize * 2,
+              duration: 2000,
+              useNativeDriver: false,
+            }).start(() => {
+              handleFeedback(answer);
+            });
+          }, 300);
         });
       }, 4000); // Wait for pedestrians
 
     } else if (answer === "Turn quickly before more pedestrians enter the crosswalk") {
-      // Animation: Car rushes through turn dangerously
-      setCarDirection("NORTHEAST");
-      
-      Animated.parallel([
-        // Rapid, aggressive turn
-        Animated.timing(carXAnim, {
-          toValue: (width / 2 - carWidth / 2) + carWidth * 1.2,
-          duration: 1200, // Very fast/dangerous
-          useNativeDriver: false,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 2,
-          duration: 1200,
-          useNativeDriver: true,
-        })
-      ]).start(() => {
+      // Animation: Car rushes through turn dangerously fast
+      // Step 1: Quick move north into intersection
+      Animated.timing(scrollY, {
+        toValue: currentScroll.current + tileSize * 1.5,
+        duration: 600,
+        useNativeDriver: true,
+      }).start(() => {
+        // Step 2: Quick turn to face east
         setCarDirection("EAST");
-        // Show near-miss or accident warning
-        handleFeedback(answer);
+        setTimeout(() => {
+          // Step 3: Rush east (only horizontal movement, no map scroll)
+          Animated.timing(carXAnim, {
+            toValue: (width / 2 - carWidth / 2) + tileSize * 2,
+            duration: 1000,
+            useNativeDriver: false,
+          }).start(() => {
+            // Show near-miss or accident warning
+            handleFeedback(answer);
+          });
+        }, 200);
       });
     }
-  };
+  }
 
   const handleNext = async () => {
     setAnimationType(null);
@@ -492,7 +497,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../../assets/dialog/Dialog.png")}
+            source={require("../../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -523,7 +528,7 @@ export default function DrivingGame() {
       {/* Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -543,6 +548,78 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 18,
+    marginTop: 20,
+  },
+  introContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: width * 0.05,
+  },
+  introLTOImage: {
+    width: width * 0.6,
+    height: height * 0.25,
+    resizeMode: "contain",
+    marginBottom: height * 0.03,
+  },
+  introTextBox: {
+    backgroundColor: "rgba(8, 8, 8, 0.7)",
+    padding: width * 0.06,
+    borderRadius: 15,
+    alignItems: "center",
+    maxWidth: width * 0.85,
+    minHeight: height * 0.3,
+    justifyContent: "center",
+  },
+  introTitle: {
+    color: "white",
+    fontSize: Math.min(width * 0.07, 32),
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: height * 0.02,
+  },
+  introSubtitle: {
+    color: "#aaa",
+    fontSize: Math.min(width * 0.05, 22),
+    textAlign: "center",
+    marginBottom: height * 0.02,
+  },
+  introText: {
+    color: "white",
+    fontSize: Math.min(width * 0.045, 20),
+    textAlign: "center",
+    marginBottom: height * 0.04,
+    lineHeight: Math.min(width * 0.06, 26),
+    paddingHorizontal: width * 0.02,
+  },
+  startButton: {
+    backgroundColor: "#007bff",
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.08,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+    minWidth: width * 0.4,
+    alignItems: "center",
+  },
+  startButtonText: {
+    color: "white",
+    fontSize: Math.min(width * 0.055, 24),
+    fontWeight: "bold",
+  },
   questionOverlay: {
     position: "absolute",
     bottom: 0,
@@ -552,42 +629,44 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
-  ltoImage: {
+ltoImage: {
     width: ltoWidth,
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: height * 0.05,
   },
   questionTextContainer: {
-    maxWidth: width * 0.6,
+    padding: -height * 0.04,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: Math.min(width * 0.045, 22),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.25,
+    top: height * 0.175,
     right: sideMargin,
     width: width * 0.35,
+    height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.02,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -618,7 +697,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
   },

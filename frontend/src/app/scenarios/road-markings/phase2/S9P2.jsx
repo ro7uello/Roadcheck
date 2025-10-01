@@ -405,50 +405,90 @@ export default function DrivingGame() {
       });
       
     } else if (answer === "Stop at the proper stop line position even if it creates a gap") {
-      // Animation: Blue car stays at proper stop line, waits for green light, then proceeds
-      setCarPaused(true);
-      
-      // Wait, then turn green
+  // Animation: Blue car moves forward to stop right before red car
+  setCarDirection("NORTH");
+  setCarPaused(false); // Keep animation running during movement
+  
+  // Calculate position right before red car (one tile behind)
+  const stopBeforeRedCarPos = getGridPosition(2, 10); // Stop at row 10, right before red car at row 9
+  
+  console.log('Moving blue car from', blueCarStartPos.y, 'to', stopBeforeRedCarPos.y);
+  
+  // Move blue car forward to stop before red car
+  Animated.timing(carYAnim, {
+    toValue: stopBeforeRedCarPos.y,
+    duration: 1500,
+    easing: Easing.linear,
+    useNativeDriver: false,
+  }).start(() => {
+    setCarPaused(true); // Stop animation after reaching position
+    
+    // Wait a bit, then turn green
+    setTimeout(() => {
+      setTrafficLightState('green');
       setTimeout(() => {
-        setTrafficLightState('green');
-        setTimeout(() => {
-          setCarPaused(false);
-          setOtherCarPaused(false);
-          
-          // Move map forward to simulate cars proceeding
-          Animated.timing(scrollY, {
-            toValue: startOffset - tileSize * 2,
-            duration: 2000,
-            useNativeDriver: true,
-          }).start(() => {
-            handleFeedback(answer);
-          });
-        }, 1000);
-      }, 1500);
+        setCarPaused(false);
+        setOtherCarPaused(false);
+        
+        // Move map forward to simulate cars proceeding
+        Animated.timing(scrollY, {
+          toValue: startOffset - tileSize * 2,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(() => {
+          handleFeedback(answer);
+        });
+      }, 1000);
+    }, 1000);
+  });
+} // <-- ADD THIS CLOSING BRACE
       
-    } else if (answer === "Honk at the vehicle ahead to move forward") {
-      // Animation: Show honking effect, wait for green light, then proceed
-      setCarPaused(true);
-      showHonkEffect();
+else if (answer === "Honk at the vehicle ahead to move forward") {
+  // Animation: Show honking effect, wait for green light, then proceed
+  setCarPaused(true);
+  showHonkEffect();
+  
+  setTimeout(() => {
+    setTrafficLightState('green');
+    setTimeout(() => {
+      setCarPaused(false);
+      setOtherCarPaused(false);
       
-      setTimeout(() => {
-        setTrafficLightState('green');
-        setTimeout(() => {
-          setCarPaused(false);
-          setOtherCarPaused(false);
-          
-          // Move map forward to simulate cars proceeding  
-          Animated.timing(scrollY, {
-            toValue: startOffset - tileSize * 2,
-            duration: 2000,
-            useNativeDriver: true,
-          }).start(() => {
-            handleFeedback(answer);
-          });
-        }, 1000);
-      }, 1500);
-    }
-  };
+      // Get current positions to move relative from where they are
+      const currentBlueCarY = carYAnim._value;
+      const currentRedCarY = otherCarYAnim._value;
+      
+      // Move both car and map forward together
+      Animated.parallel([
+        // Move the blue car forward smoothly
+        Animated.timing(carYAnim, {
+          toValue: currentBlueCarY - tileSize * 4, // Move 4 tiles from current position
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease), // Smooth easing
+          useNativeDriver: false,
+        }),
+        // Move the red car forward smoothly
+        Animated.timing(otherCarYAnim, {
+          toValue: currentRedCarY - tileSize * 4, // Move 4 tiles from current position
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease), // Smooth easing
+          useNativeDriver: false,
+        }),
+        // Move map forward with same timing
+        Animated.timing(scrollY, {
+          toValue: startOffset - tileSize * 4,
+          duration: 3000,
+          easing: Easing.inOut(Easing.ease), // Smooth easing
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        handleFeedback(answer);
+      });
+    }, 1000);
+  }, 1500);
+}
+
+}
 
   const handleNext = async () => {
     setAnimationType(null);
@@ -609,7 +649,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../../assets/dialog/Dialog.png")}
+            source={require("../../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -640,7 +680,7 @@ export default function DrivingGame() {
       {/* Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -660,6 +700,78 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 18,
+    marginTop: 20,
+  },
+  introContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: width * 0.05,
+  },
+  introLTOImage: {
+    width: width * 0.6,
+    height: height * 0.25,
+    resizeMode: "contain",
+    marginBottom: height * 0.03,
+  },
+  introTextBox: {
+    backgroundColor: "rgba(8, 8, 8, 0.7)",
+    padding: width * 0.06,
+    borderRadius: 15,
+    alignItems: "center",
+    maxWidth: width * 0.85,
+    minHeight: height * 0.3,
+    justifyContent: "center",
+  },
+  introTitle: {
+    color: "white",
+    fontSize: Math.min(width * 0.07, 32),
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: height * 0.02,
+  },
+  introSubtitle: {
+    color: "#aaa",
+    fontSize: Math.min(width * 0.05, 22),
+    textAlign: "center",
+    marginBottom: height * 0.02,
+  },
+  introText: {
+    color: "white",
+    fontSize: Math.min(width * 0.045, 20),
+    textAlign: "center",
+    marginBottom: height * 0.04,
+    lineHeight: Math.min(width * 0.06, 26),
+    paddingHorizontal: width * 0.02,
+  },
+  startButton: {
+    backgroundColor: "#007bff",
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.08,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+    minWidth: width * 0.4,
+    alignItems: "center",
+  },
+  startButtonText: {
+    color: "white",
+    fontSize: Math.min(width * 0.055, 24),
+    fontWeight: "bold",
+  },
   questionOverlay: {
     position: "absolute",
     bottom: 0,
@@ -669,42 +781,44 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
-  ltoImage: {
+ltoImage: {
     width: ltoWidth,
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: height * 0.05,
   },
   questionTextContainer: {
-    maxWidth: width * 0.6,
+    padding: -height * 0.04,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: Math.min(width * 0.045, 22),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.25,
+    top: height * 0.175,
     right: sideMargin,
     width: width * 0.35,
+    height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.02,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -735,7 +849,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
   },

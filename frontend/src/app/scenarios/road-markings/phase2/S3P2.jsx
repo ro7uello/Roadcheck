@@ -512,6 +512,8 @@ export default function DrivingGame() {
           moveToNextScenario();
           const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
           router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+          
+    
         }
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();

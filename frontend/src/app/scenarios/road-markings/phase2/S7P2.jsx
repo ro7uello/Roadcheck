@@ -145,12 +145,12 @@ export default function DrivingGame() {
   const currentScroll = useRef(startOffset);
 
   // Traffic light position (place it at the intersection - row 7, column 2)
-  const trafficLightRowIndex = 6.8; // Just before the intersection
+  const trafficLightRowIndex = 7; // Just before the intersection
   const trafficLightColIndex = 2; // Center column
   const trafficLightXOffset = -10;
 
   // School zone sign position (beside road59, third column)
-  const schoolZoneRowIndex = 6; // Row with road59
+  const schoolZoneRowIndex = 8; // Row with road59
   const schoolZoneColIndex = 2; // Third column
   const schoolZoneXOffset = tileSize * 0.6; // Positioned to the right side of the tile
 
@@ -197,7 +197,7 @@ export default function DrivingGame() {
     scrollY.setValue(startOffset);
     setTrafficLightState('normal'); // Start with green light
 
-    const stopRow = 5; // Stop before the intersection to show the question
+    const stopRow = 6.7; // Stop before the intersection to show the question
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -398,7 +398,7 @@ export default function DrivingGame() {
           source={require("../../../../../assets/signs/school_zone.png")}
           style={{
             width: tileSize * 0.8,
-            height: tileSize * 0.8,
+            height: tileSize * 0.5,
             position: "absolute",
             top: schoolZoneTop,
             left: schoolZoneLeft,
@@ -427,7 +427,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../../assets/dialog/Dialog.png")}
+            source={require("../../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -458,9 +458,9 @@ export default function DrivingGame() {
       {/* Responsive Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
-            <Text style={[styles.feedbackText, { color: isCorrectAnswer ? '#4CAF50' : '#F44336' }]}>
+            <Text style={[styles.feedbackText, { color: isCorrectAnswer ? '#ffffffff' : '#ffffffff' }]}>
               {feedbackMessage}
             </Text>
           </View>
@@ -480,6 +480,20 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
+  // Loading screen styles
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  // No intro styles (responsive)
+  // In-game responsive styles
   questionOverlay: {
     position: "absolute",
     bottom: 0,
@@ -489,7 +503,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -497,34 +511,36 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: height * 0.05,
   },
   questionTextContainer: {
-    maxWidth: width * 0.6,
+    padding: -height * 0.04,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: Math.min(width * 0.045, 21),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.25,
+    top: height * 0.20,
     right: sideMargin,
     width: width * 0.35,
+    height: height * 0.23,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.02,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -554,7 +570,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   feedbackText: {
-    fontSize: Math.min(width * 0.06, 28),
+    color: "white",
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
@@ -583,5 +600,37 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: Math.min(width * 0.045, 20),
     fontWeight: "bold",
+  },
+  // Rain and flood effects
+  rainContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 8,
+    pointerEvents: 'none',
+  },
+  rainDrop: {
+    position: 'absolute',
+    width: 2,
+    height: 15,
+    backgroundColor: '#87CEEB',
+    opacity: 0.7,
+    borderRadius: 1,
+  },
+  floodArea: {
+    backgroundColor: 'rgba(65, 105, 225, 0.6)',
+    borderRadius: 3,
+    zIndex: 2,
+  },
+  waterSpout: {
+    backgroundColor: 'rgba(30, 144, 255, 0.7)',
+    borderRadius: 2,
+    zIndex: 2,
+    shadowColor: '#0066CC',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
   },
 });

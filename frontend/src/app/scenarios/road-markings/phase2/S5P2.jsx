@@ -23,7 +23,7 @@ const roadTiles = {
   road19: require("../../../../../assets/road/road19.png"),
   road59: require("../../../../../assets/road/road59.png"),
   road20: require("../../../../../assets/road/road20.png"),
-  road23: require("../../../../../assets/road/road23.png"),
+  road22: require("../../../../../assets/road/road22.png"),
   road24: require("../../../../../assets/road/road24.png"),
   road49: require("../../../../../assets/road/road49.png"),
   road50: require("../../../../../assets/road/road50.png"),
@@ -34,7 +34,9 @@ const roadTiles = {
   road59: require("../../../../../assets/road/road59.png"),
   road60: require("../../../../../assets/road/road60.png"),
   road15: require("../../../../../assets/road/road15.png"),
-  road22: require("../../../../../assets/road/road22.png"),
+  road23: require("../../../../../assets/road/road23.png"),
+  road24: require("../../../../../assets/road/road24.png"),
+  road28: require("../../../../../assets/road/road28.png"),
   int1: require("../../../../../assets/road/int1.png"),
   int2: require("../../../../../assets/road/int2.png"),
   int3: require("../../../../../assets/road/int3.png"),
@@ -49,9 +51,9 @@ const mapLayout = [
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
-  ["road22", "road22", "road22", "road22", "road22"],
-  ["road23", "road22", "road22", "road22", "road23"],
-  ["road18", "road4", "road3", "road17", "road20"],
+  ["road22", "road24", "road24", "road24", "road24"],
+  ["road23", "road23", "road23", "road23", "road23"],
+  ["road18", "road15", "road15", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
@@ -81,6 +83,30 @@ const carSprites = {
   EAST: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+  ],
+};
+
+// NPC Car Sprites - Green Bus
+const busSprites = {
+  EAST: [
+    require("../../../../../assets/car/BUS TOPDOWN/Green/MOVE/EAST/SEPARATED/Green_BUS_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/BUS TOPDOWN/Green/MOVE/EAST/SEPARATED/Green_BUS_CLEAN_EAST_001.png"),
+  ],
+  WEST: [
+    require("../../../../../assets/car/BUS TOPDOWN/Green/MOVE/WEST/SEPARATED/Green_BUS_CLEAN_WEST_000.png"),
+    require("../../../../../assets/car/BUS TOPDOWN/Green/MOVE/WEST/SEPARATED/Green_BUS_CLEAN_WEST_001.png"),
+  ],
+};
+
+// NPC Car Sprites - Yellow Civic
+const yellowCivicSprites = {
+  EAST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/EAST/SEPARATED/Yellow_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/EAST/SEPARATED/Yellow_CIVIC_CLEAN_EAST_001.png"),
+  ],
+  WEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/WEST/SEPARATED/Yellow_CIVIC_CLEAN_WEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/WEST/SEPARATED/Yellow_CIVIC_CLEAN_WEST_001.png"),
   ],
 };
 
@@ -173,6 +199,13 @@ export default function DrivingGame() {
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
 
+  // NPC Cars State
+  const [showNPCCars, setShowNPCCars] = useState(false);
+  const [npcBusFrame, setNpcBusFrame] = useState(0);
+  const [npcCivicFrame, setNpcCivicFrame] = useState(0);
+  const busXAnim = useRef(new Animated.Value(-carWidth * 2)).current; // Start off-screen left
+  const civicXAnim = useRef(new Animated.Value(-carWidth * 2.5)).current; // Start slightly behind bus
+
   // Car animation frame cycling
   useEffect(() => {
     let iv;
@@ -184,10 +217,22 @@ export default function DrivingGame() {
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
 
+  // NPC Cars animation frame cycling
+  useEffect(() => {
+    let iv;
+    if (showNPCCars) {
+      iv = setInterval(() => {
+        setNpcBusFrame((p) => (p + 1) % busSprites.EAST.length);
+        setNpcCivicFrame((p) => (p + 1) % yellowCivicSprites.EAST.length);
+      }, 200);
+    }
+    return () => clearInterval(iv);
+  }, [showNPCCars]);
+
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
     
-    const stopRow = 6.5; // Stop before the give way sign
+    const stopRow = 5.7; // Stop before the give way sign
     const stopOffset = startOffset + stopRow * tileSize;
 
     // Show question when approaching give way sign
@@ -246,6 +291,38 @@ export default function DrivingGame() {
       await updateProgress(answer, isCorrect);
     const currentRow = Math.abs(currentScroll.current - startOffset) / tileSize;
 
+    // Pan camera to road22 (rows 7-8) to show NPC cars
+    const road22Row = 7.5; // Middle of the intersection
+    const panTarget = startOffset + road22Row * tileSize;
+    
+    // Show NPC cars and animate them
+    setShowNPCCars(true);
+    
+    // Animate NPC cars from left to right across the intersection
+    Animated.parallel([
+      Animated.timing(busXAnim, {
+        toValue: width + carWidth,
+        duration: 3000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(civicXAnim, {
+        toValue: width + carWidth,
+        duration: 3500,
+        useNativeDriver: true,
+      }),
+      // Pan camera to show the intersection
+      Animated.timing(scrollY, {
+        toValue: panTarget,
+        duration: 1500,
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      // After showing NPC cars, execute the chosen behavior
+      executeAnswerBehavior(answer, currentRow);
+    });
+  };
+
+const executeAnswerBehavior = (answer, currentRow) => {
     if (answer === "Stop completely at the give way lines and wait for the vehicle to pass") {
       // Animation: Car comes to a complete stop at give way lines
       setCarPaused(true);
@@ -257,10 +334,12 @@ export default function DrivingGame() {
       
     } else if (answer === "Speed up to cross before the approaching vehicle reaches the intersection") {
       // Animation: Car speeds up and goes through intersection quickly
-      setAnimationSpeed(2000); // Faster animation to show speeding up
+      // Use current scroll position after NPC animation
+      const currentScrollValue = currentScroll.current;
+      const road22Row = 7.5; // Where we are now (after NPC animation)
       const targetRow = 12; // Past the intersection
-      const rowsToMove = targetRow - currentRow;
-      const nextTarget = currentScroll.current + rowsToMove * tileSize;
+      const rowsToMove = targetRow - road22Row;
+      const nextTarget = currentScrollValue + rowsToMove * tileSize;
       
       Animated.timing(scrollY, {
         toValue: nextTarget,
@@ -311,6 +390,11 @@ export default function DrivingGame() {
     setCarFrame(0);
     setCarPaused(false);
     setAnimationSpeed(4000); // Reset to default speed
+    
+    // Reset NPC cars
+    setShowNPCCars(false);
+    busXAnim.setValue(-carWidth * 2);
+    civicXAnim.setValue(-carWidth * 2.5);
 
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
@@ -337,8 +421,9 @@ export default function DrivingGame() {
           }
         } else {
           moveToNextScenario();
-          const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
-          router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+          const nextScreen = `S${currentScenario + 1 }P2`; // Will be S2P2
+         router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+        
         }
   };
 
@@ -413,11 +498,44 @@ export default function DrivingGame() {
         />
       )}
 
+      {/* NPC Cars - Green Bus and Yellow Civic */}
+      {showNPCCars && (
+        <>
+          {/* Green Bus - positioned on road22 row */}
+          <Animated.Image
+            source={busSprites.EAST[npcBusFrame]}
+            style={{
+              width: carWidth * 1.3, // Slightly larger for bus
+              height: carHeight * 1.3,
+              position: "absolute",
+              top: -110, // Positioned on road22
+              bottom:-90,
+              transform: [{ translateX: busXAnim }],
+              zIndex: 6,
+            }}
+          />
+          
+          {/* Yellow Civic - positioned on road22 row, following bus */}
+          <Animated.Image
+            source={yellowCivicSprites.EAST[npcCivicFrame]}
+            style={{
+              width: carWidth,
+              height: carHeight,
+              bottom:-80,
+              position: "absolute",
+              top: -130, // Same horizontal road as bus
+              transform: [{ translateX: civicXAnim }],
+              zIndex: 6,
+            }}
+          />
+        </>
+      )}
+
       {/* Responsive Question Overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../../assets/dialog/Dialog.png")}
+            source={require("../../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -448,7 +566,7 @@ export default function DrivingGame() {
       {/* Responsive Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -468,7 +586,21 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  questionOverlay: {
+  // Loading screen styles
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  // No intro styles (responsive)
+  // In-game responsive styles
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -477,7 +609,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -485,34 +617,36 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: height * 0.05,
   },
   questionTextContainer: {
-    maxWidth: width * 0.6,
+    padding: -height * 0.04,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: Math.min(width * 0.045, 21),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.25,
+    top: height * 0.076,
     right: sideMargin,
     width: width * 0.35,
+    height: height * 0.23,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.02,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -543,7 +677,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
