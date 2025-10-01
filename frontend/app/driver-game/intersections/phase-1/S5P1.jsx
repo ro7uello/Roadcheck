@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from "react";
 import {
   View,
@@ -28,8 +29,8 @@ const roadTiles = {
     road18: require("../../../../assets/road/road18.png"),
     road19: require("../../../../assets/road/road19.png"), 
     road20: require("../../../../assets/road/road20.png"),
+    road21: require("../../../../assets/road/road21.png"),
     road50: require("../../../../assets/road/road50.png"),
-    road65: require("../../../../assets/road/road65.png"),
     road76: require("../../../../assets/road/road76.png"),
     road84: require("../../../../assets/road/road84.png"),
     road86: require("../../../../assets/road/road86.png"),
@@ -46,7 +47,7 @@ const mapLayout = [
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road86", "road1", "road17", "road20"],
-  ["road65", "int3", "int4", "road17", "road20"],
+  ["road21", "int3", "int4", "road17", "road20"],
   ["road84", "int2", "int1", "road17", "road20"],
   ["road19", "road1", "road76", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
@@ -65,14 +66,7 @@ const carSprites = {
     require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  NORTHWEST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
-  ],
-  WEST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
-  ],
+
 };
 
 const jeepSprites = {
@@ -152,12 +146,12 @@ const treePositions = [
 
 const questions = [
   {
-    question: "You're driving along Commonwealth Avenue when you see a Side road junction ahead warning sign. As you approach the junction, you notice a jeepney from the side road is already halfway into the main road, blocking part of your lane while waiting for a gap in oncoming traffic.",
-    options: ["Slow down and give a brief courtesy honk to alert the jeepney of your presence", "Change lanes to the left if clear, while reducing speed as you pass", "Stop completely and wait for the jeepney to finish its maneuver before proceeding"],
-    correct: "Stop completely and wait for the jeepney to finish its maneuver before proceeding",
+    question: "You're driving along a main road in Cebu and see a Side road junction ahead warning sign. As you approach, you notice a jeepney trying to enter the main road from the side street.",
+    options: ["Speed up to pass before the jeepney enters", "Maintain speed since you have the right of way on the main road", "Be prepared to slow down and give way if necessary for safety"],
+    correct: "Be prepared to slow down and give way if necessary for safety",
     wrongExplanation: {
-      "Slow down and give a brief courtesy honk to alert the jeepney of your presence": "Wrong!  While a brief honk isn't inherently dangerous, slowing down without stopping when the jeepney is blocking your lane could still result in a collision if it moves unpredictably.",
-      "Change lanes to the left if clear, while reducing speed as you pass": "Wrong! Changing lanes near an intersection with a vehicle blocking traffic creates additional hazards. Other drivers may not expect the lane change, and you're moving into a potentially unsafe situation."
+      "Speed up to pass before the jeepney enters": "Accident Prone! Speeding up near junctions is dangerous and could cause an accident if the jeepney doesn't see you.",
+      "Maintain speed since you have the right of way on the main road": "Not the best answer! While you have the legal right of way, defensive driving requires being prepared for other vehicles that might not yield properly."
     }
   },
   // Add more questions here as needed
@@ -180,7 +174,7 @@ export default function DrivingGame() {
   const currentScroll = useRef(startOffset);
 
   // Traffic Sign position (place it before the pedestrian crossing)
-  const trafficSignRowIndex = 4.8; // One row before the 'crossing' point
+  const trafficSignRowIndex = 10; // One row before the 'crossing' point
   const trafficSignColIndex = 3; // Left side of the road
   const trafficSignXOffset = -30;
 
@@ -213,7 +207,7 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 8.5; // Adjusted to match the visual stop point
+    const stopRow = 8.4; // Adjusted to match the visual stop point
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -264,7 +258,7 @@ export default function DrivingGame() {
     setShowJeepney(true);
     
     // Position jeepney at row 10 (intersection area)
-    const jeepneyStartRow = 8;
+    const jeepneyStartRow = 7.5;
     const jeepneyRowPosition = jeepneyStartRow * tileSize;
     const mapTopPosition = Math.abs(currentScroll.current - startOffset);
     const jeepneyScreenY = jeepneyRowPosition - mapTopPosition;
@@ -272,7 +266,7 @@ export default function DrivingGame() {
     jeepneyYAnim.setValue(jeepneyScreenY);
     jeepneyXAnim.setValue(-carWidth); // Start from left side
 
-    if (scenario === "courtesy_honk" || scenario === "change_lanes") {
+    if (scenario === "speed_up" || scenario === "maintain_speed") {
       // Jeepney turns from left side road into main road
       setJeepneyDirection("EAST");
       
@@ -386,55 +380,45 @@ export default function DrivingGame() {
 
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
-    if (answer === "Slow down and give a brief courtesy honk to alert the jeepney of your presence") {
-        // Start jeepney animation immediately
-        animateJeepney("courtesy_honk");
-        
+    if (answer === "Speed up to pass before the jeepney enters") {
+        // Car speeds up quickly to pass before jeepney enters
         const targetRow = 11;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-        // Car slows down but continues moving
-        setTimeout(() => {
-            Animated.timing(scrollY, {
-                toValue: nextTarget,
-                duration: 4000, // Slower movement
-                useNativeDriver: true,
-            }).start(() => {
-                handleFeedback(answer);
-            });
-        }, 1000);
+        // Car moves fast immediately
+        Animated.timing(scrollY, {
+            toValue: nextTarget,
+            duration: 1500, // Fast movement to speed up
+            useNativeDriver: true,
+        }).start(() => {
+            // Start jeepney animation after car passes
+            setTimeout(() => {
+                animateJeepney("speed_up");
+            }, 300);
+            handleFeedback(answer);
+        });
         
-    } else if (answer === "Change lanes to the left if clear, while reducing speed as you pass") {
-        // Start jeepney animation
-        animateJeepney("change_lanes");
-        
+    } else if (answer === "Maintain speed since you have the right of way on the main road") {
+        // Car maintains normal speed
         const targetRow = 10;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-        // Car changes lanes (moves left) and then continues
-        setTimeout(() => {
-            setCarDirection("NORTHWEST");
-            // Move car to left lane
-            Animated.timing(carXAnim, {
-                toValue: width / 2 - carWidth / 2 - tileSize * 0.8, // Move to left lane
-                duration: 1000,
-                useNativeDriver: true,
-            }).start(() => {
-                // Continue forward in left lane
-                setCarDirection("NORTH");
-                Animated.timing(scrollY, {
-                    toValue: nextTarget,
-                    duration: 3000,
-                    useNativeDriver: true,
-                }).start(() => {
-                    handleFeedback(answer);
-                });
-            });
-        }, 1500);
+        // Car continues at normal speed
+        Animated.timing(scrollY, {
+            toValue: nextTarget,
+            duration: 2500, // Normal/maintain speed
+            useNativeDriver: true,
+        }).start(() => {
+            // Start jeepney animation as car reaches intersection
+            setTimeout(() => {
+                animateJeepney("maintain_speed");
+            }, 200);
+            handleFeedback(answer);
+        });
         
-    } else if(answer === "Stop completely and wait for the jeepney to finish its maneuver before proceeding"){
+    } else if(answer === "Be prepared to slow down and give way if necessary for safety"){
         // Start jeepney animation first
         animateJeepney("stop_and_wait");
         
@@ -482,7 +466,7 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      router.push('/driver-game/intersections/phase-1/S3P1');
+      router.push('/driver-game/intersections/phase-1/S6P1');
       setQuestionIndex(0);
       setShowQuestion(false);
     }
@@ -494,7 +478,7 @@ export default function DrivingGame() {
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct!  When a vehicle is already occupying part of your travel path at an intersection, the safest action is to stop and allow it to complete its maneuver. This prevents accidents and follows proper defensive driving principles."
+    ? "Correct! Defensive driving means being prepared to avoid accidents even when you have the right of way. The warning sign alerts you to be cautious."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction

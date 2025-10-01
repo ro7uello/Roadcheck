@@ -24,31 +24,26 @@ const roadTiles = {
     road1: require("../../../../assets/road/road1.png"),
     road3: require("../../../../assets/road/road3.png"),
     road4: require("../../../../assets/road/road4.png"),
+    road16: require("../../../../assets/road/road16.png"),
     road17: require("../../../../assets/road/road17.png"),
     road18: require("../../../../assets/road/road18.png"),
-    road19: require("../../../../assets/road/road19.png"), 
+    road19: require("../../../../assets/road/road19.png"),
     road20: require("../../../../assets/road/road20.png"),
-    road50: require("../../../../assets/road/road50.png"),
-    road65: require("../../../../assets/road/road65.png"),
+    road22: require("../../../../assets/road/road22.png"),
+    road23: require("../../../../assets/road/road23.png"),
+    road24: require("../../../../assets/road/road24.png"),
+    road51: require("../../../../assets/road/road51.png"),
+    road52: require("../../../../assets/road/road52.png"),
     road76: require("../../../../assets/road/road76.png"),
-    road84: require("../../../../assets/road/road84.png"),
-    road86: require("../../../../assets/road/road86.png"),
-    int1: require("../../../../assets/road/int1.png"),
-    int2: require("../../../../assets/road/int2.png"),
-    int3: require("../../../../assets/road/int3.png"),
-    int4: require("../../../../assets/road/int4.png"),
 };
 
 const mapLayout = [
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],  
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road86", "road1", "road17", "road20"],
-  ["road65", "int3", "int4", "road17", "road20"],
-  ["road84", "int2", "int1", "road17", "road20"],
-  ["road19", "road1", "road76", "road17", "road20"],
+  ["road20", "road20", "road20", "road20", "road20"],
+  ["road20", "road20", "road20", "road20", "road20"],
+  ["road52", "road52", "road52", "road52", "road52"],
+  ["road24", "road22", "road22", "road22", "road24"],
+  ["road23", "road22", "road22", "road23", "road23"],
+  ["road19", "road1", "road1", "road16", "road51"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
@@ -65,45 +60,26 @@ const carSprites = {
     require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  NORTHWEST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
+  NORTHEAST: [
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
   ],
-  WEST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
+  EAST: [
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
   ],
 };
-
-const jeepSprites = {
-    NORTH: [
-        require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
-        require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
-    ],
-    EAST: [
-        require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/EAST/SEPARATED/Brown_JEEP_CLEAN_EAST_000.png"),
-        require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/EAST/SEPARATED/Brown_JEEP_CLEAN_EAST_001.png"),
-    ],
-    NORTHEAST: [
-        require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTHEAST/SEPARATED/Brown_JEEP_CLEAN_NORTHEAST_000.png"),
-        require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTHEAST/SEPARATED/Brown_JEEP_CLEAN_NORTHEAST_001.png"),
-    ],
-};
-
 const treeSprites = {
   tree1: require("../../../../assets/tree/Tree3_idle_s.png"),
   // Add more tree variations if you have them
   // tree2: require("../assets/tree/Tree2_idle_s"),
   // tree3: require("../assets/tree/Tree1_idle_s"),
 };
-
 const treePositions = [
   // Left side trees (column -1, outside the road)
-    { row: 1, col: 0, type: 'tree1' },
-    { row: 2, col: 0, type: 'tree1' },
-    { row: 3, col: 0, type: 'tree1' },
-    { row: 4, col: 0, type: 'tree1' },
     { row: 5, col: 0, type: 'tree1' },
+    { row: 6, col: 0, type: 'tree1' },
+    { row: 7, col: 0, type: 'tree1' },
     { row: 8, col: 0, type: 'tree1' },
     { row: 9, col: 0, type: 'tree1' },
     { row: 10, col: 0, type: 'tree1' },
@@ -111,14 +87,7 @@ const treePositions = [
     { row: 12, col: 0, type: 'tree1' },
     { row: 13, col: 0, type: 'tree1' },
     { row: 14, col: 0, type: 'tree1' },
-    { row: 15, col: 0, type: 'tree1' },
-    { row: 16, col: 0, type: 'tree1' },
-    
   // right side trees
-    { row: 1, col: 3.5, type: 'tree1' },
-    { row: 2, col: 3.5, type: 'tree1' },
-    { row: 3, col: 3.5, type: 'tree1' },
-    { row: 4, col: 3.5, type: 'tree1' },
     { row: 5, col: 3.5, type: 'tree1' },
     { row: 6, col: 3.5, type: 'tree1' },
     { row: 7, col: 3.5, type: 'tree1' },
@@ -129,13 +98,7 @@ const treePositions = [
     { row: 12, col: 3.5, type: 'tree1' },
     { row: 13, col: 3.5, type: 'tree1' },
     { row: 14, col: 3.5, type: 'tree1' },
-    { row: 15, col: 3.5, type: 'tree1' },
-    { row: 16, col: 3.5, type: 'tree1' },
 // scattered trees right side
-    { row: 1.5, col: 4, type: 'tree1' },
-    { row: 2.5, col: 4, type: 'tree1' },
-    { row: 3.5, col: 4, type: 'tree1' },
-    { row: 4.5, col: 4, type: 'tree1' },
     { row: 5.5, col: 4, type: 'tree1' },
     { row: 6.5, col: 4, type: 'tree1' },
     { row: 7.5, col: 4, type: 'tree1' },
@@ -146,27 +109,31 @@ const treePositions = [
     { row: 12.5, col: 4, type: 'tree1' },
     { row: 13.5, col: 4, type: 'tree1' },
     { row: 14.5, col: 4, type: 'tree1' },
-    { row: 15.5, col: 4, type: 'tree1' },
-    { row: 16.5, col: 4, type: 'tree1' },
+    //top side trees
+    { row: 1.4, col: 0, type: 'tree1' },
+    { row: 1.4, col: 1, type: 'tree1' },
+    { row: 1.4, col: 2, type: 'tree1' },
+    { row: 1.4, col: 3, type: 'tree1' },
+    { row: 1.4, col: 4, type: 'tree1' },
+    { row: 1, col: 0.5, type: 'tree1' },
+    { row: 1, col: 1.5, type: 'tree1' },
+    { row: 1, col: 2.5, type: 'tree1' },
+    { row: 1, col: 3.5, type: 'tree1' },
+    { row: 1, col: 4.5, type: 'tree1' },
 ];
 
 const questions = [
   {
-    question: "You're driving along Commonwealth Avenue when you see a Side road junction ahead warning sign. As you approach the junction, you notice a jeepney from the side road is already halfway into the main road, blocking part of your lane while waiting for a gap in oncoming traffic.",
-    options: ["Slow down and give a brief courtesy honk to alert the jeepney of your presence", "Change lanes to the left if clear, while reducing speed as you pass", "Stop completely and wait for the jeepney to finish its maneuver before proceeding"],
-    correct: "Stop completely and wait for the jeepney to finish its maneuver before proceeding",
+    question: "You're approaching a busy roundabout in Makati during lunch time. There's a Roundabout ahead sign, and you can see the circular intersection has continuous traffic. You need to take the second exit, and there's a motorcycle beside you also approaching the roundabout.",
+    options: ["Race the motorcycle to enter the roundabout first", "Yield to traffic in the roundabout, coordinate with the motorcycle, and enter when both can safely do so", "Stop and wait for traffic to completely clear"],
+    correct: "Yield to traffic already in the roundabout, then enter when safe",
     wrongExplanation: {
-      "Slow down and give a brief courtesy honk to alert the jeepney of your presence": "Wrong!  While a brief honk isn't inherently dangerous, slowing down without stopping when the jeepney is blocking your lane could still result in a collision if it moves unpredictably.",
-      "Change lanes to the left if clear, while reducing speed as you pass": "Wrong! Changing lanes near an intersection with a vehicle blocking traffic creates additional hazards. Other drivers may not expect the lane change, and you're moving into a potentially unsafe situation."
+      "Race the motorcycle to enter the roundabout first": "Accident Prone! Racing other vehicles is dangerous and illegal, especially near intersections and roundabouts.",
+      "Stop and wait for traffic to completely clear": "Wrong! Waiting for complete clearance in heavy traffic areas like Makati would create massive traffic jams. Enter when there's a reasonable safe gap."
     }
   },
   // Add more questions here as needed
 ];
-
-const trafficSign = {
-  sign: require("../../../../assets/signs/t_junction3.png"),
-};
-
 export default function DrivingGame() {
 
   const numColumns = mapLayout[0].length;
@@ -178,11 +145,6 @@ export default function DrivingGame() {
   const startOffset = -(mapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
-
-  // Traffic Sign position (place it before the pedestrian crossing)
-  const trafficSignRowIndex = 4.8; // One row before the 'crossing' point
-  const trafficSignColIndex = 3; // Left side of the road
-  const trafficSignXOffset = -30;
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -204,16 +166,9 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
 
-  // Jeepney states and animations
-  const [showJeepney, setShowJeepney] = useState(false);
-  const [jeepneyFrame, setJeepneyFrame] = useState(0);
-  const [jeepneyDirection, setJeepneyDirection] = useState("EAST");
-  const jeepneyXAnim = useRef(new Animated.Value(-carWidth)).current;
-  const jeepneyYAnim = useRef(new Animated.Value(0)).current;
-
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 8.5; // Adjusted to match the visual stop point
+    const stopRow = 8; // Adjusted to match the visual stop point
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -243,113 +198,11 @@ export default function DrivingGame() {
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
 
-  // Jeepney sprite frame loop
-  useEffect(() => {
-    let iv;
-    if (showJeepney && jeepSprites[jeepneyDirection]) {
-      iv = setInterval(() => {
-        setJeepneyFrame((p) => (p + 1) % jeepSprites[jeepneyDirection].length);
-      }, 200);
-    }
-    return () => clearInterval(iv);
-  }, [showJeepney, jeepneyDirection]);
-
   // feedback anims
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
   const [animationType, setAnimationType] = useState(null);
   const [showNext, setShowNext] = useState(false);
-
-  const animateJeepney = (scenario) => {
-    setShowJeepney(true);
-    
-    // Position jeepney at row 10 (intersection area)
-    const jeepneyStartRow = 8;
-    const jeepneyRowPosition = jeepneyStartRow * tileSize;
-    const mapTopPosition = Math.abs(currentScroll.current - startOffset);
-    const jeepneyScreenY = jeepneyRowPosition - mapTopPosition;
-    
-    jeepneyYAnim.setValue(jeepneyScreenY);
-    jeepneyXAnim.setValue(-carWidth); // Start from left side
-
-    if (scenario === "courtesy_honk" || scenario === "change_lanes") {
-      // Jeepney turns from left side road into main road
-      setJeepneyDirection("EAST");
-      
-      // Move jeepney from left to center of road
-      Animated.sequence([
-        // Phase 1: Move east into the intersection
-        Animated.timing(jeepneyXAnim, {
-          toValue: tileSize * 1.5, // Move to center of intersection
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        // Phase 2: Change direction to northeast and continue
-        Animated.timing(jeepneyXAnim, {
-          toValue: tileSize * 2, // Move slightly more right
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        // Phase 3: Turn north and continue up the road
-        setJeepneyDirection("NORTHEAST");
-        setTimeout(() => {
-          setJeepneyDirection("NORTH");
-          Animated.parallel([
-            Animated.timing(jeepneyXAnim, {
-              toValue: tileSize * 2.2, // Align with right lane
-              duration: 1000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(jeepneyYAnim, {
-              toValue: jeepneyScreenY - tileSize * 3, // Move up the road
-              duration: 2000,
-              useNativeDriver: true,
-            }),
-          ]).start();
-        }, 300);
-      });
-    } else if (scenario === "stop_and_wait") {
-      // Jeepney completes full turn and exits before car moves
-      setJeepneyDirection("EAST");
-      
-      Animated.sequence([
-        // Move across intersection
-        Animated.timing(jeepneyXAnim, {
-          toValue: tileSize * 1.5,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        // Turn northeast
-        Animated.timing(jeepneyXAnim, {
-          toValue: tileSize * 2,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setJeepneyDirection("NORTHEAST");
-        setTimeout(() => {
-          setJeepneyDirection("NORTH");
-          // Complete the turn and move away
-          Animated.parallel([
-            Animated.timing(jeepneyXAnim, {
-              toValue: tileSize * 2.2,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(jeepneyYAnim, {
-              toValue: jeepneyScreenY - tileSize * 5, // Move far up
-              duration: 2500,
-              useNativeDriver: true,
-            }),
-          ]).start(() => {
-            // Hide jeepney after it's far away
-            setTimeout(() => setShowJeepney(false), 1000);
-          });
-        }, 400);
-      });
-    }
-  };
 
   const handleFeedback = (answerGiven) => {
       const currentQuestion = questions[questionIndex];
@@ -386,67 +239,77 @@ export default function DrivingGame() {
 
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
-    if (answer === "Slow down and give a brief courtesy honk to alert the jeepney of your presence") {
-        // Start jeepney animation immediately
-        animateJeepney("courtesy_honk");
-        
-        const targetRow = 11;
-        const rowsToMove = targetRow - currentRow;
-        const nextTarget = currentScroll.current + rowsToMove * tileSize;
+    if (answer === "Race the motorcycle to enter the roundabout first") {
+      const turnStartRow = 10;
+      const turnEndRow = 11;
 
-        // Car slows down but continues moving
-        setTimeout(() => {
-            Animated.timing(scrollY, {
-                toValue: nextTarget,
-                duration: 4000, // Slower movement
+      const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
+
+      Animated.timing(scrollY, {
+        toValue: initialScrollTarget,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start(() => {
+        const turnSequence = ["NORTH", "NORTHEAST", "EAST"];
+        let currentTurnStep = 0;
+
+        const animateTurnAndMove = () => {
+          if (currentTurnStep < turnSequence.length) {
+            setCarDirection(turnSequence[currentTurnStep]);
+            setCarFrame(0);
+
+            let deltaX = 0;
+            let deltaYScroll = 0;
+
+            if (turnSequence[currentTurnStep] === "NORTHEAST") {
+              deltaX = tileSize / 4;
+              deltaYScroll = tileSize / 4;
+            } else if (turnSequence[currentTurnStep] === "EAST") {
+              deltaX = tileSize / 2;
+              deltaYScroll = tileSize / 2;
+            }
+
+            // Get current values properly
+            const currentCarX = carXAnim._value;
+            const currentScrollY = scrollY._value;
+
+            Animated.parallel([
+              Animated.timing(carXAnim, {
+                toValue: currentCarX + deltaX,
+                duration: 300,
+                useNativeDriver: false,
+              }),
+              Animated.timing(scrollY, {
+                toValue: currentScrollY + deltaYScroll,
+                duration: 300,
                 useNativeDriver: true,
-            }).start(() => {
-                handleFeedback(answer);
+              }),
+            ]).start(() => {
+              currentTurnStep++;
+              animateTurnAndMove();
             });
-        }, 1000);
-        
-    } else if (answer === "Change lanes to the left if clear, while reducing speed as you pass") {
-        // Start jeepney animation
-        animateJeepney("change_lanes");
-        
-        const targetRow = 10;
-        const rowsToMove = targetRow - currentRow;
-        const nextTarget = currentScroll.current + rowsToMove * tileSize;
-
-        // Car changes lanes (moves left) and then continues
-        setTimeout(() => {
-            setCarDirection("NORTHWEST");
-            // Move car to left lane
+          } else {
             Animated.timing(carXAnim, {
-                toValue: width / 2 - carWidth / 2 - tileSize * 0.8, // Move to left lane
-                duration: 1000,
-                useNativeDriver: true,
+              toValue: width * 2,
+              duration: 2500,
+              useNativeDriver: false,
             }).start(() => {
-                // Continue forward in left lane
-                setCarDirection("NORTH");
-                Animated.timing(scrollY, {
-                    toValue: nextTarget,
-                    duration: 3000,
-                    useNativeDriver: true,
-                }).start(() => {
-                    handleFeedback(answer);
-                });
+              setIsCarVisible(false);
+              handleFeedback(answer);
             });
-        }, 1500);
-        
-    } else if(answer === "Stop completely and wait for the jeepney to finish its maneuver before proceeding"){
-        // Start jeepney animation first
-        animateJeepney("stop_and_wait");
-        
-        const targetRow = 10;
+          }
+        };
+        animateTurnAndMove();
+      });
+      return;
+    } else if (answer === "C. Stop and wait for traffic to completely clear") {
+        const targetRow = 8;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-        setCarPaused(true); // Car stops completely
-        
-        // Wait for jeepney to complete its maneuver (longer delay)
+        setCarPaused(true); // Car pauses as if yielding
         setTimeout(() => {
-            setCarPaused(false); // Car resumes after jeepney is clear
+            setCarPaused(false); // Car resumes after a short pause
             Animated.timing(scrollY, {
                 toValue: nextTarget,
                 duration: 2000,
@@ -454,16 +317,81 @@ export default function DrivingGame() {
             }).start(() => {
                 handleFeedback(answer);
             });
-        }, 5000); // Wait 5 seconds for jeepney to clear
+        }); // Added delay duration
+    } else if(answer === "Yield to traffic in the roundabout, coordinate with the motorcycle, and enter when both can safely do so"){
+        const turnStartRow = 10;
+        const turnEndRow = 11;
+
+        const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
+
+        Animated.timing(scrollY, {
+          toValue: initialScrollTarget,
+          duration: 2000,
+          useNativeDriver: true,
+        }).start(() => {
+          setTimeout(() => {
+            // Fixed the typo: "NORTHEAST" -> "NORTHEAST"
+            const turnSequence = ["NORTH", "NORTHEAST", "EAST"];
+            let currentTurnStep = 0;
+
+            const animateTurnAndMove = () => {
+              if (currentTurnStep < turnSequence.length) {
+                setCarDirection(turnSequence[currentTurnStep]);
+                setCarFrame(0);
+
+                let deltaX = 0;
+                let deltaYScroll = 0;
+
+                if (turnSequence[currentTurnStep] === "NORTHEAST") {
+                  deltaX = tileSize / 4;
+                  deltaYScroll = tileSize / 4;
+                } else if (turnSequence[currentTurnStep] === "EAST") {
+                  deltaX = tileSize / 2;
+                  deltaYScroll = tileSize / 2;
+                }
+
+                // Get current values properly
+                const currentCarX = carXAnim._value;
+                const currentScrollY = scrollY._value;
+
+                Animated.parallel([
+                  Animated.timing(carXAnim, {
+                    toValue: currentCarX + deltaX,
+                    duration: 500,
+                    useNativeDriver: false,
+                  }),
+                  Animated.timing(scrollY, {
+                    toValue: currentScrollY + deltaYScroll,
+                    duration: 500,
+                    useNativeDriver: true,
+                  }),
+                ]).start(() => {
+                  currentTurnStep++;
+                  animateTurnAndMove();
+                });
+              } else {
+                Animated.timing(carXAnim, {
+                  toValue: width * 2,
+                  duration: 1000,
+                  useNativeDriver: false,
+                }).start(() => {
+                  setIsCarVisible(false);
+                  handleFeedback(answer);
+                });
+              }
+            };
+            animateTurnAndMove();
+          });
+        });
+      return;
     }
-};
+  };
 
   const handleNext = () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setCarFrame(0);
-    setShowJeepney(false);
     
     // Reset car position and visibility
     const centerX = width / 2 - carWidth / 2;
@@ -472,40 +400,26 @@ export default function DrivingGame() {
     setIsCarVisible(true);
     setCarPaused(false);
     
-    // Reset jeepney
-    jeepneyXAnim.setValue(-carWidth);
-    jeepneyYAnim.setValue(0);
-    setJeepneyDirection("EAST");
-    setJeepneyFrame(0);
-    
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      router.push('/driver-game/intersections/phase-1/S3P1');
+      router.push('/driver-game/intersections/phase-1/S4P1');
       setQuestionIndex(0);
       setShowQuestion(false);
     }
   };
 
   // Calculate traffic Sign position
-  const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;
-  const trafficSignTop = trafficSignRowIndex * tileSize;
-
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct!  When a vehicle is already occupying part of your travel path at an intersection, the safest action is to stop and allow it to complete its maneuver. This prevents accidents and follows proper defensive driving principles."
+    ? "Correct! Safe roundabout navigation requires yielding to circulating traffic and being aware of adjacent vehicles. Coordination prevents conflicts."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction
   const currentCarSprite = carSprites[carDirection] && carSprites[carDirection][carFrame] 
     ? carSprites[carDirection][carFrame] 
     : carSprites["NORTH"][0];
-
-  // Ensure jeepney sprite exists for current direction
-  const currentJeepneySprite = jeepSprites[jeepneyDirection] && jeepSprites[jeepneyDirection][jeepneyFrame]
-    ? jeepSprites[jeepneyDirection][jeepneyFrame]
-    : jeepSprites["EAST"][0];
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -536,19 +450,6 @@ export default function DrivingGame() {
             />
           ))
         )}
-        {/* Traffic Sign */}
-        <Image
-                source={trafficSign.sign}
-                style={{
-                    width: tileSize * .8,
-                    height: tileSize *.8,
-                    position: "absolute",
-                    top: trafficSignTop,
-                    left: trafficSignLeft,
-                    zIndex: 11,
-                }}
-                resizeMode="contain"
-                />
 
         {treePositions.map((tree, index) => (
                           <Image
@@ -566,21 +467,6 @@ export default function DrivingGame() {
                           />
                         ))}
       </Animated.View>
-
-      {/* Jeepney - positioned relative to map */}
-      {showJeepney && (
-        <Animated.Image
-          source={currentJeepneySprite}
-          style={{
-            width: carWidth,
-            height: carHeight,
-            position: "absolute",
-            left: jeepneyXAnim,
-            top: jeepneyYAnim,
-            zIndex: 7,
-          }}
-        />
-      )}
 
       {/* Car - fixed */}
       {isCarVisible && (
@@ -708,13 +594,13 @@ const styles = StyleSheet.create({
   questionText: {
     flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 18),
+    fontSize: Math.min(width * 0.045, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.2,
+    top: height * 0.16,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
@@ -730,7 +616,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 16),
+    fontSize: Math.min(width * 0.04, 18),
     textAlign: "center",
   },
   feedbackOverlay: {
@@ -753,7 +639,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 22),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
   },

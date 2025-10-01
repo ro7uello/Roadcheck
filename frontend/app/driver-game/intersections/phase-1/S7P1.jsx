@@ -12,6 +12,8 @@ import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
+//CONTINUE & FIX ANIMATION ISSUES
+
 // Responsive calculations
 const carWidth = Math.min(width * 0.25, 280);
 const carHeight = carWidth * (350/280);
@@ -21,38 +23,29 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 const roadTiles = {
-    road1: require("../../../../assets/road/road1.png"),
-    road3: require("../../../../assets/road/road3.png"),
-    road4: require("../../../../assets/road/road4.png"),
-    road16: require("../../../../assets/road/road16.png"),
-    road17: require("../../../../assets/road/road17.png"),
-    road18: require("../../../../assets/road/road18.png"),
-    road19: require("../../../../assets/road/road19.png"),
-    road20: require("../../../../assets/road/road20.png"),
-    road22: require("../../../../assets/road/road22.png"),
-    road23: require("../../../../assets/road/road23.png"),
-    road24: require("../../../../assets/road/road24.png"),
-    road51: require("../../../../assets/road/road51.png"),
-    road52: require("../../../../assets/road/road52.png"),
-    road76: require("../../../../assets/road/road76.png"),
+  road2: require("../../../../assets/road/road2.png"),
+  road3: require("../../../../assets/road/road3.png"),
+  road4: require("../../../../assets/road/road4.png"),
+  road48: require("../../../../assets/road/road48.png"),
+  road80: require("../../../../assets/road/road80.png"),
+  road87: require("../../../../assets/road/road87.png"),
+  road92: require("../../../../assets/road/road92.png"),
 };
 
 const mapLayout = [
-  ["road20", "road20", "road20", "road20", "road20"],
-  ["road20", "road20", "road20", "road20", "road20"],
-  ["road52", "road52", "road52", "road52", "road52"],
-  ["road24", "road22", "road22", "road22", "road24"],
-  ["road23", "road22", "road22", "road23", "road23"],
-  ["road19", "road1", "road1", "road16", "road51"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
+  ["road4", "road3", "road4", "road3", "road80"],
+  ["road4", "road3", "road4", "road3", "road80"],
+  ["road4", "road3", "road4", "road3", "road80"],
+  ["road4", "road3", "road4", "road3", "road80"],
+  ["road4", "road3", "road4", "road2", "road92"],
+  ["road4", "road3", "road4", "road2", "road48"],
+  ["road4", "road3", "road4", "road2", "road87"],
+  ["road4", "road3", "road4", "road3", "road80"],
+  ["road4", "road3", "road4", "road3", "road80"],
+  ["road4", "road3", "road4", "road3", "road80"],
+  ["road4", "road3", "road4", "road3", "road80"],
+  ["road4", "road3", "road4", "road3", "road80"],
+  ["road4", "road3", "road4", "road3", "road80"],
 ];
 
 const carSprites = {
@@ -60,80 +53,54 @@ const carSprites = {
     require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  NORTHEAST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
-  ],
-  EAST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
-  ],
 };
-const treeSprites = {
-  tree1: require("../../../../assets/tree/Tree3_idle_s.png"),
-  // Add more tree variations if you have them
-  // tree2: require("../assets/tree/Tree2_idle_s"),
-  // tree3: require("../assets/tree/Tree1_idle_s"),
-};
-const treePositions = [
-  // Left side trees (column -1, outside the road)
-    { row: 5, col: 0, type: 'tree1' },
-    { row: 6, col: 0, type: 'tree1' },
-    { row: 7, col: 0, type: 'tree1' },
-    { row: 8, col: 0, type: 'tree1' },
-    { row: 9, col: 0, type: 'tree1' },
-    { row: 10, col: 0, type: 'tree1' },
-    { row: 11, col: 0, type: 'tree1' },
-    { row: 12, col: 0, type: 'tree1' },
-    { row: 13, col: 0, type: 'tree1' },
-    { row: 14, col: 0, type: 'tree1' },
-  // right side trees
-    { row: 5, col: 3.5, type: 'tree1' },
-    { row: 6, col: 3.5, type: 'tree1' },
-    { row: 7, col: 3.5, type: 'tree1' },
-    { row: 8, col: 3.5, type: 'tree1' },
-    { row: 9, col: 3.5, type: 'tree1' },
-    { row: 10, col: 3.5, type: 'tree1' },
-    { row: 11, col: 3.5, type: 'tree1' },
-    { row: 12, col: 3.5, type: 'tree1' },
-    { row: 13, col: 3.5, type: 'tree1' },
-    { row: 14, col: 3.5, type: 'tree1' },
-// scattered trees right side
-    { row: 5.5, col: 4, type: 'tree1' },
-    { row: 6.5, col: 4, type: 'tree1' },
-    { row: 7.5, col: 4, type: 'tree1' },
-    { row: 8.5, col: 4, type: 'tree1' },
-    { row: 9.5, col: 4, type: 'tree1' },
-    { row: 10.5, col: 4, type: 'tree1' },
-    { row: 11.5, col: 4, type: 'tree1' },
-    { row: 12.5, col: 4, type: 'tree1' },
-    { row: 13.5, col: 4, type: 'tree1' },
-    { row: 14.5, col: 4, type: 'tree1' },
-    //top side trees
-    { row: 1.4, col: 0, type: 'tree1' },
-    { row: 1.4, col: 1, type: 'tree1' },
-    { row: 1.4, col: 2, type: 'tree1' },
-    { row: 1.4, col: 3, type: 'tree1' },
-    { row: 1.4, col: 4, type: 'tree1' },
-    { row: 1, col: 0.5, type: 'tree1' },
-    { row: 1, col: 1.5, type: 'tree1' },
-    { row: 1, col: 2.5, type: 'tree1' },
-    { row: 1, col: 3.5, type: 'tree1' },
-    { row: 1, col: 4.5, type: 'tree1' },
-];
 
+const truckSprites = {
+  NORTH: [
+    require("../../../../assets/car/BOX TRUCK TOPDOWN/White/MOVE/NORTH/SEPARATED/White_BOXTRUCK_CLEAN_NORTH_000.png"),
+    require("../../../../assets/car/BOX TRUCK TOPDOWN/White/MOVE/NORTH/SEPARATED/White_BOXTRUCK_CLEAN_NORTH_001.png"),
+  ], 
+  NORTHWEST: [
+    require("../../../../assets/car/BOX TRUCK TOPDOWN/White/MOVE/NORTHWEST/SEPARATED/White_BOXTRUCK_CLEAN_NORTHWEST_000.png"),
+    require("../../../../assets/car/BOX TRUCK TOPDOWN/White/MOVE/NORTHWEST/SEPARATED/White_BOXTRUCK_CLEAN_NORTHWEST_001.png"),
+  ]
+};
+
+const npcCarSprite1 = {
+  NORTH: [
+    require("../../../../assets/car/SEDAN TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_SEDAN_CLEAN_NORTH_000.png"),
+    require("../../../../assets/car/SEDAN TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_SEDAN_CLEAN_NORTH_001.png"),
+  ],
+};
+const npcCarSprite2 = {
+  NORTH: [
+    require("../../../../assets/car/SEDAN TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_SEDAN_CLEAN_NORTH_000.png"),
+    require("../../../../assets/car/SEDAN TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_SEDAN_CLEAN_NORTH_001.png"),
+  ],
+};
+const npcCarSprite3 = {
+  NORTH: [
+    require("../../../../assets/car/SEDAN TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_SEDAN_CLEAN_NORTH_000.png"),
+    require("../../../../assets/car/SEDAN TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_SEDAN_CLEAN_NORTH_001.png"),
+  ],
+};
 const questions = [
   {
-    question: "You're approaching a Roundabout (Rotunda) in Iloilo City. There's moderate traffic, and you need to take the third exit. A motorcycle is already in the roundabout to your left.",
-    options: ["Enter the roundabout immediately since you have the right of way", "Yield to traffic already in the roundabout, then enter when safe", "Stop and wait for the roundabout to be completely empty"],
-    correct: "Yield to traffic already in the roundabout, then enter when safe",
+    question: "You see an Approach to intersection merging traffic sign while driving in Quezon City. Traffic from your right is merging onto your road, and a delivery truck is approaching from that merge point.",
+    options: ["Maintain your speed since merging traffic must yield", "Slow down slightly and create space for smooth merging", "Speed up to get ahead of the merging traffic"],
+    correct: "Slow down slightly and create space for smooth merging",
     wrongExplanation: {
-      "Enter the roundabout immediately since you have the right of way": "Accident Prone! Vehicles already in the roundabout have the right of way. Entering without yielding can cause accidents.",
-      "Stop and wait for the roundabout to be completely empty": "Wrong! Waiting for complete emptiness is unnecessary and creates traffic backup. Enter when there's a reasonable safe gap."
+      "Maintain your speed since merging traffic must yield": "Not the best! While legally correct, this approach can create dangerous situations and traffic congestion.",
+      "Speed up to get ahead of the merging traffic": "Wrong! Speeding up during merging situations increases accident risk and shows aggressive driving behavior."
     }
   },
   // Add more questions here as needed
 ];
+
+const trafficSign = {
+  sign: require("../../../../assets/signs/t_junction5.png"),
+};
+
 export default function DrivingGame() {
 
   const numColumns = mapLayout[0].length;
@@ -141,10 +108,35 @@ export default function DrivingGame() {
   const mapHeight = mapLayout.length * tileSize;
 
   const [isCarVisible, setIsCarVisible] = useState(true);
+  const [isTruckVisible, setIsTruckVisible] = useState(true);
 
   const startOffset = -(mapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
+
+  // Truck animation
+  const [truckFrame, setTruckFrame] = useState(0);
+  const [truckDirection, setTruckDirection] = useState("NORTHWEST");
+  // Adjusted initial truck position to row 6, column 4
+  const truckXAnim = useRef(new Animated.Value(4.2 * tileSize)).current; // Column 4
+  const truckYAnim = useRef(new Animated.Value(5.5 * tileSize)).current; // Row 6
+
+
+  // NPC Cars
+  const npcCar1XAnim = useRef(new Animated.Value(2.5 * tileSize)).current;
+  const npcCar1YAnim = useRef(new Animated.Value(3 * tileSize)).current; // Adjusted position
+  
+  const npcCar2XAnim = useRef(new Animated.Value(3.5 * tileSize)).current;
+  const npcCar2YAnim = useRef(new Animated.Value(2 * tileSize)).current; // Adjusted position
+  
+  const npcCar3XAnim = useRef(new Animated.Value(2.5 * tileSize)).current;
+  const npcCar3YAnim = useRef(new Animated.Value(1 * tileSize)).current; // Adjusted position
+
+
+  // Traffic Sign position (place it before the pedestrian crossing)
+  const trafficSignRowIndex = 7; // One row before the 'crossing' point
+  const trafficSignColIndex = 4; // Left side of the road
+  const trafficSignXOffset = -30;
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -168,7 +160,7 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 8; // Adjusted to match the visual stop point
+    const stopRow = 6; // Adjusted to match the visual stop point
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -197,6 +189,17 @@ export default function DrivingGame() {
     }
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
+
+  // Truck sprite frame loop
+  useEffect(() => {
+    let iv;
+    if (isTruckVisible && truckSprites[truckDirection]) {
+      iv = setInterval(() => {
+        setTruckFrame((p) => (p + 1) % truckSprites[truckDirection].length);
+      }, 200);
+    }
+    return () => clearInterval(iv);
+  }, [isTruckVisible, truckDirection]);
 
   // feedback anims
   const correctAnim = useRef(new Animated.Value(0)).current;
@@ -239,71 +242,8 @@ export default function DrivingGame() {
 
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
-    if (answer === "Enter the roundabout immediately since you have the right of way") {
-      const turnStartRow = 10;
-      const turnEndRow = 11;
-
-      const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
-
-      Animated.timing(scrollY, {
-        toValue: initialScrollTarget,
-        duration: 2000,
-        useNativeDriver: true,
-      }).start(() => {
-        const turnSequence = ["NORTH", "NORTHEAST", "EAST"];
-        let currentTurnStep = 0;
-
-        const animateTurnAndMove = () => {
-          if (currentTurnStep < turnSequence.length) {
-            setCarDirection(turnSequence[currentTurnStep]);
-            setCarFrame(0);
-
-            let deltaX = 0;
-            let deltaYScroll = 0;
-
-            if (turnSequence[currentTurnStep] === "NORTHEAST") {
-              deltaX = tileSize / 4;
-              deltaYScroll = tileSize / 4;
-            } else if (turnSequence[currentTurnStep] === "EAST") {
-              deltaX = tileSize / 2;
-              deltaYScroll = tileSize / 2;
-            }
-
-            // Get current values properly
-            const currentCarX = carXAnim._value;
-            const currentScrollY = scrollY._value;
-
-            Animated.parallel([
-              Animated.timing(carXAnim, {
-                toValue: currentCarX + deltaX,
-                duration: 300,
-                useNativeDriver: false,
-              }),
-              Animated.timing(scrollY, {
-                toValue: currentScrollY + deltaYScroll,
-                duration: 300,
-                useNativeDriver: true,
-              }),
-            ]).start(() => {
-              currentTurnStep++;
-              animateTurnAndMove();
-            });
-          } else {
-            Animated.timing(carXAnim, {
-              toValue: width * 2,
-              duration: 2500,
-              useNativeDriver: false,
-            }).start(() => {
-              setIsCarVisible(false);
-              handleFeedback(answer);
-            });
-          }
-        };
-        animateTurnAndMove();
-      });
-      return;
-    } else if (answer === "Stop and wait for the roundabout to be completely empty") {
-        const targetRow = 8;
+    if (answer === "Speed up to get ahead of the merging traffic") {
+     const targetRow = 8;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
@@ -318,72 +258,72 @@ export default function DrivingGame() {
                 handleFeedback(answer);
             });
         }); // Added delay duration
-    } else if(answer === "Yield to traffic already in the roundabout, then enter when safe"){
-        const turnStartRow = 10;
-        const turnEndRow = 11;
+    } else if (answer === "Maintain your speed since merging traffic must yield") {
+      // Maintain speed - normal animation, truck stays stationary
+      const targetRow = 8;
+        const rowsToMove = targetRow - currentRow;
+        const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-        const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
+        setCarPaused(true); // Car pauses as if yielding
+        setTimeout(() => {
+            setCarPaused(false); // Car resumes after a short pause
+            Animated.timing(scrollY, {
+                toValue: nextTarget,
+                duration: 2000,
+                useNativeDriver: true,
+            }).start(() => {
+                handleFeedback(answer);
+            });
+        }); // Added delay duration
+     } else if(answer === "Slow down slightly and create space for smooth merging"){
+      setCarPaused(true); // Pause the user's car immediately
+      setIsTruckVisible(true); // Ensure truck stays visible
+      
+      // Add a short delay to show the car pausing before truck moves
+      setTimeout(() => {
+        setTruckDirection("NORTHWEST"); // Start with diagonal movement
 
-        Animated.timing(scrollY, {
-          toValue: initialScrollTarget,
-          duration: 2000,
-          useNativeDriver: true,
-        }).start(() => {
-          setTimeout(() => {
-            // Fixed the typo: "NORTHEAST" -> "NORTHEAST"
-            const turnSequence = ["NORTH", "NORTHEAST", "EAST"];
-            let currentTurnStep = 0;
+        // 1. Animate the truck moving diagonally right and up (NORTHWEST)
+        Animated.parallel([
+          Animated.timing(truckXAnim, { // Move right to the right lane
+            toValue: 3.2 * tileSize, // Target X for the right lane
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(truckYAnim, { // Move up while merging
+            toValue: 7.5 * tileSize, // Intermediate position
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          // Switch to NORTH direction for straight movement
+          setTruckDirection("NORTH");
+          
+          // 2. Continue moving straight up (NORTH)
+          Animated.timing(truckYAnim, {
+            toValue: 9 * tileSize, // Final stop position at row 9
+            duration: 1000,
+            useNativeDriver: true,
+          }).start(() => {
+            // Truck animation complete, now move the user's car
+            setCarPaused(false); // Allow user's car to resume animation
 
-            const animateTurnAndMove = () => {
-              if (currentTurnStep < turnSequence.length) {
-                setCarDirection(turnSequence[currentTurnStep]);
-                setCarFrame(0);
+            const targetRow = 10; // Row past where the truck stopped
+            const rowsToMove = targetRow - currentRow;
+            const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-                let deltaX = 0;
-                let deltaYScroll = 0;
-
-                if (turnSequence[currentTurnStep] === "NORTHEAST") {
-                  deltaX = tileSize / 4;
-                  deltaYScroll = tileSize / 4;
-                } else if (turnSequence[currentTurnStep] === "EAST") {
-                  deltaX = tileSize / 2;
-                  deltaYScroll = tileSize / 2;
-                }
-
-                // Get current values properly
-                const currentCarX = carXAnim._value;
-                const currentScrollY = scrollY._value;
-
-                Animated.parallel([
-                  Animated.timing(carXAnim, {
-                    toValue: currentCarX + deltaX,
-                    duration: 500,
-                    useNativeDriver: false,
-                  }),
-                  Animated.timing(scrollY, {
-                    toValue: currentScrollY + deltaYScroll,
-                    duration: 500,
-                    useNativeDriver: true,
-                  }),
-                ]).start(() => {
-                  currentTurnStep++;
-                  animateTurnAndMove();
-                });
-              } else {
-                Animated.timing(carXAnim, {
-                  toValue: width * 2,
-                  duration: 1000,
-                  useNativeDriver: false,
-                }).start(() => {
-                  setIsCarVisible(false);
-                  handleFeedback(answer);
-                });
-              }
-            };
-            animateTurnAndMove();
+            Animated.timing(scrollY, {
+              toValue: nextTarget,
+              duration: 2000, // Duration for the car to move past the truck
+              useNativeDriver: true,
+            }).start(() => {
+              handleFeedback(answer);
+            });
           });
         });
-      return;
+      }, 500); // 500ms delay to show car pausing first
+
+      return; // Return immediately to prevent other animations from firing
     }
   };
 
@@ -400,26 +340,41 @@ export default function DrivingGame() {
     setIsCarVisible(true);
     setCarPaused(false);
     
+    // Reset truck position and visibility
+    truckXAnim.setValue(4.2 * tileSize); // Reset to adjusted initial position (col 4)
+    truckYAnim.setValue(5.5 * tileSize); // Reset to adjusted initial position (row 6)
+    setTruckDirection("NORTHWEST");
+    setIsTruckVisible(true);
+    setTruckFrame(0);
+    
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      router.push('/driver-game/intersections/phase-1/S4P1');
+      router.push('/driver-game/intersections/phase-1/S8P1');
       setQuestionIndex(0);
       setShowQuestion(false);
     }
   };
 
   // Calculate traffic Sign position
+  const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;
+  const trafficSignTop = trafficSignRowIndex * tileSize;
+
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! This is the fundamental roundabout rule - yield to traffic already circulating, then enter when there's a safe gap."
+    ? "Correct! Defensive driving and traffic courtesy require helping merging traffic when safe to do so. This keeps traffic flowing smoothly"
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction
   const currentCarSprite = carSprites[carDirection] && carSprites[carDirection][carFrame] 
     ? carSprites[carDirection][carFrame] 
     : carSprites["NORTH"][0];
+
+  // Truck sprite
+  const currentTruckSprite = truckSprites[truckDirection] && truckSprites[truckDirection][truckFrame]
+    ? truckSprites[truckDirection][truckFrame]
+    : truckSprites["NORTH"][0];
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -450,22 +405,86 @@ export default function DrivingGame() {
             />
           ))
         )}
+        {/* Traffic Sign */}
+        <Image
+                source={trafficSign.sign}
+                style={{
+                    width: tileSize * .8,
+                    height: tileSize *.8,
+                    position: "absolute",
+                    top: trafficSignTop,
+                    left: trafficSignLeft,
+                    zIndex: 11,
+                }}
+                resizeMode="contain"
+                />
 
-        {treePositions.map((tree, index) => (
-                          <Image
-                            key={`tree-${index}`}
-                            source={treeSprites[tree.type]}
-                            style={{
-                              position: "absolute",
-                              width: tileSize * 0.8,
-                              height: tileSize * 1.2,
-                              left: tree.col * tileSize,
-                              top: tree.row * tileSize,
-                              zIndex: 2,
-                            }}
-                            resizeMode="contain"
-                          />
-                        ))}
+        {/* NPC Cars - Traffic Jam */}
+        <Animated.Image
+          source={npcCarSprite1.NORTH[0]}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            transform: [
+              { translateX: npcCar1XAnim },
+              { translateY: npcCar1YAnim }
+            ],
+            marginLeft: -carWidth / 2,
+            marginTop: -carHeight / 2,
+            zIndex: 5,
+          }}
+        />
+        <Animated.Image
+          source={npcCarSprite2.NORTH[0]}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            transform: [
+              { translateX: npcCar2XAnim },
+              { translateY: npcCar2YAnim }
+            ],
+            marginLeft: -carWidth / 2,
+            marginTop: -carHeight / 2,
+            zIndex: 5,
+          }}
+        />
+        <Animated.Image
+          source={npcCarSprite3.NORTH[0]}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            transform: [
+              { translateX: npcCar3XAnim },
+              { translateY: npcCar3YAnim }
+            ],
+            marginLeft: -carWidth / 2,
+            marginTop: -carHeight / 2,
+            zIndex: 5,
+          }}
+        />
+
+        {/* Truck */}
+        {isTruckVisible && (
+          <Animated.Image
+            source={currentTruckSprite}
+            style={{
+              width: carWidth,
+              height: carHeight,
+              position: "absolute",
+              transform: [
+                { translateX: truckXAnim },
+                { translateY: truckYAnim }
+              ],
+              marginLeft: -carWidth / 2,
+              marginTop: -carHeight / 2,
+              zIndex: 6,
+            }}
+          />
+        )}
+        
       </Animated.View>
 
       {/* Car - fixed */}
@@ -547,7 +566,6 @@ export default function DrivingGame() {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
@@ -594,13 +612,13 @@ const styles = StyleSheet.create({
   questionText: {
     flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 24),
+    fontSize: Math.min(width * 0.045, 18),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.16,
+    top: height * 0.2,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
@@ -616,7 +634,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 18),
+    fontSize: Math.min(width * 0.04, 16),
     textAlign: "center",
   },
   feedbackOverlay: {
@@ -639,7 +657,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 24),
+    fontSize: Math.min(width * 0.06, 20),
     fontWeight: "bold",
     textAlign: "center",
   },
