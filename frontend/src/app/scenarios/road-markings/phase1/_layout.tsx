@@ -23,16 +23,16 @@ export default function Phase1Layout() {
           gestureEnabled: false,
         }}
       >
-        <Stack.Screen name="s1p1" />
-        <Stack.Screen name="s2p1" />
-        <Stack.Screen name="s3p1" />
-        <Stack.Screen name="s4p1" />
-        <Stack.Screen name="s5p1" />
-        <Stack.Screen name="s6p1" />
-        <Stack.Screen name="s7p1" />
-        <Stack.Screen name="s8p1" />
-        <Stack.Screen name="s9p1" />
-        <Stack.Screen name="s10p1" />
+        <Stack.Screen name="S1P1" />
+        <Stack.Screen name="S2P1" />
+        <Stack.Screen name="S3P1" />
+        <Stack.Screen name="S4P1" />
+        <Stack.Screen name="S5P1" />
+        <Stack.Screen name="S6P1" />
+        <Stack.Screen name="S7P1" />
+        <Stack.Screen name="S8P1" />
+        <Stack.Screen name="S9P1" />
+        <Stack.Screen name="S10P1" />
       </Stack>
     </SessionProvider>
   );
