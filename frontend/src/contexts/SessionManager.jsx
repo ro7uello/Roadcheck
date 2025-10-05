@@ -1,5 +1,6 @@
 // SessionManager.jsx - Wrapper component for managing 10 scenario session
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { View, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 
@@ -126,7 +127,6 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
       console.log('🔍 API RESPONSE:', response.status, responseText);
 
       if (response.ok) {
-        await loadSessionProgress(sessionData.id);
         console.log(`Scenario ${currentScenario} progress updated`);
       } else {
         console.error('❌ API ERROR:', response.status, responseText);
@@ -172,9 +172,9 @@ console.log('New current scenario:', currentScenario + 1);
         // Return session results for result page
         return {
           sessionId: sessionData.id,
-          categoryId,
-          phaseId,
-          categoryName,
+          categoryId: sessionData.category_id, // ADD THIS
+          phaseId: sessionData.phase_id, // ADD THIS
+          categoryName: 'Traffic Signs', // Or get from sessionData
           totalTime,
           totalScore,
           correctCount,
@@ -186,11 +186,14 @@ console.log('New current scenario:', currentScenario + 1);
             time_taken: s.time_taken_seconds
           }))
         };
+      } else {
+        console.error('Failed to complete session:', response.status);
+        return null; // This causes the error!
       }
     } catch (error) {
       console.error('Error completing session:', error);
+      return null; // This also causes the error!
     }
-    return null;
   };
 
   const value = {
