@@ -878,6 +878,8 @@ app.get('/sessions/:sessionId/progress', async (req, res) => {
 
 // PUT /sessions/:sessionId/complete - Mark session as complete
 app.put('/sessions/:sessionId/complete', async (req, res) => {
+  console.log('🔍 Complete session called for:', req.params.sessionId);
+  console.log('🔍 Request body:', req.body);
   try {
     const { sessionId } = req.params;
     const { total_time_seconds, total_score } = req.body;
@@ -901,10 +903,10 @@ app.put('/sessions/:sessionId/complete', async (req, res) => {
         error: error.message
       });
     }
-
+    console.log('✅ Session completed successfully');
     res.json({
       success: true,
-      data: data,
+      data: result,
       message: 'Session completed successfully'
     });
 

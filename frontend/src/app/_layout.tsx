@@ -34,7 +34,6 @@ export default function RootLayout() {
       <Stack.Screen name="loadingScreen" />
       <Stack.Screen name="optionPage" />
       <Stack.Screen name="phaseSelectionScreen" />
-      <Stack.Screen name="account-creation" />
       <Stack.Screen name="register" />
       <Stack.Screen name="categorySelectionScreen" />
       <Stack.Screen name="profile" />

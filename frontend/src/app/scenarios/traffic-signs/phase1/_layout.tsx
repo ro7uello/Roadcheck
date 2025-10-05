@@ -1,13 +1,11 @@
 import React from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { SessionProvider } from '../../../SessionManager';
+import { SessionProvider } from '../../../../contexts/SessionManager';
 
 export default function Phase1Layout() {
-  // Get the parameters passed from navigation
   const { categoryId, phaseId, categoryName } = useLocalSearchParams();
 
-  // Default values if not passed (for road markings phase 1)
-  const finalCategoryId = categoryId || '2';
+  const finalCategoryId = categoryId || '2'; // Traffic Signs = Category 2
   const finalPhaseId = phaseId || '1';
   const finalCategoryName = categoryName || 'Traffic Signs';
 
@@ -17,12 +15,7 @@ export default function Phase1Layout() {
       phaseId={parseInt(finalPhaseId as string)}
       categoryName={finalCategoryName as string}
     >
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          gestureEnabled: false,
-        }}
-      >
+      <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>
         <Stack.Screen name="S1P1" />
         <Stack.Screen name="S2P1" />
         <Stack.Screen name="S3P1" />

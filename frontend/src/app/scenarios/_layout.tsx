@@ -1,5 +1,10 @@
-Import { Stack } from 'expo-router';
+import { Stack } from 'expo-router';
+import { SessionProvider } from '../../contexts/SessionManager';
 
 export default function ScenariosLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <SessionProvider>
+      <Stack screenOptions={{ headerShown: false, gestureEnabled: false }} />
+    </SessionProvider>
+  );
 }

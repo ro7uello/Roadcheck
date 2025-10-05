@@ -1,4 +1,4 @@
-import { useSession } from '../../../SessionManager';
+import { useSession } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
 import { router } from 'expo-router';
@@ -374,7 +374,7 @@ export default function DrivingGame() {
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-    } else if (currentScenario >= 10) {
+    } else if (currentScenario === 10) {
              // Last scenario in phase - complete session
              try {
                const sessionResults = await completeSession();

@@ -10,7 +10,7 @@ import {
   Easing,
 } from "react-native";
 import { useNavigation } from '@react-navigation/native';
-import { useSession } from '../../../SessionManager';
+import { useSession } from '../../../../contexts/SessionManager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 

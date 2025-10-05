@@ -1,6 +1,6 @@
 import React from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { SessionProvider } from '../../../SessionManager';
+import { SessionProvider } from '../../../../contexts/SessionManager';
 
 export default function Phase1Layout() {
   // Get the parameters passed from navigation

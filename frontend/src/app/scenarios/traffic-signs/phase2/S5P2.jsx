@@ -1,15 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing, // Import Easing for more control over animations
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
@@ -90,6 +82,35 @@ const questions = [
 ];
 
 export default function DrivingGame() {
+
+  const {
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+    sessionData
+  } = useSession();
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      // Traffic Signs Phase 1: scenarios 31-40
+      // Traffic Signs Phase 2: scenarios 41-50
+      const phaseId = sessionData?.phase_id || 1;
+      const baseId = phaseId === 1 ? 40 : 50; // Adjust based on phase
+      const scenarioId = baseId + currentScenario;
+
+      console.log('🔍 SCENARIO DEBUG:', {
+        currentScenario,
+        calculatedScenarioId: scenarioId,
+        selectedOption,
+        isCorrect
+      });
+
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
@@ -208,11 +229,14 @@ export default function DrivingGame() {
     }).start(callback);
   };
 
-  const handleAnswer = (option) => {
-    setSelectedAnswer(option);
+  const handleAnswer = async (answer) => {
+    setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
     const actualCorrectAnswer = questions[questionIndex].correct;
     const originalLaneX = width / 2 - carWidth / 2; // Original lane center
     const rightLaneX = width / 2 - carWidth / 2 + tileSize; // One lane to the right
@@ -304,7 +328,7 @@ export default function DrivingGame() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
@@ -320,12 +344,30 @@ export default function DrivingGame() {
     BusXAnim.setValue(width / 2 - carWidth / 2); // Reset Bus X to middle lane for next potential scenario
 
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else {
-      router.push('/driver-game/signs/phase-2/S6P2');
-      setShowQuestion(false);
-    }
+        setQuestionIndex(questionIndex + 1);
+        startScrollAnimation();
+      } else if (currentScenario >= 10) {
+        // Last scenario - complete session
+        try {
+          const sessionResults = await completeSession();
+          router.push({
+            pathname: '/result',
+            params: {
+              ...sessionResults,
+              userAttempts: JSON.stringify(sessionResults.attempts)
+            }
+          });
+        } catch (error) {
+          console.error('Error completing session:', error);
+          Alert.alert('Error', 'Failed to save session results');
+        }
+      } else {
+        // Move to next scenario
+        moveToNextScenario();
+        const phaseNumber = sessionData?.phase_id || 1;
+        const nextScreen = `S${currentScenario + 1}P${phaseNumber}`;
+        router.push(`/scenarios/traffic-signs/phase${phaseNumber}/${nextScreen}`);
+      }
   };
 
   // Determine the feedback message based on whether the answer was correct or wrong (from S2P1)

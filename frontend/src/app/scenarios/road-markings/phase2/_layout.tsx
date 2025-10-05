@@ -1,7 +1,7 @@
 // Phase2Layout.jsx (for Road Markings Phase 2)
 import React from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { SessionProvider } from '../../../SessionManager';
+import { SessionProvider } from '../../../../contexts/SessionManager';
 
 export default function Phase2Layout() {
   // Get the parameters passed from navigation

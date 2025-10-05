@@ -14,7 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
-import { useSession } from '../../../SessionManager';
+import { useSession } from '../../../../contexts/SessionManager';
 
 // Debug API_URL at module level
 console.log('S1P1 Module loaded. API_URL from env:', API_URL);
