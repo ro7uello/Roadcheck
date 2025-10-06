@@ -598,12 +598,15 @@ const styles = StyleSheet.create({
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 20,
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 24),
+    fontSize: Math.min(width * 0.04, 18),
     fontWeight: "bold",
     textAlign: "center",
+    paddingHorizontal: 10,
+    lineHeight: 22,
   },
   nextButtonContainer: {
     position: "absolute",

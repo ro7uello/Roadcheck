@@ -83,7 +83,7 @@ const questions = [
     correct: "Reduce speed, maintain safe distance from bicycle lane, and be extra cautious of cyclists",
     wrongExplanation: {
       "Drive normally since you're in the car lane": "Not the best answer! Normal driving doesn't account for the increased need for caution around cyclists.",
-      "Use the bicycle lane to accommodate more cars in the road.": "Wrong! Motor vehicles are prohibited from using bicycle lanes regardless of traffic conditions."
+      "Use the bicycle lane to accomodate more cars in the road.": "Wrong! Motor vehicles are prohibited from using bicycle lanes regardless of traffic conditions."
     }
   },
   // Add more questions here as needed

@@ -1,3 +1,4 @@
+// frontend/src/app/result-page.tsx
 import { useFonts } from 'expo-font';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -28,7 +29,6 @@ export default function ResultPage() {
     pixel: require('../../assets/fonts/pixel3.ttf'),
   });
 
-  // Get navigation parameters (now includes sessionId and detailed progress)
   const params = useLocalSearchParams();
   const {
     sessionId,
@@ -38,7 +38,7 @@ export default function ResultPage() {
     userAttempts,
     totalTime,
     scenarioCount = 10,
-    scenarioProgress // JSON string of detailed scenario progress
+    scenarioProgress
   } = params;
 
   const [settingsVisible, setSettingsVisible] = useState(false);
@@ -54,7 +54,7 @@ export default function ResultPage() {
     totalScore: '0%',
     accuracy: 0,
     averageTime: '00:00',
-    scenarioDetails: [] // New: detailed scenario results
+    scenarioDetails: []
   });
 
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
@@ -95,7 +95,6 @@ export default function ResultPage() {
       let attempts = [];
       let detailedProgress = [];
 
-      // Parse data from navigation params with better error handling
       try {
         if (userAttempts && typeof userAttempts === 'string') {
           attempts = JSON.parse(userAttempts);
@@ -120,18 +119,15 @@ export default function ResultPage() {
         detailedProgress = [];
       }
 
-      // If we have sessionId, fetch latest data from backend
       if (sessionId) {
         console.log('🔍 DEBUG: Fetching session details for sessionId:', sessionId);
         await fetchSessionDetails(sessionId);
-        return; // fetchSessionDetails will call showResultPanel
+        return;
       }
 
-      // Fallback to calculate from passed data
       console.log('🔍 DEBUG: Calculating from passed data, attempts count:', attempts.length);
 
       if (attempts.length === 0) {
-        // No attempts data - create mock data based on scenarioCount
         console.log('⚠️ No attempts data, creating default results');
         const scenarioDetails = Array.from({ length: parseInt(scenarioCount) || 10 }, (_, index) => ({
           scenarioNumber: index + 1,
@@ -165,7 +161,6 @@ export default function ResultPage() {
       const passingScore = 70;
       const status = accuracy >= passingScore ? 'PASS' : 'FAIL';
 
-      // Better time formatting
       const totalTimeNum = parseInt(totalTime) || 0;
       const formattedTime = formatTime(totalTimeNum);
       const averageTimePerScenario = attempts.length > 0 ?
@@ -173,7 +168,6 @@ export default function ResultPage() {
 
       console.log('🔍 DEBUG: Calculated results:', { correctAnswers, incorrectAnswers, accuracy, status, totalTimeNum });
 
-      // Create scenario details from attempts
       const scenarioDetails = attempts.map((attempt, index) => ({
         scenarioNumber: index + 1,
         scenarioId: attempt.scenario_id || index + 1,
@@ -222,7 +216,6 @@ export default function ResultPage() {
         const data = await response.json();
         const { session, scenarios, summary } = data.data;
 
-        // Create detailed results from session data
         const scenarioDetails = scenarios.map(scenario => ({
           scenarioNumber: scenario.scenario_number,
           scenarioId: scenario.scenario_id,
@@ -253,12 +246,11 @@ export default function ResultPage() {
         showResultPanel();
       } else {
         console.error('Failed to fetch session details');
-        // Fallback to calculate from params
         calculateResults();
       }
     } catch (error) {
       console.error('Error fetching session details:', error);
-      calculateResults(); // Fallback
+      calculateResults();
     }
   };
 
@@ -319,24 +311,7 @@ export default function ResultPage() {
   };
 
   const handleFinishPress = () => {
-    Alert.alert(
-      'Session Complete!',
-      `You've completed ${categoryName} Phase ${phaseId} with ${resultData.accuracy}% accuracy.\n\nWhat would you like to do next?`,
-      [
-        {
-          text: 'View Profile',
-          onPress: () => router.push('/profile')
-        },
-        {
-          text: 'Continue Learning',
-          onPress: () => router.push('/categorySelectionScreen')
-        },
-        {
-          text: 'Back to Menu',
-          onPress: () => router.push('/optionPage')
-        }
-      ]
-    );
+    router.push('/optionPage');
   };
 
   const toggleDetailedView = () => {
@@ -388,7 +363,6 @@ export default function ResultPage() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Background */}
       <View style={styles.backgroundContainer}>
         <Animated.View
           style={[
@@ -422,7 +396,6 @@ export default function ResultPage() {
 
       <View style={styles.skyOverlay} />
 
-      {/* Car */}
       <Animated.View
         style={[styles.carContainer, { transform: [{ translateY: carVerticalBounce }] }]}
       >
@@ -433,11 +406,10 @@ export default function ResultPage() {
         />
       </Animated.View>
 
-      {/* Top-right Icons */}
       <View style={styles.topRightIcons}>
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => setSettingsVisible(true)}
+          onPress={() => router.push('/profile')}
         >
           <Image
             source={require('../../assets/icon/Settings.png')}
@@ -458,7 +430,6 @@ export default function ResultPage() {
         </TouchableOpacity>
       </View>
 
-      {/* Loading Indicator */}
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#4CAF50" />
@@ -466,7 +437,6 @@ export default function ResultPage() {
         </View>
       )}
 
-      {/* Result Panel */}
       <Animated.View
         style={[
           styles.resultPanel,
@@ -480,7 +450,6 @@ export default function ResultPage() {
         />
 
         {!showDetailedView ? (
-          // Summary View
           <>
             <View style={styles.resultHeader}>
               <Text style={styles.resultTitle}>RESULT</Text>
@@ -525,7 +494,6 @@ export default function ResultPage() {
               </View>
             </View>
 
-            {/* Toggle to detailed view */}
             <TouchableOpacity
               style={styles.detailToggleButton}
               onPress={toggleDetailedView}
@@ -534,7 +502,6 @@ export default function ResultPage() {
             </TouchableOpacity>
           </>
         ) : (
-          // Detailed View
           <>
             <View style={styles.detailedHeader}>
               <TouchableOpacity
@@ -556,7 +523,6 @@ export default function ResultPage() {
           </>
         )}
 
-        {/* Saving indicator */}
         {saving && (
           <View style={styles.savingIndicator}>
             <ActivityIndicator size="small" color="#666" />
@@ -564,7 +530,6 @@ export default function ResultPage() {
           </View>
         )}
 
-        {/* Finish Button */}
         {!showDetailedView && (
           <TouchableOpacity
             style={[
@@ -581,7 +546,6 @@ export default function ResultPage() {
         )}
       </Animated.View>
 
-      {/* Settings Panel */}
       {settingsVisible && (
         <Animated.View
           style={[
@@ -656,8 +620,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginLeft: 10,
   },
   topIcon: { width: 24, height: 24 },
-
-  // Loading overlay
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -672,8 +634,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
   },
-
-  // Result panel styles
   resultPanel: {
     position: 'absolute',
     top: height * 0.1,
@@ -740,8 +700,6 @@ const styles = StyleSheet.create({
     minWidth: 60,
     fontWeight: 'bold',
   },
-
-  // Detailed view toggle
   detailToggleButton: {
     backgroundColor: '#2196F3',
     paddingHorizontal: 15,
@@ -756,8 +714,6 @@ const styles = StyleSheet.create({
     fontFamily: 'pixel',
     textAlign: 'center',
   },
-
-  // Detailed view styles
   detailedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -834,8 +790,6 @@ const styles = StyleSheet.create({
     fontFamily: 'pixel',
     fontStyle: 'italic',
   },
-
-  // Saving indicator
   savingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -847,7 +801,6 @@ const styles = StyleSheet.create({
     fontFamily: 'pixel',
     marginLeft: 8,
   },
-
   finishButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -866,8 +819,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
   },
-
-  // Settings panel styles
   settingsPanel: {
     position: 'absolute',
     top: height * 0.15,
@@ -896,6 +847,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 25,
   },
+  settingsOption: {},
   profileButton: { width: 147, height: 50, resizeMode: 'contain', marginBottom: -10, marginTop: 10 },
   audioButton: { width: 120, height: 50, resizeMode: 'contain', marginBottom: -10 },
   backButtonImage: { width: 100, height: 50, resizeMode: 'contain', marginBottom: 30 },

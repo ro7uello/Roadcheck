@@ -1166,7 +1166,7 @@ app.get('/api/scenarios-with-choices', async (req, res) => {
 // SERVER STARTUP
 // ===========================
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
   console.log(`🚀 RoadCheck Server running on port ${PORT}`);
 });
