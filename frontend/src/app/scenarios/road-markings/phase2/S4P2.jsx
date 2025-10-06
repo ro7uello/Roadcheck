@@ -189,7 +189,7 @@ export default function DrivingGame() {
     setTrafficLightState('normal'); // Start with green light
     setLightChangeTriggered(false);
 
-    const stopRow = 6.5;
+    const stopRow = 6.8;
     const stopOffset = startOffset + stopRow * tileSize;
 
     // Calculate when to trigger red light
@@ -298,7 +298,7 @@ export default function DrivingGame() {
       }, 2000);
     } else if (answer === "Stop just past the stop line to get a better view of cross traffic") {
       // Animation: Car goes past the stop line and stops at road57
-      const targetRow = 9.2; // Past the stop line, at road57
+      const targetRow = 7.2; // Past the stop line, at road57
       const rowsToMove = targetRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
       
@@ -430,7 +430,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../../assets/dialog/Dialog.png")}
+            source={require("../../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -461,7 +461,7 @@ export default function DrivingGame() {
       {/* Responsive Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -481,16 +481,30 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  questionOverlay: {
+  // Loading screen styles
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  // No intro styles (responsive)
+  // In-game responsive styles
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -498,34 +512,36 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: height * 0.05,
   },
   questionTextContainer: {
-    maxWidth: width * 0.6,
+    padding: -height * 0.04,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: Math.min(width * 0.045, 22),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.25,
+    top: height * 0.15,
     right: sideMargin,
     width: width * 0.35,
+    height: height * 0.23,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.02,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -541,7 +557,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -556,7 +572,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
   },

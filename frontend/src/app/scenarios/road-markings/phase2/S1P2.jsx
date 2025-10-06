@@ -6,16 +6,15 @@ import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
-// Responsive calculations - FIXED VARIABLE NAMES
+// Responsive calculations
 const carWidth = Math.min(width * 0.25, 280);
-const carHeight = carWidth * (350/280); // CHANGED from playerCarHeight
+const carHeight = carWidth * (350/280);
 const jeepWidth = Math.min(width * 0.28, 300);
 const jeepHeight = jeepWidth * (350/280);
 const npcCarWidth = Math.min(width * 0.24, 260);
 const npcCarHeight = npcCarWidth * (350/280);
-const overlayTop = height * 0.4;
 const overlayHeight = height * 0.35;
-const ltoWidth = Math.min(width * 0.3, 240);
+const ltoWidth = Math.min(width * 0.25, 200);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
@@ -53,7 +52,6 @@ const mapLayout = [
   ["road2", "road5", "road5"],
 ];
 
-// Separated sprites for clarity and easier management
 const playerCarSprites = {
   NORTH: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
@@ -86,8 +84,8 @@ const jeepneySprites = {
 
 const npcCarSprites = {
   SOUTH: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/SOUTH/SEPARATED/Black_CIVIC_CLEAN_SOUTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/SOUTH/SEPARATED/Black_CIVIC_CLEAN_SOUTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_001.png"),
   ],
 };
 
@@ -109,15 +107,16 @@ const trafficCarSprites = {
 const questions = [
   {
     question: "You're driving on NLEX and encounter a single yellow line with broken white line combination. You're on the side with the broken white line and want to overtake a truck blocking your view ahead.",
-    options: [" Overtake immediately since you have a broken white line on your side", "Check for oncoming traffic first, then overtake safely when clear", "Don't overtake since there's a yellow line present"],
+    options: ["Overtake immediately since you have a broken white line on your side", "Check for oncoming traffic first, then overtake safely when clear", "Don't overtake since there's a yellow line present"],
     correct: "Check for oncoming traffic first, then overtake safely when clear",
     wrongExplanation: {
-      " Overtake immediately since you have a broken white line on your side": "Violation! Reckless overtaking without checking for oncoming traffic can result in serious accidents!",
+      "Overtake immediately since you have a broken white line on your side": "Violation! Reckless overtaking without checking for oncoming traffic can result in serious accidents!",
       "Don't overtake since there's a yellow line present": "Road rage prone! In a situation where the area is experiencing traffic, honking a lot can only make other drivers mad and wouldn't make the cars move faster."
     }
   },
 ];
 
+export default function DrivingGame() {
 function DrivingGameContent() {
   // Session Management
   const {
@@ -133,13 +132,6 @@ function DrivingGameContent() {
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
       const scenarioId = 10 + currentScenario;
-      console.log('🔍 SCENARIO DEBUG:', {
-        currentScenario,
-        calculatedScenarioId: scenarioId,
-        selectedOption,
-        isCorrect
-      });
-
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -178,59 +170,28 @@ function DrivingGameContent() {
   const [playerCarFrame, setPlayerCarFrame] = useState(0);
   const [jeepneyFrame, setJeepneyFrame] = useState(0);
   const [npcCarFrame, setNpcCarFrame] = useState(0);
-  const [showCollision, setShowCollision] = useState(false);
 
-  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+  // Lane calculations
+  const lane0X = 0 * tileSize + (tileSize / 2 - carWidth / 2);
+  const lane1X = 1 * tileSize + (tileSize / 2 - carWidth / 2);
+  const lane2X = 2 * tileSize + (tileSize / 2 - carWidth / 2);
 
+  const carXAnim = useRef(new Animated.Value(0)).current;
   const jeepneyLane = 1;
   const jeepneyInitialX = jeepneyLane * tileSize + (tileSize / 2 - jeepWidth / 2);
   const jeepneyYAnim = useRef(new Animated.Value(-jeepHeight)).current;
-
   const npcCarXAnim = useRef(new Animated.Value(2 * tileSize + (tileSize / 2 - npcCarWidth / 2))).current;
   const npcCarYAnim = useRef(new Animated.Value(-height)).current;
 
   const trafficCars = useRef([
-    {
-      id: 'traffic1',
-      type: 'RED_SEDAN',
-      lane: 0,
-      yAnim: new Animated.Value(height * 0.3),
-      frame: 0,
-    },
-    {
-      id: 'traffic2',
-      type: 'TAXI',
-      lane: 1,
-      yAnim: new Animated.Value(height * 0.5),
-      frame: 0,
-    },
-    {
-      id: 'traffic3',
-      type: 'BLACK_CIVIC',
-      lane: 2,
-      yAnim: new Animated.Value(height * 0.7),
-      frame: 0,
-    },
-    {
-      id: 'traffic4',
-      type: 'RED_SEDAN',
-      lane: 0,
-      yAnim: new Animated.Value(height * 0.1),
-      frame: 0,
-    },
-    {
-      id: 'traffic5',
-      type: 'TAXI',
-      lane: 2,
-      yAnim: new Animated.Value(height * 0.9),
-      frame: 0,
-    },
+    { id: 'traffic1', type: 'RED_SEDAN', lane: 0, yAnim: new Animated.Value(height * 0.3), frame: 0 },
+    { id: 'traffic3', type: 'BLACK_CIVIC', lane: 2, yAnim: new Animated.Value(height * 0.7), frame: 0 },
+    { id: 'traffic4', type: 'RED_SEDAN', lane: 0, yAnim: new Animated.Value(height * 0.1), frame: 0 },
   ]).current;
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
 
-  // Animation for player's car sprite
   useEffect(() => {
     if (!showQuestion && isPlayerCarVisible) {
       const interval = setInterval(() => {
@@ -240,7 +201,6 @@ function DrivingGameContent() {
     }
   }, [showQuestion, isPlayerCarVisible]);
 
-  // Animation for jeepney's sprite
   useEffect(() => {
     if (!showQuestion && isJeepneyVisible) {
       const interval = setInterval(() => {
@@ -250,7 +210,6 @@ function DrivingGameContent() {
     }
   }, [showQuestion, isJeepneyVisible]);
 
-  // Animation for NPC car's sprite
   useEffect(() => {
     if (!showQuestion && isNpcCarVisible) {
       const interval = setInterval(() => {
@@ -291,12 +250,10 @@ function DrivingGameContent() {
         if (scrollAnimationRef.current) {
           scrollAnimationRef.current.stop();
         }
-
         setIsPlayerCarVisible(true);
         setIsJeepneyVisible(true);
         setPlayerCarFrame(0);
         setJeepneyFrame(0);
-
         setShowQuestion(true);
         setTimeout(() => {
           setShowAnswers(true);
@@ -310,12 +267,8 @@ function DrivingGameContent() {
       startScrollAnimation();
     }
     return () => {
-      if (scrollAnimationRef.current) {
-        scrollAnimationRef.current.stop();
-      }
-      if (jeepneyAnimationRef.current) {
-          jeepneyAnimationRef.current.stop();
-      }
+      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+      if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
     };
   }, [showIntro]);
 
@@ -349,74 +302,6 @@ function DrivingGameContent() {
         setShowNext(true);
       });
     }
-  };
-
-  const animateOvertake = async (targetX) => {
-    if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-
-    setPlayerCarFrame(0);
-    setJeepneyFrame(0);
-
-    await new Promise(resolve => {
-        setPlayerCarDirection("NORTHWEST");
-        Animated.parallel([
-            Animated.timing(carXAnim, {
-                toValue: targetX,
-                duration: 300,
-                easing: Easing.easeOut,
-                useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-                toValue: scrollY._value - (tileSize * 0.5),
-                duration: 300,
-                easing: Easing.easeOut,
-                useNativeDriver: true,
-            })
-        ]).start(resolve);
-    });
-
-    await new Promise(resolve => {
-        setPlayerCarDirection("NORTH");
-        Animated.parallel([
-            Animated.timing(jeepneyYAnim, {
-                toValue: height + jeepHeight,
-                duration: 1000,
-                easing: Easing.linear,
-                useNativeDriver: true,
-            }),
-            Animated.timing(scrollY, {
-                toValue: scrollY._value - (tileSize * 3),
-                duration: 1000,
-                easing: Easing.easeOut,
-                useNativeDriver: true,
-            }),
-        ]).start(resolve);
-    });
-    setIsJeepneyVisible(false);
-
-    await new Promise(resolve => {
-        setPlayerCarDirection("NORTHEAST");
-        Animated.parallel([
-            Animated.timing(carXAnim, {
-                toValue: width / 2 - carWidth / 2,
-                duration: 400,
-                easing: Easing.easeOut,
-                useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-                toValue: scrollY._value - (tileSize * 0.5),
-                duration: 400,
-                easing: Easing.easeOut,
-                useNativeDriver: true,
-            })
-        ]).start(resolve);
-    });
-
-    setPlayerCarDirection("NORTH");
-
-    if (scrollAnimationRef.current) scrollAnimationRef.current.start();
-    setIsPlayerCarVisible(true);
-    setIsJeepneyVisible(false);
   };
 
   const animateCollision = async () => {
@@ -515,109 +400,115 @@ function DrivingGameContent() {
   // FIXED: Make animateSafeOvertake properly awaitable
   const animateSafeOvertake = async () => {
     return new Promise(async (resolve) => {
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+      try {
+        console.log('Safe overtake animation started');
+        if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
 
-      setPlayerCarDirection("NORTH");
-      await new Promise(res => setTimeout(res, 1500));
+        setPlayerCarDirection("NORTH");
+        await new Promise(res => setTimeout(res, 1000));
 
-      await new Promise(res => {
-          setPlayerCarDirection("EAST");
+        await new Promise(res => {
+          setPlayerCarDirection("NORTHEAST");
           Animated.parallel([
-              Animated.timing(carXAnim, {
-                  toValue: 2 * tileSize + (tileSize / 2 - carWidth / 2),
-                  duration: 1200,
-                  easing: Easing.easeOut,
-                  useNativeDriver: false,
-              }),
-              Animated.timing(scrollY, {
-                  toValue: scrollY._value - (tileSize * 1),
-                  duration: 1200,
-                  easing: Easing.easeOut,
-                  useNativeDriver: true,
-              })
+            Animated.timing(carXAnim, {
+              toValue: tileSize + (tileSize / 2 - carWidth / 2),
+              duration: 700,
+              easing: Easing.easeOut,
+              useNativeDriver: false,
+            }),
+            Animated.timing(scrollY, {
+              toValue: scrollY._value - (tileSize * 1),
+              duration: 1000,
+              easing: Easing.easeOut,
+              useNativeDriver: true,
+            })
           ]).start(res);
-      });
+        });
 
-      await new Promise(res => {
+        await new Promise(res => {
           setPlayerCarDirection("NORTH");
           Animated.parallel([
-              Animated.timing(jeepneyYAnim, {
-                  toValue: height + jeepHeight,
-                  duration: 1500,
-                  easing: Easing.linear,
-                  useNativeDriver: true,
-              }),
-              Animated.timing(scrollY, {
-                  toValue: scrollY._value - (tileSize * 2),
-                  duration: 1500,
-                  easing: Easing.easeOut,
-                  useNativeDriver: true,
-              })
+            Animated.timing(jeepneyYAnim, {
+              toValue: height + jeepHeight,
+              duration: 1200,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scrollY, {
+              toValue: scrollY._value - (tileSize * 2),
+              duration: 1200,
+              easing: Easing.easeOut,
+              useNativeDriver: true,
+            })
           ]).start(res);
-      });
+        });
 
-      setIsJeepneyVisible(false);
+        setIsJeepneyVisible(false);
 
-      await new Promise(res => {
-          setPlayerCarDirection("WEST");
+        await new Promise(res => {
+          setPlayerCarDirection("NORTHWEST");
           Animated.parallel([
-              Animated.timing(carXAnim, {
-                  toValue: width / 2 - carWidth / 2,
-                  duration: 1000,
-                  easing: Easing.easeOut,
-                  useNativeDriver: false,
-              }),
-              Animated.timing(scrollY, {
-                  toValue: scrollY._value - (tileSize * 0.5),
-                  duration: 1000,
-                  easing: Easing.easeOut,
-                  useNativeDriver: true,
-              })
+            Animated.timing(carXAnim, {
+              toValue: 0,
+              duration: 600,
+              easing: Easing.easeOut,
+              useNativeDriver: false,
+            }),
+            Animated.timing(scrollY, {
+              toValue: scrollY._value - (tileSize * 0.5),
+              duration: 800,
+              easing: Easing.easeOut,
+              useNativeDriver: true,
+            })
           ]).start(res);
-      });
+        });
 
-      setPlayerCarDirection("NORTH");
-
-      if (scrollAnimationRef.current) scrollAnimationRef.current.start();
-      setIsPlayerCarVisible(true);
-      resolve();
+        setPlayerCarDirection("NORTH");
+        setIsPlayerCarVisible(true);
+        
+        await new Promise(res => setTimeout(res, 500));
+        
+        console.log('Safe overtake animation completed');
+        resolve();
+      } catch (error) {
+        console.error('Error in animateSafeOvertake:', error);
+        resolve();
+      }
     });
   };
 
   const animateTrafficJam = async () => {
-    try {
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+    return new Promise(async (resolve) => {
+      try {
+        if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
 
-      setShowTrafficJam(true);
+        setShowTrafficJam(true);
 
-      trafficCars.forEach((car, index) => {
-        const xPos = car.lane * tileSize + (tileSize / 2 - npcCarWidth / 2);
-        car.yAnim.setValue(height * (0.1 + index * 0.15));
-      });
+        trafficCars.forEach((car, index) => {
+          car.yAnim.setValue(height * (0.1 + index * 0.15));
+        });
 
-      const crawlAnimations = trafficCars.map(car =>
-        Animated.timing(car.yAnim, {
-          toValue: car.yAnim._value + 50,
-          duration: 5000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        })
-      );
+        const crawlAnimations = trafficCars.map(car =>
+          Animated.timing(car.yAnim, {
+            toValue: car.yAnim._value + 50,
+            duration: 5000,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          })
+        );
 
-      crawlAnimations.forEach(anim => anim.start());
+        crawlAnimations.forEach(anim => anim.start());
+        await new Promise(res => setTimeout(res, 2000));
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+        setShowHonking(true);
 
-      setShowHonking(true);
-
-      const honkingSequence = async () => {
         for (let i = 0; i < 5; i++) {
           const playerShake = Animated.sequence([
             Animated.timing(carXAnim, { toValue: carXAnim._value + 10, duration: 100, useNativeDriver: false }),
             Animated.timing(carXAnim, { toValue: carXAnim._value - 10, duration: 100, useNativeDriver: false }),
           ]);
 
-          await new Promise(resolve => playerShake.start(resolve));
+          await new Promise(res => playerShake.start(res));
 
           const trafficShakes = trafficCars.slice(0, 3).map(car =>
             Animated.sequence([
@@ -626,31 +517,29 @@ function DrivingGameContent() {
             ])
           );
 
-          await Promise.all(trafficShakes.map(shake => new Promise(resolve => shake.start(resolve))));
-
-          await new Promise(resolve => setTimeout(resolve, 800));
+          await Promise.all(trafficShakes.map(shake => new Promise(res => shake.start(res))));
+          await new Promise(res => setTimeout(res, 800));
         }
-      };
 
-      await honkingSequence();
+        await new Promise(res => setTimeout(res, 2000));
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+        crawlAnimations.forEach(anim => anim.stop());
+        setShowHonking(false);
+        setShowTrafficJam(false);
 
-      crawlAnimations.forEach(anim => anim.stop());
-
-      setShowHonking(false);
-      setShowTrafficJam(false);
-
-      const centerX = width / 2 - carWidth / 2;
-      carXAnim.setValue(centerX);
-    } catch (error) {
-      console.error('Error in animateTrafficJam:', error);
-      setShowHonking(false);
-      setShowTrafficJam(false);
-    }
+        const centerX = width / 2 - carWidth / 2;
+        carXAnim.setValue(centerX);
+        
+        resolve();
+      } catch (error) {
+        console.error('Error in animateTrafficJam:', error);
+        setShowHonking(false);
+        setShowTrafficJam(false);
+        resolve();
+      }
+    });
   };
 
-  // FIXED: handleAnswer function with proper async/await and sequencing
   const handleAnswer = async (answer) => {
     console.log('🎯 handleAnswer START:', answer);
     setSelectedAnswer(answer);
@@ -694,7 +583,13 @@ function DrivingGameContent() {
     }
   };
 
-  // FIXED: handleNext function with proper navigation
+  // Add this helper function to get current scenario number from file
+  const getCurrentScenarioNumber = () => {
+    // Return the scenario number based on the current file
+    // For S1P2, return 1
+    return 1;
+  };
+
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
@@ -712,41 +607,41 @@ function DrivingGameContent() {
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-    } else if (currentScenario >= 10) {
-      // Last scenario in phase - complete session
-      try {
-        const sessionResults = await completeSession();
-        router.push({
-          pathname: '/result',
-          params: {
-            ...sessionResults,
-            userAttempts: JSON.stringify(sessionResults.attempts)
-          }
-        });
-      } catch (error) {
-        console.error('Error completing session:', error);
-        Alert.alert('Error', 'Failed to save session results');
-      }
     } else {
-          console.log('🔍 NAVIGATION: About to call moveToNextScenario');
-          console.log('🔍 NAVIGATION: currentScenario before:', currentScenario);
+      // Get current scenario number from file name
+      const currentFileScenario = getCurrentScenarioNumber();
 
-          moveToNextScenario();
+      if (currentFileScenario >= 10) {
+        // Last scenario - complete session and go to results
+        try {
+          const sessionResults = await completeSession();
+          if (sessionResults) {
+            router.push({
+              pathname: '/result',
+              params: {
+                ...sessionResults,
+                userAttempts: JSON.stringify(sessionResults.attempts),
+                scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error completing session:', error);
+          Alert.alert('Error', 'Failed to save session results');
+        }
+      } else {
+        // Move to next scenario
+        moveToNextScenario();
 
-          console.log('🔍 NAVIGATION: currentScenario after:', currentScenario);
+        // Navigate to next scenario using file-based numbering
+        const nextScenarioNumber = currentFileScenario + 1;
+        const nextScreen = `S${nextScenarioNumber}P2`;
+        router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+      }
 
-          const nextScreen = `S${currentScenario + 1}P2`;
-          console.log('🔍 NAVIGATION: nextScreen:', nextScreen);
-
-          router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-    }
-
-    setShowQuestion(false);
-    if (scrollAnimationRef.current) {
-      scrollAnimationRef.current.stop();
-    }
-    if (jeepneyAnimationRef.current) {
-        jeepneyAnimationRef.current.stop();
+      setShowQuestion(false);
+      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+      if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
     }
   };
 
@@ -757,13 +652,13 @@ function DrivingGameContent() {
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
     ? "Correct! When you're on the side with the broken white line, you CAN overtake after checking for oncoming traffic and ensuring it's safe to do so."
-    : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
+    : (selectedAnswer && currentQuestionData.wrongExplanation[selectedAnswer]) || "Wrong answer!";
 
   if (showIntro) {
     return (
       <View style={styles.introContainer}>
         <Image
-          source={require("../../../../../assets/dialog/Dialog.png")}
+          source={require("../../../../../assets/dialog/LTO.png")}
           style={styles.introLTOImage}
         />
         <View style={styles.introTextBox}>
@@ -783,7 +678,6 @@ function DrivingGameContent() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "black", overflow: 'hidden' }}>
-      {/* Map - Looping background */}
       <Animated.View
         style={{
           position: "absolute",
@@ -822,7 +716,6 @@ function DrivingGameContent() {
         ))}
       </Animated.View>
 
-      {/* Responsive Jeepney */}
       {isJeepneyVisible && (
         <Animated.Image
           source={jeepneySprites.NORTH[jeepneyFrame]}
@@ -837,7 +730,6 @@ function DrivingGameContent() {
         />
       )}
 
-      {/* NPC Car (Black car for collision) */}
       {isNpcCarVisible && (
         <Animated.Image
           source={npcCarSprites.SOUTH[npcCarFrame]}
@@ -855,11 +747,9 @@ function DrivingGameContent() {
         />
       )}
 
-      {/* Traffic Cars (for road rage scenario) */}
       {showTrafficJam && trafficCars.map(car => {
         const xPos = car.lane * tileSize + (tileSize / 2 - npcCarWidth / 2);
         const spriteSource = trafficCarSprites[car.type][car.frame];
-
         return (
           <Animated.Image
             key={car.id}
@@ -876,111 +766,39 @@ function DrivingGameContent() {
         );
       })}
 
-      {/* Honking Effect */}
-      {showHonking && (
-        <View style={{
-          position: "absolute",
-          width: width,
-          height: height,
-          zIndex: 9,
-          pointerEvents: "none",
-        }}>
-          {/* Honking indicators around cars */}
-          <View style={{
-            position: "absolute",
-            left: carXAnim._value - 30,
-            bottom: height * 0.05,
-            width: 60,
-            height: 30,
-            justifyContent: "center",
-            alignItems: "center",
-          }}>
-            <Text style={{
-              color: "yellow",
-              fontSize: 20,
-              fontWeight: "bold",
-              textShadowColor: "black",
-              textShadowOffset: { width: 1, height: 1 },
-              textShadowRadius: 3,
-            }}>
-              HONK!
-            </Text>
+      {showHonking && (        <View style={{ position: "absolute", width: width, height: height, zIndex: 9, pointerEvents: "none" }}>
+          <View style={{ position: "absolute", left: carXAnim._value - 30, bottom: height * 0.05, width: 60, height: 30, justifyContent: "center", alignItems: "center" }}>
+            <Text style={{ color: "yellow", fontSize: 20, fontWeight: "bold", textShadowColor: "black", textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 }}></Text>
           </View>
-
-          {/* Multiple honking sounds from other cars */}
-          <View style={{
-            position: "absolute",
-            left: width * 0.1,
-            top: height * 0.3,
-            width: 60,
-            height: 30,
-            justifyContent: "center",
-            alignItems: "center",
-          }}>
-            <Text style={{
-              color: "orange",
-              fontSize: 16,
-              fontWeight: "bold",
-              textShadowColor: "black",
-              textShadowOffset: { width: 1, height: 1 },
-              textShadowRadius: 3,
-            }}>
-              BEEP!
-            </Text>
+          <View style={{ position: "absolute", left: width * 0.1, top: height * 0.3, width: 60, height: 30, justifyContent: "center", alignItems: "center" }}>
+            <Text style={{ color: "orange", fontSize: 16, fontWeight: "bold", textShadowColor: "black", textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 }}></Text>
           </View>
-
-          <View style={{
-            position: "absolute",
-            right: width * 0.1,
-            top: height * 0.5,
-            width: 60,
-            height: 30,
-            justifyContent: "center",
-            alignItems: "center",
-          }}>
-            <Text style={{
-              color: "red",
-              fontSize: 18,
-              fontWeight: "bold",
-              textShadowColor: "black",
-              textShadowOffset: { width: 1, height: 1 },
-              textShadowRadius: 3,
-            }}>
-              HONK!
-            </Text>
+          <View style={{ position: "absolute", right: width * 0.1, top: height * 0.5, width: 60, height: 30, justifyContent: "center", alignItems: "center" }}>
+            <Text style={{ color: "red", fontSize: 18, fontWeight: "bold", textShadowColor: "black", textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 }}></Text>
           </View>
-
-          {/* Central message about road rage */}
-          <View style={{
-            position: "absolute",
-            top: height * 0.15,
-            left: width * 0.1,
-            right: width * 0.1,
-            backgroundColor: "rgba(255, 100, 100, 0.8)",
-            padding: 15,
-            borderRadius: 10,
-            alignItems: "center",
-          }}>
-            <Text style={{
-              color: "white",
-              fontSize: 16,
-              fontWeight: "bold",
-              textAlign: "center",
-            }}>
-              Traffic is NOT moving faster!
-            </Text>
-            <Text style={{
-              color: "white",
-              fontSize: 14,
-              textAlign: "center",
-              marginTop: 5,
-            }}>
-              Honking causes road rage!
-            </Text>
+          <View style={{ position: "absolute", top: height * 0.15, left: width * 0.1, right: width * 0.1, backgroundColor: "rgba(255, 100, 100, 0.8)", padding: 15, borderRadius: 10, alignItems: "center" }}>
+            <Text style={{ color: "white", fontSize: 16, fontWeight: "bold", textAlign: "center" }}>Traffic is not moving faster!</Text>
+            <Text style={{ color: "white", fontSize: 14, textAlign: "center", marginTop: 5 }}>Honking causes road rage!</Text>
           </View>
         </View>
       )}
 
+      {isPlayerCarVisible && (
+        <View style={{ 
+          position: "absolute", 
+          bottom: height * 0.1, 
+          left: lane1X,
+          zIndex: 5 
+        }}>
+          <Animated.Image
+            source={playerCarSprites[playerCarDirection][playerCarFrame]}
+            style={{ 
+              width: carWidth, 
+              height: carHeight,
+              transform: [{ translateX: carXAnim }]
+            }}
+          />
+        </View>
       {/* Collision Effect */}
       {showCollision && (
         <View style={{
@@ -1020,49 +838,36 @@ function DrivingGameContent() {
         />
       )}
 
-      {/* Responsive Question Overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
-          <Image
-            source={require("../../../../../assets/dialog/Dialog.png")}
-            style={styles.ltoImage}
-          />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.questionBox}>
             <View style={styles.questionTextContainer}>
-              <Text style={styles.questionText}>
-                {questions[questionIndex].question}
-              </Text>
+              <Text style={styles.questionText}>{questions[questionIndex].question}</Text>
             </View>
           </View>
         </View>
       )}
 
-      {/* Responsive Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={styles.answerButton}
-              onPress={() => handleAnswer(option)}
-            >
+            <TouchableOpacity key={option} style={styles.answerButton} onPress={() => handleAnswer(option)}>
               <Text style={styles.answerText}>{option}</Text>
             </TouchableOpacity>
           ))}
         </View>
       )}
 
-      {/* Responsive Feedback - Correct/Wrong */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
         </Animated.View>
       )}
 
-      {/* Responsive Next Button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
@@ -1087,7 +892,17 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // Intro styles (responsive)
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 18,
+    marginTop: 20,
+  },
   introContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -1117,6 +932,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: height * 0.02,
   },
+  introSubtitle: {
+    color: "#aaa",
+    fontSize: Math.min(width * 0.05, 22),
+    textAlign: "center",
+    marginBottom: height * 0.02,
+  },
   introText: {
     color: "white",
     fontSize: Math.min(width * 0.045, 20),
@@ -1143,8 +964,6 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
-
-  // In-game responsive styles
   questionOverlay: {
     position: "absolute",
     bottom: 0,
@@ -1154,7 +973,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -1162,7 +981,7 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
@@ -1172,17 +991,18 @@ const styles = StyleSheet.create({
   },
   questionTextContainer: {
     padding: -height * 0.04,
-    maxWidth: width * 0.6,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.018, 18),
+    fontSize: Math.min(width * 0.045, 22),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.1,
+    top: height * 0.175,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
@@ -1198,7 +1018,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 11),
+    fontSize: Math.min(width * 0.04, 18),
     textAlign: "center",
   },
   feedbackOverlay: {
@@ -1221,8 +1041,9 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
+    textAlign: "center",
   },
   nextButtonContainer: {
     position: "absolute",

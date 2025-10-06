@@ -80,6 +80,10 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
   ],
+  SOUTH: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/SOUTH/SEPARATED/Brown_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/SOUTH/SEPARATED/Brown_CIVIC_CLEAN_SOUTH_001.png"),
+  ],
 };
 
 // Rain drop component
@@ -164,6 +168,11 @@ export default function DrivingGame() {
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
 
+  // Brown car state (oncoming traffic)
+  const [brownCarFrame, setBrownCarFrame] = useState(0);
+  const brownCarY = useRef(new Animated.Value(-carHeight)).current; // Start above screen
+  const brownCarX = 1 * tileSize + tileSize/2 - carWidth/2; // Position in 1st column (road4)
+
   // Animation speed control
   const [animationSpeed, setAnimationSpeed] = useState(4000);
 
@@ -228,6 +237,30 @@ export default function DrivingGame() {
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
 
+  // Brown car animation frame cycling
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setBrownCarFrame((p) => (p + 1) % carSprites.SOUTH.length);
+    }, 200);
+    return () => clearInterval(iv);
+  }, []);
+
+  // Brown car continuous movement
+  useEffect(() => {
+    const animateBrownCar = () => {
+      brownCarY.setValue(-carHeight);
+      Animated.timing(brownCarY, {
+        toValue: height + carHeight,
+        duration: 6000,
+        useNativeDriver: true,
+      }).start(() => {
+        animateBrownCar(); // Loop the animation
+      });
+    };
+
+    animateBrownCar();
+  }, []);
+
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
     
@@ -288,18 +321,18 @@ export default function DrivingGame() {
 
     if (answer === "Drive closer to the center line to avoid the flooded shoulder") {
       // Animation: Car moves toward center (left) to avoid flood
-      setCarDirection("NORTHWEST");
+      setCarDirection("NORTH");
       
       // Move car to column 1 (road3 - center line area)
       Animated.parallel([
         Animated.timing(carXAnim, {
-          toValue: 1 * tileSize + tileSize/2 - carWidth/2,
-          duration: 1500,
+          toValue: 1.7 * tileSize + tileSize/2 - carWidth/2,
+          duration: 900,
           useNativeDriver: true,
         }),
         Animated.timing(scrollY, {
           toValue: currentScroll.current + 4 * tileSize,
-          duration: 2000,
+          duration: 1000,
           useNativeDriver: true,
         })
       ]).start(() => {
@@ -321,30 +354,33 @@ export default function DrivingGame() {
           handleFeedback(answer);
         }, 500);
       });
-      
-    } else if (answer === "Drive on the shoulder since it's marked by edge lines") {
-      // Animation: Car moves right to shoulder (column 3)
-      setCarDirection("NORTHEAST");
-      
-      // Move car to column 3 (shoulder area)
-      Animated.parallel([
-        Animated.timing(carXAnim, {
-          toValue: 3 * tileSize + tileSize/2 - carWidth/2,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + 4 * tileSize,
-          duration: 2000,
-          useNativeDriver: true,
-        })
-      ]).start(() => {
-        setTimeout(() => {
-          handleFeedback(answer);
-        }, 500);
-      });
-    }
-  };
+    
+  } else if (answer === "Drive on the shoulder since it's marked by edge lines") {
+  // Animation: Car moves right to shoulder (column 3)
+  setCarDirection("NORTHEAST");
+  
+  // Move car to column 3 (shoulder area)
+  Animated.parallel([
+    Animated.timing(carXAnim, {
+      toValue: 3 * tileSize + tileSize/2 - carWidth/2,
+      duration: 700,
+      useNativeDriver: true,
+    }),
+    Animated.timing(scrollY, {
+      toValue: currentScroll.current + 4 * tileSize,
+      duration: 2000,
+      useNativeDriver: true,
+    })
+  ]).start(() => {
+    // Once on the shoulder, car faces north again
+    setCarDirection("NORTH");
+    
+    setTimeout(() => {
+      handleFeedback(answer);
+    }, 500);
+  });
+  }
+};
 
   const handleNext = async () => {
     setAnimationType(null);
@@ -539,11 +575,24 @@ export default function DrivingGame() {
         />
       )}
 
+      {/* Brown Car (Oncoming Traffic) */}
+      <Animated.Image
+        source={carSprites.SOUTH[brownCarFrame]}
+        style={{
+          width: carWidth,
+          height: carHeight,
+          position: "absolute",
+          left: brownCarX,
+          transform: [{ translateY: brownCarY }],
+          zIndex: 5,
+        }}
+      />
+
       {/* Question Overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../../assets/dialog/Dialog.png")}
+            source={require("../../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -574,7 +623,7 @@ export default function DrivingGame() {
       {/* Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -594,6 +643,20 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
+  // Loading screen styles
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  // No intro styles (responsive)
+  // In-game responsive styles
   questionOverlay: {
     position: "absolute",
     bottom: 0,
@@ -603,7 +666,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -611,34 +674,36 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: height * 0.05,
   },
   questionTextContainer: {
-    maxWidth: width * 0.6,
+    padding: -height * 0.04,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: Math.min(width * 0.045, 21),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.25,
+    top: height * 0.076,
     right: sideMargin,
     width: width * 0.35,
+    height: height * 0.23,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.02,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -669,7 +734,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
