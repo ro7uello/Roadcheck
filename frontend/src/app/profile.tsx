@@ -1,593 +1,326 @@
 // profile.jsx
-import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Alert, } from "react-native";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// Import API URL - adjust this based on your environment setup
-import { API_URL } from '@env';
+// profile.tsx (or wherever your profile screen is)
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  Dimensions,
+  SafeAreaView,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get("window");
-const BACKGROUND_SPEED = 12000;
+const API_URL = process.env.API_URL;
 
-// TypeScript interfaces
-interface CategoryStats {
-  total_scenarios: number;
-  completed_scenarios: number;
-  total_attempts: number;
-  correct_answers: number;
-}
-
-interface Profile {
-  id: string;
-  full_name: string;
-  email: string;
-  avatar_url?: string;
-  created_at: string;
-}
-
-interface UserProgress {
-  user_id: string;
-  current_phase: number;
-  current_category_id: number;
-  current_scenario_index: number;
-  completed_scenarios: number;
-  phase_scores: number[];
-  total_score: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-interface UserAttempt {
-  id: number;
-  user_id: string;
-  scenario_id: number;
-  selected_choice_id: number;
-  is_correct: boolean;
-  created_at: string;
-}
-
-export default function ProfilePage() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
-  const [userAttempts, setUserAttempts] = useState<UserAttempt[]>([]);
-  const [categoryStats, setCategoryStats] = useState<Record<string, CategoryStats>>({});
+export default function ProfileScreen() {
+  const router = useRouter();
+  const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const bgAnim = useRef(new Animated.Value(0)).current;
-  const carAnim = useRef(new Animated.Value(0)).current;
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
-    // Start animations
-    Animated.loop(
-      Animated.timing(bgAnim, { toValue: 1, duration: BACKGROUND_SPEED, useNativeDriver: true })
-    ).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(carAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
-        Animated.timing(carAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
-      ])
-    ).start();
-
-    // Fetch profile data from backend
-    fetchProfileData();
+    loadProfileData();
   }, []);
 
-  const fetchProfileData = async () => {
+  const loadProfileData = async () => {
     try {
       setLoading(true);
-      setError(null);
 
-      console.log('API_URL:', API_URL);
+      const storedUserId = await AsyncStorage.getItem("userId");
+      const userData = await AsyncStorage.getItem("user_data");
+      const userEmail = await AsyncStorage.getItem("user_email");
 
-      // Get user data from AsyncStorage (saved during login)
-      const userData = await AsyncStorage.getItem('user_data');
-      const token = await AsyncStorage.getItem('access_token');
+      console.log("Stored userId:", storedUserId);
+      console.log("Stored user_data:", userData);
+      console.log("Stored user_email:", userEmail);
 
-      if (!userData) {
-        throw new Error('No user data found. Please login again.');
+      if (!storedUserId) {
+        console.error("No user ID found - redirecting to login");
+        Alert.alert("Session Expired", "Please login again", [
+          { text: "OK", onPress: () => router.replace("/login") }
+        ]);
+        return;
       }
 
-      const user = JSON.parse(userData);
-      console.log('User data from storage:', user);
-
-      // Set profile from stored user data
-      setProfile({
-        id: user.id,
-        full_name: user.full_name || user.email?.split('@')[0] || 'Unknown User',
-        email: user.email,
-        created_at: user.created_at
-      });
-
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      // Fetch user attempts
-      console.log('Fetching user attempts...');
-      try {
-        const attemptsResponse = await fetch(`${API_URL}/attempts/user/${user.id}`, {
-          headers
+      // Try to use the stored user_data first as fallback
+      if (userData) {
+        const parsedUserData = JSON.parse(userData);
+        setProfile({
+          full_name: parsedUserData.full_name || parsedUserData.email?.split('@')[0],
+          email: parsedUserData.email,
+          id: parsedUserData.id
         });
-
-        console.log('Attempts response status:', attemptsResponse.status);
-
-        if (attemptsResponse.ok) {
-          const attemptsData = await attemptsResponse.json();
-          console.log('Attempts data:', attemptsData);
-
-          if (attemptsData.success && Array.isArray(attemptsData.data)) {
-            setUserAttempts(attemptsData.data);
-            calculateCategoryStatsFromAttempts(attemptsData.data);
-          }
-        } else {
-          console.warn('Failed to fetch attempts:', attemptsResponse.status);
-        }
-      } catch (attemptError) {
-        console.warn('Error fetching attempts:', attemptError);
       }
 
-      // Fetch user progress
-      console.log('Fetching user progress...');
-      try {
-        const progressResponse = await fetch(`${API_URL}/progress/user/${user.id}`, {
-          headers
-        });
+      setUserId(storedUserId);
 
-        console.log('Progress response status:', progressResponse.status);
+      // Then fetch from API
+      const [profileRes, statsRes] = await Promise.all([
+        fetch(`${API_URL}/profiles/${storedUserId}`),
+        fetch(`${API_URL}/user-stats/${storedUserId}`)
+      ]);
 
-        if (progressResponse.ok) {
-          const progressData = await progressResponse.json();
-          console.log('Progress data:', progressData);
+      console.log("Profile response status:", profileRes.status);
+      console.log("Stats response status:", statsRes.status);
 
-          if (progressData.success) {
-            setUserProgress(progressData.data);
-          }
-        } else {
-          console.warn('Failed to fetch progress:', progressResponse.status);
-        }
-      } catch (progressError) {
-        console.warn('Error fetching progress:', progressError);
+      const profileData = await profileRes.json();
+      const statsData = await statsRes.json();
+
+      console.log("Profile data:", profileData);
+      console.log("Stats data:", statsData);
+
+      if (profileData.success) {
+        setProfile({...profileData.data, email: userEmail || profileData.data.email || "N/A"});
+      }
+
+      if (statsData.success) {
+        setStats(statsData.data);
       }
 
     } catch (error) {
-      console.error('Error fetching profile data:', error);
-      setError(error.message);
-      Alert.alert('Error', 'Failed to load profile data. Please try again.');
+      console.error("Error loading profile:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Calculate category statistics from attempts data
-  const calculateCategoryStatsFromAttempts = (attempts: UserAttempt[]) => {
-    // This is a simplified calculation - you might want to fetch scenario details
-    // to properly categorize attempts by category
-    const stats: Record<string, CategoryStats> = {
-      road_markings: { total_scenarios: 0, completed_scenarios: 0, total_attempts: 0, correct_answers: 0 },
-      road_signs: { total_scenarios: 0, completed_scenarios: 0, total_attempts: 0, correct_answers: 0 },
-      intersections: { total_scenarios: 0, completed_scenarios: 0, total_attempts: 0, correct_answers: 0 }
-    };
-
-    // For now, we'll use scenario_id ranges to determine categories
-    // You should adjust this based on your actual scenario organization
-    attempts.forEach(attempt => {
-      let category = 'road_markings'; // Default to road_markings
-
-      // Determine category based on scenario_id (adjust these ranges as needed)
-      if (attempt.scenario_id >= 1 && attempt.scenario_id <= 10) {
-        category = 'road_markings';
-      } else if (attempt.scenario_id >= 11 && attempt.scenario_id <= 20) {
-        category = 'road_signs';
-      } else if (attempt.scenario_id >= 21 && attempt.scenario_id <= 30) {
-        category = 'intersections';
-      }
-
-      stats[category].total_attempts++;
-      if (attempt.is_correct) {
-        stats[category].correct_answers++;
-      }
-    });
-
-    // Count unique scenarios per category
-    const uniqueScenarios = new Set(attempts.map(a => a.scenario_id));
-    uniqueScenarios.forEach(scenarioId => {
-      let category = 'road_markings'; // Default to road_markings
-      if (scenarioId >= 1 && scenarioId <= 10) {
-        category = 'road_markings';
-      } else if (scenarioId >= 11 && scenarioId <= 20) {
-        category = 'road_signs';
-      } else if (scenarioId >= 21 && scenarioId <= 30) {
-        category = 'intersections';
-      }
-
-      stats[category].completed_scenarios++;
-      stats[category].total_scenarios = Math.max(stats[category].total_scenarios, stats[category].completed_scenarios);
-    });
-
-    setCategoryStats(stats);
+  const calculateAccuracy = (categoryKey) => {
+    if (!stats || !stats[categoryKey]) return 0;
+    const { completed_scenarios, correct_answers } = stats[categoryKey];
+    if (completed_scenarios === 0) return 0;
+    return Math.round((correct_answers / completed_scenarios) * 100);
   };
 
-  // Calculate completion percentage for each category
-  const calculateCategoryProgress = (categoryName: string): number => {
-    const stats = categoryStats[categoryName];
-    if (!stats || !stats.total_scenarios || stats.total_scenarios === 0) return 0;
-
-    return Math.round((stats.completed_scenarios / stats.total_scenarios) * 100);
+  const getStatusBadge = (accuracy) => {
+    if (accuracy >= 80) return { text: "PASSED", color: "#4ade80" };
+    if (accuracy >= 50) return { text: "NEEDS WORK", color: "#fbbf24" };
+    return { text: "FAILED", color: "#ef4444" };
   };
 
-  // Calculate accuracy percentage for each category
-  const calculateCategoryAccuracy = (categoryName: string): number => {
-    const stats = categoryStats[categoryName];
-    if (!stats || !stats.total_attempts || stats.total_attempts === 0) return 0;
-
-    return Math.round((stats.correct_answers / stats.total_attempts) * 100);
-  };
-
-  // Get overall driver status
-  const getDriverStatus = (): string => {
-    const categories = ['road_markings', 'road_signs', 'intersections'];
-    const passed = categories.filter(cat => calculateCategoryAccuracy(cat) >= 70).length;
-    const total = categories.length;
-
-    if (passed === total) return 'LICENSED DRIVER';
-    if (passed >= total / 2) return 'LEARNER';
-    return 'BEGINNER';
-  };
-
-  const bgTranslate = bgAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -width] });
-  const carBounce = carAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -10] });
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Background */}
-      <View style={styles.movingBackground}>
-        <Animated.View style={[styles.bgWrapper, { transform: [{ translateX: bgTranslate }] }]}>
-          <ImageBackground
-            source={require("../../assets/background/city-background.png")}
-            style={styles.bgImage}
-            resizeMode="stretch"
-          />
-        </Animated.View>
-        <Animated.View
-          style={[styles.bgWrapper, { transform: [{ translateX: Animated.add(bgTranslate, width) }] }]}
-        >
-          <ImageBackground
-            source={require("../../assets/background/city-background.png")}
-            style={styles.bgImage}
-            resizeMode="stretch"
-          />
-        </Animated.View>
-      </View>
+      {/* Close Button - NOW PROPERLY POSITIONED */}
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => router.back()}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.closeButtonText}>✕</Text>
+      </TouchableOpacity>
 
-      {/* Car */}
-      <Animated.View style={[styles.carContainer, { transform: [{ translateY: carBounce }] }]}>
-        <Image source={require("../../assets/car/blue-car.png")} style={styles.car} resizeMode="contain" />
-      </Animated.View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>PROFILE</Text>
+        </View>
 
-      {/* Profile Box */}
-      <View style={styles.box}>
-        <Text style={styles.title}>PROFILE</Text>
-
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#333" />
-            <Text style={styles.loadingText}>Loading profile...</Text>
+        {/* User Info Card */}
+        <View style={styles.card}>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>NAME:</Text>
+            <Text style={styles.value}>{profile?.full_name}</Text>
           </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Error: {error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={fetchProfileData}>
-              <Text style={styles.retryText}>Retry</Text>
-            </TouchableOpacity>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>EMAIL:</Text>
+            <Text style={styles.value}>{profile?.email}</Text>
           </View>
-        ) : profile ? (
-          <>
-            {/* Basic Information */}
-            <Text style={styles.label}>
-              NAME: <Text style={styles.value}>{profile.full_name || 'Not set'}</Text>
-            </Text>
 
-            <Text style={styles.label}>
-              EMAIL: <Text style={styles.value}>{profile.email || 'Not set'}</Text>
-            </Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>STATUS:</Text>
+            <Text style={styles.statusBadge}>BEGINNER</Text>
+          </View>
+        </View>
 
-            {/* Driver Status */}
-            <Text style={styles.label}>
-              STATUS: <Text style={[styles.value, styles.statusText]}>{getDriverStatus()}</Text>
-            </Text>
+        {/* Driver Progression */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>DRIVER PROGRESSION:</Text>
 
-            {/* Current Progress */}
-            {userProgress && (
-              <View style={styles.currentProgressBox}>
-                <Text style={styles.sectionTitle}>CURRENT PROGRESS:</Text>
-                <Text style={styles.progressDetail}>
-                  Phase: {userProgress.current_phase || 'Not started'}
-                </Text>
-                <Text style={styles.progressDetail}>
-                  Scenario: {userProgress.current_scenario_index || 1}
-                </Text>
-                <Text style={styles.progressDetail}>
-                  Total Score: {userProgress.total_score || 0}
-                </Text>
-              </View>
-            )}
-
-            {/* Category Performance */}
-            <Text style={[styles.label, { marginTop: 15 }]}>CATEGORY PERFORMANCE:</Text>
-            <View style={styles.progressBox}>
-              <View style={styles.categoryRow}>
-                <Text style={styles.progress}>
-                  ROAD MARKINGS: {calculateCategoryAccuracy('road_markings')}% accuracy
-                </Text>
-                <Text style={[styles.status, calculateCategoryAccuracy('road_markings') >= 70 ? styles.passed : styles.failed]}>
-                  {calculateCategoryAccuracy('road_markings') >= 70 ? "PASSED" : "NEEDS WORK"}
-                </Text>
-              </View>
-
-              <View style={styles.categoryRow}>
-                <Text style={styles.progress}>
-                  ROAD SIGNS: {calculateCategoryAccuracy('road_signs')}% accuracy
-                </Text>
-                <Text style={[styles.status, calculateCategoryAccuracy('road_signs') >= 70 ? styles.passed : styles.failed]}>
-                  {calculateCategoryAccuracy('road_signs') >= 70 ? "PASSED" : "NEEDS WORK"}
-                </Text>
-              </View>
-
-              <View style={styles.categoryRow}>
-                <Text style={styles.progress}>
-                  INTERSECTIONS: {calculateCategoryAccuracy('intersections')}% accuracy
-                </Text>
-                <Text style={[styles.status, calculateCategoryAccuracy('intersections') >= 70 ? styles.passed : styles.failed]}>
-                  {calculateCategoryAccuracy('intersections') >= 70 ? "PASSED" : "NEEDS WORK"}
-                </Text>
-              </View>
+          <View style={styles.progressItem}>
+            <View style={styles.progressRow}>
+              <Text style={styles.categoryName}>ROAD MARKINGS:</Text>
+              <Text style={styles.accuracy}>{calculateAccuracy("road_markings")}% ACCURACY</Text>
             </View>
+            {(() => {
+              const status = getStatusBadge(calculateAccuracy("road_markings"));
+              return <Text style={[styles.statusLabel, { color: status.color }]}>{status.text}</Text>;
+            })()}
+          </View>
 
-            {/* Detailed Statistics */}
-            <View style={styles.statsBox}>
-              <Text style={styles.sectionTitle}>DETAILED STATS:</Text>
-              {Object.entries(categoryStats).map(([category, stats]) => {
-                const safeStats = stats || {};
-                const completedScenarios = safeStats.completed_scenarios || 0;
-                const totalScenarios = safeStats.total_scenarios || 0;
-                const correctAnswers = safeStats.correct_answers || 0;
-                const totalAttempts = safeStats.total_attempts || 0;
-
-                return (
-                  <View key={category} style={styles.statRow}>
-                    <Text style={styles.statLabel}>{category.replace('_', ' ').toUpperCase()}:</Text>
-                    <Text style={styles.statValue}>
-                      {`${completedScenarios}/${totalScenarios} scenarios`}
-                    </Text>
-                    <Text style={styles.statValue}>
-                      {`${correctAnswers}/${totalAttempts} correct`}
-                    </Text>
-                  </View>
-                );
-              })}
+          <View style={styles.progressItem}>
+            <View style={styles.progressRow}>
+              <Text style={styles.categoryName}>ROAD SIGNS:</Text>
+              <Text style={styles.accuracy}>{calculateAccuracy("road_signs")}% ACCURACY</Text>
             </View>
+            {(() => {
+              const status = getStatusBadge(calculateAccuracy("road_signs"));
+              return <Text style={[styles.statusLabel, { color: status.color }]}>{status.text}</Text>;
+            })()}
+          </View>
 
-            {/* Total Attempts Summary */}
-            <View style={styles.summaryBox}>
-              <Text style={styles.sectionTitle}>SUMMARY:</Text>
-              <Text style={styles.progressDetail}>
-                Total Attempts: {userAttempts.length}
+          <View style={styles.progressItem}>
+            <View style={styles.progressRow}>
+              <Text style={styles.categoryName}>INTERSECTIONS:</Text>
+              <Text style={styles.accuracy}>{calculateAccuracy("intersections")}% ACCURACY</Text>
+            </View>
+            {(() => {
+              const status = getStatusBadge(calculateAccuracy("intersections"));
+              return <Text style={[styles.statusLabel, { color: status.color }]}>{status.text}</Text>;
+            })()}
+          </View>
+        </View>
+
+        {/* Detailed Stats */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>DETAILED STATS:</Text>
+
+          {stats && Object.entries(stats).map(([key, data]) => (
+            <View key={key} style={styles.statRow}>
+              <Text style={styles.statLabel}>
+                {key.replace(/_/g, " ").toUpperCase()}:
               </Text>
-              <Text style={styles.progressDetail}>
-                Correct Answers: {userAttempts.filter(a => a.is_correct).length}
-              </Text>
-              <Text style={styles.progressDetail}>
-                Overall Accuracy: {userAttempts.length > 0 ?
-                  Math.round((userAttempts.filter(a => a.is_correct).length / userAttempts.length) * 100) : 0}%
+              <Text style={styles.statValue}>
+                {data.correct_answers || 0}/{data.completed_scenarios || 0} correct
               </Text>
             </View>
-          </>
-        ) : (
-          <Text style={styles.label}>No profile data available</Text>
-        )}
-
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => router.back()}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.closeText}>×</Text>
-        </TouchableOpacity>
-      </View>
+          ))}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  movingBackground: { ...StyleSheet.absoluteFillObject },
-  bgWrapper: { position: "absolute", width, height },
-  bgImage: { flex: 1, width: "105%", height: "105%" },
-  carContainer: { position: "absolute", bottom: 5, left: width * 0.05 },
-  car: { width: 250, height: 150 },
-
-  box: {
-    position: "absolute",
-    top: height * 0.05,
-    alignSelf: "center",
-    backgroundColor: "rgba(255,255,255,0.95)",
+  container: {
+    flex: 1,
+    backgroundColor: '#87CEEB',
+    paddingTop: 60,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#ef4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 24,
+    fontFamily: 'pixel',
+  },
+  scrollContent: {
     padding: 20,
-    borderRadius: 10,
-    width: "90%",
-    maxHeight: height * 0.85,
+    paddingBottom: 40,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 20,
   },
   title: {
-    fontSize: 20,
-    color: "black",
-    fontFamily: "pixel",
-    textAlign: "center",
-    marginBottom: 15,
-    fontWeight: 'bold'
-  },
-  label: {
-    fontSize: 12,
-    color: "black",
-    fontFamily: "pixel",
-    marginBottom: 5
-  },
-  value: {
-    fontWeight: "bold",
-    color: "#2c3e50"
-  },
-  statusText: {
-    color: "#27ae60",
-    fontSize: 13,
-  },
-
-  // Loading and Error States
-  loadingContainer: {
-    alignItems: 'center',
-    padding: 20,
-  },
-  loadingText: {
-    fontSize: 12,
-    color: "#666",
-    fontFamily: "pixel",
-    marginTop: 10,
-  },
-  errorContainer: {
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 12,
-    color: "red",
-    fontFamily: "pixel",
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  retryButton: {
-    backgroundColor: "#3498db",
-    paddingHorizontal: 15,
-    paddingVertical: 8,
+    fontSize: 32,
+    color: '#000',
+    fontFamily: 'pixel',
+    backgroundColor: '#f4d03f',
+    paddingHorizontal: 30,
+    paddingVertical: 10,
     borderRadius: 5,
   },
-  retryText: {
-    color: "white",
-    fontFamily: "pixel",
-    fontSize: 12,
+  card: {
+    backgroundColor: '#f5e6d3',
+    borderRadius: 10,
+    padding: 20,
+    marginBottom: 15,
+    borderWidth: 3,
+    borderColor: '#000',
   },
-
-  // Progress Sections
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 16,
+    color: '#000',
+    fontFamily: 'pixel',
+    marginRight: 10,
+  },
+  value: {
+    fontSize: 16,
+    color: '#000',
+    fontFamily: 'pixel',
+  },
+  statusBadge: {
+    fontSize: 16,
+    color: '#4ade80',
+    fontFamily: 'pixel',
+  },
   sectionTitle: {
-    fontSize: 12,
-    color: "black",
-    fontFamily: "pixel",
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontSize: 18,
+    color: '#000',
+    fontFamily: 'pixel',
+    marginBottom: 15,
   },
-  currentProgressBox: {
-    marginTop: 10,
-    backgroundColor: "#ecf0f1",
-    padding: 10,
-    borderRadius: 6,
-    borderLeftWidth: 4,
-    borderLeftColor: "#3498db",
+  progressItem: {
+    backgroundColor: '#4a5568',
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 10,
   },
-  progressDetail: {
-    fontSize: 11,
-    color: "#2c3e50",
-    fontFamily: "pixel",
-    marginBottom: 3,
-  },
-  progressBox: {
-    marginTop: 10,
-    backgroundColor: "#2c3e50",
-    padding: 12,
-    borderRadius: 6
-  },
-  categoryRow: {
+  progressRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  progress: {
-    fontSize: 11,
-    color: "white",
-    fontFamily: "pixel",
-    flex: 1,
+  categoryName: {
+    fontSize: 14,
+    color: '#fff',
+    fontFamily: 'pixel',
   },
-  status: {
-    fontSize: 10,
-    fontFamily: "pixel",
-    fontWeight: 'bold',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 3,
+  accuracy: {
+    fontSize: 12,
+    color: '#cbd5e0',
+    fontFamily: 'pixel',
   },
-  passed: {
-    backgroundColor: "#27ae60",
-    color: "white",
+  badgeContainer: {
+    alignItems: 'flex-end',
   },
-  failed: {
-    backgroundColor: "#e74c3c",
-    color: "white",
-  },
-
-  // Detailed Stats
-  statsBox: {
-    marginTop: 15,
-    backgroundColor: "#f8f9fa",
-    padding: 10,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#dee2e6",
+  statusLabel: {
+    fontSize: 14,
+    fontFamily: 'pixel',
   },
   statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   statLabel: {
-    fontSize: 10,
-    color: "#2c3e50",
-    fontFamily: "pixel",
-    flex: 1,
+    fontSize: 12,
+    color: '#000',
+    fontFamily: 'pixel',
   },
   statValue: {
-    fontSize: 10,
-    color: "#7f8c8d",
-    fontFamily: "pixel",
-    marginLeft: 5,
-  },
-
-  // Summary Box
-  summaryBox: {
-    marginTop: 15,
-    backgroundColor: "#e8f5e8",
-    padding: 10,
-    borderRadius: 6,
-    borderLeftWidth: 4,
-    borderLeftColor: "#27ae60",
-  },
-
-  closeButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    backgroundColor: "#e74c3c",
-    borderRadius: 15,
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16
+    fontSize: 12,
+    color: '#4a5568',
+    fontFamily: 'pixel',
   },
 });

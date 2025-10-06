@@ -109,14 +109,52 @@ app.post('/auth/signup', [
       });
     }
 
-    console.log('✅ User created successfully:', data.user.email);
+    console.log('✅ User created in auth:', data.user.id);
+
+    // Create profile entry (matching your table structure - no email column)
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: data.user.id,
+        full_name: `${firstName} ${lastName}`,
+        avatar_url: null
+      });
+
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
+    } else {
+      console.log('✅ Profile created');
+    }
+
+    // Initialize user progress
+    const { error: progressError } = await supabase
+      .from('user_progress')
+      .insert({
+        user_id: data.user.id,
+        current_phase: 1,
+        current_category_id: 1,
+        current_scenario_index: 0,
+        completed_scenarios: [],
+        phase_scores: { "1": 0, "2": 0, "3": 0 },
+        total_score: 0,
+        last_scenario_id: null
+      });
+
+    if (progressError) {
+      console.error('Progress initialization error:', progressError);
+    } else {
+      console.log('✅ User progress initialized');
+    }
+
+    console.log('✅ User signup complete:', data.user.email);
 
     res.status(201).json({
       message: 'User created successfully! Please check your email to confirm.',
       user: {
         id: data.user.id,
         email: data.user.email,
-        username: username
+        username: username,
+        full_name: `${firstName} ${lastName}`
       }
     });
 

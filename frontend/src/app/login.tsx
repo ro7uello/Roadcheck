@@ -83,11 +83,11 @@ export default function LoginPage() {
       console.log('🔄 Starting login for:', email);
       console.log('API_URL:', API_URL);
       console.log('Calling:', `${API_URL}/auth/login`);
-      
+
       // Add timeout to prevent hanging requests
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
+
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -100,7 +100,7 @@ export default function LoginPage() {
         }),
         signal: controller.signal
       });
-      
+
       clearTimeout(timeoutId);
       console.log('📡 Response status:', response.status);
 
@@ -109,9 +109,9 @@ export default function LoginPage() {
           const textData = await response.text();
           return { message: textData || 'Network error' };
         });
-        
+
         console.log('❌ Login failed. Status:', response.status, 'Error:', errorData);
-        
+
         // Better error messages based on status
         let errorMessage = 'Login failed';
         if (response.status === 401) {
@@ -123,7 +123,7 @@ export default function LoginPage() {
         } else if (errorData.message) {
           errorMessage = errorData.message;
         }
-        
+
         throw new Error(errorMessage);
       }
 
@@ -141,11 +141,11 @@ export default function LoginPage() {
       }
 
       console.log('✅ Login successful!');
-      
-      // Save authentication data using multiSet for better performance
+
+      // Save authentication data - FIXED: Use 'userId' instead of 'user_id'
       const authData: [string, string][] = [
         ['access_token', data.access_token],
-        ['user_id', String(data.user?.id || '')],
+        ['userId', String(data.user?.id || '')], // CHANGED THIS LINE
         ['user_email', data.user?.email || email.trim().toLowerCase()],
         ['login_timestamp', new Date().toISOString()]
       ];
@@ -153,22 +153,25 @@ export default function LoginPage() {
       await AsyncStorage.multiSet(authData);
       await AsyncStorage.setItem('user_data', JSON.stringify(data.user));
       console.log('💾 Authentication data saved');
-      
+
       // Verify token was saved
       const savedToken = await AsyncStorage.getItem('access_token');
+      const savedUserId = await AsyncStorage.getItem('userId'); // VERIFY THIS TOO
+
       if (!savedToken) {
         throw new Error('Failed to save authentication token');
       }
 
       console.log('🔍 Token verification: ✅ SAVED');
+      console.log('🔍 User ID saved:', savedUserId);
       console.log('🚀 Navigating to optionPage...');
-      
+
       // Use replace to prevent going back to login screen
       router.replace('/optionPage');
-      
+
     } catch (error: any) {
       console.error("❌ Login error:", error);
-      
+
       if (error.name === 'AbortError') {
         Alert.alert("Timeout", "Login request timed out. Please check your connection and try again.");
       } else {
