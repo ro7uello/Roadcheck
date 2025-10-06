@@ -28,15 +28,16 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
 
   const initializeSession = async () => {
     try {
-      const userData = await AsyncStorage.getItem('user_data');
+      // Get userId from AsyncStorage - FIXED
+      const userId = await AsyncStorage.getItem('userId');
       const token = await AsyncStorage.getItem('access_token');
 
-      if (!userData || !token) {
-        console.warn('No user data or token found');
+      if (!userId || !token) {
+        console.warn('No user ID or token found');
         return;
       }
 
-      const user = JSON.parse(userData);
+      console.log('🔍 Initializing session with userId:', userId);
 
       // Start a new session
       const response = await fetch(`${API_URL}/sessions/start`, {
@@ -46,21 +47,24 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          user_id: user.id,
+          user_id: userId,  // Use the userId from AsyncStorage
           category_id: categoryId,
           phase_id: phaseId
         })
       });
 
+      console.log('Session start response status:', response.status);
+
       if (response.ok) {
         const result = await response.json();
         setSessionData(result.data);
-        console.log('Session initialized:', result.data.id);
+        console.log('Session initialized:', result.status);
 
         // Load initial progress
         await loadSessionProgress(result.data.id);
       } else {
-        console.error('Failed to initialize session');
+        const errorText = await response.text();
+        console.error('Failed to initialize session:', response.status, errorText);
       }
     } catch (error) {
       console.error('Error initializing session:', error);

@@ -830,7 +830,7 @@ app.post('/sessions/start', async (req, res) => {
   }
 });
 
-// PUT /sessions/:sessionId/scenario/:scenarioNumber - Update specific scenario progress
+// PUT /sessions/:sessionId/scenario/:scenarioId - Update specific scenario progress
 app.put('/sessions/:sessionId/scenario/:scenarioId', async (req, res) => {
   const { sessionId, scenarioId } = req.params;
   const { selected_answer, is_correct, time_taken_seconds } = req.body;
@@ -844,19 +844,29 @@ app.put('/sessions/:sessionId/scenario/:scenarioId', async (req, res) => {
       time_taken_seconds
     });
 
-    // Calculate scenario_number from scenarioId
-    // Phase 1: scenarioId 1-10 → scenario_number 1-10
-    // Phase 2: scenarioId 11-20 → scenario_number 1-10
-    // Phase 3: scenarioId 21-30 → scenario_number 1-10
-    const scenarioNumber = ((parseInt(scenarioId) - 1) % 10) + 1;
+    // First, get the user_id from the session
+    const { data: sessionData, error: sessionError } = await supabase
+      .from('user_sessions')
+      .select('user_id')
+      .eq('id', sessionId)
+      .single();
 
+    if (sessionError) {
+      console.error('Error fetching session:', sessionError);
+      throw sessionError;
+    }
+
+    console.log('Session user_id:', sessionData.user_id);
+
+    // Calculate scenario_number from scenarioId
+    const scenarioNumber = ((parseInt(scenarioId) - 1) % 10) + 1;
     console.log('Calculated scenario_number:', scenarioNumber);
 
     // Update the scenario_progress table
     const { data, error } = await supabase
       .from('scenario_progress')
       .update({
-        scenario_id: parseInt(scenarioId), // Store the actual scenario ID
+        scenario_id: parseInt(scenarioId),
         selected_answer,
         is_correct,
         time_taken_seconds,
@@ -875,11 +885,11 @@ app.put('/sessions/:sessionId/scenario/:scenarioId', async (req, res) => {
 
     console.log('Updated scenario progress:', data);
 
-    // Also insert into user_attempts table for detailed tracking
+    // Insert into user_attempts table with the user_id from session
     const { data: attemptData, error: attemptError } = await supabase
       .from('user_attempts')
       .insert({
-        user_id: data.user_id || req.user?.id, // You may need to adjust this
+        user_id: sessionData.user_id, // ← FIXED: Use user_id from session
         scenario_id: parseInt(scenarioId),
         chosen_option: selected_answer,
         is_correct
@@ -888,6 +898,8 @@ app.put('/sessions/:sessionId/scenario/:scenarioId', async (req, res) => {
     if (attemptError) {
       console.error('Error inserting user attempt:', attemptError);
       // Don't fail the whole request for this
+    } else {
+      console.log('✅ User attempt saved successfully');
     }
 
     res.json({ success: true, data });

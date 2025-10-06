@@ -1,4 +1,4 @@
-import { useSession } from '../../../../contexts/SessionManager';
+import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
 import { router } from 'expo-router';
@@ -117,7 +117,7 @@ const questions = [
   },
 ];
 
-export default function DrivingGame() {
+function DrivingGameContent() {
   // Session Management
   const {
     updateScenarioProgress,
@@ -1024,6 +1024,18 @@ export default function DrivingGame() {
         </View>
       )}
     </View>
+  );
+}
+
+export default function DrivingGame() {
+  return (
+    <SessionProvider
+      categoryId={1}
+      phaseId={2}
+      categoryName="Road Markings"
+    >
+      <DrivingGameContent />
+    </SessionProvider>
   );
 }
 

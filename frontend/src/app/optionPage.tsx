@@ -80,27 +80,29 @@ export default function OptionPage() {
 
     try {
       setIsLoading(true);
-      console.log('Loading state set to true');
 
       const token = await AsyncStorage.getItem('access_token');
       console.log('Token from storage:', token ? 'exists' : 'null');
 
       if (!token) {
-        console.log('No token found, proceeding without saving');
-        return true;
+        console.log('No token found, cannot save progress');
+        Alert.alert('Error', 'Please log in again');
+        router.replace('/login');
+        return false;
       }
 
-      // Get or generate user ID
-      let userId = await AsyncStorage.getItem('user_id');
+      // Get the authenticated user ID - FIXED KEY
+      const userId = await AsyncStorage.getItem('userId');
       console.log('User ID from storage:', userId);
 
       if (!userId) {
-        userId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        await AsyncStorage.setItem('user_id', userId);
-        console.log('Generated new user ID:', userId);
+        console.log('❌ No authenticated user ID found');
+        Alert.alert('Error', 'Session expired. Please log in again');
+        router.replace('/login');
+        return false;
       }
 
-      console.log(`About to make API call to:${API_BASE_URL}/user-progress`);
+      console.log(`Making API call to: ${API_BASE_URL}/user-progress`);
       console.log('Request body:', {
         user_id: userId,
         current_category_id: 1,
@@ -108,7 +110,6 @@ export default function OptionPage() {
         current_scenario_index: 0
       });
 
-      // Call your backend's PUT /user-progress endpoint
       const response = await fetch(`${API_BASE_URL}/user-progress`, {
         method: 'PUT',
         headers: {
@@ -124,32 +125,24 @@ export default function OptionPage() {
       });
 
       console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Progress saved successfully:', result);
+        console.log('✅ Progress saved successfully:', result);
       } else {
         const errorText = await response.text();
-        console.log('Failed to save progress:', response.status, errorText);
+        console.log('❌ Failed to save progress:', response.status, errorText);
       }
 
       // Store locally as backup
       await AsyncStorage.setItem('selectedMode', selectedMode);
-      await AsyncStorage.setItem('lastProgress', JSON.stringify({
-        action: 'mode_selection',
-        selectedMode,
-        timestamp: new Date().toISOString()
-      }));
-
       return true;
+
     } catch (error) {
-      console.error('Error saving progress:', error);
-      console.log('Full error details:', error.message, error.stack);
+      console.error('❌ Error saving progress:', error);
       await AsyncStorage.setItem('selectedMode', selectedMode);
       return true;
     } finally {
-      console.log('Setting loading to false');
       setIsLoading(false);
     }
   };
