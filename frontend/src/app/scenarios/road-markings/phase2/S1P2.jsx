@@ -1,3 +1,4 @@
+// frontend/src/app/scenarios/road-markings/phase2/S1P2.jsx
 import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
@@ -319,8 +320,12 @@ function DrivingGameContent() {
   }, [showIntro]);
 
   const handleFeedback = (answerGiven) => {
+    console.log('📝 handleFeedback called with:', answerGiven);
+    console.log('📝 showCollision state:', showCollision);
+
     const currentQuestion = questions[questionIndex];
     if (answerGiven === currentQuestion.correct) {
+      console.log('✅ Correct answer path');
       setIsCorrectAnswer(true);
       setAnimationType("correct");
       Animated.timing(correctAnim, {
@@ -332,6 +337,7 @@ function DrivingGameContent() {
         setShowNext(true);
       });
     } else {
+      console.log('❌ Wrong answer path');
       setIsCorrectAnswer(false);
       setAnimationType("wrong");
       Animated.timing(wrongAnim, {
@@ -414,68 +420,96 @@ function DrivingGameContent() {
   };
 
   const animateCollision = async () => {
-    if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+    console.log('💥 animateCollision: Starting');
+    return new Promise(async (resolve) => {
+      try {
+        if (scrollAnimationRef.current) {
+          scrollAnimationRef.current.stop();
+          console.log('💥 Scroll animation stopped');
+        }
 
-    setIsNpcCarVisible(true);
-    npcCarYAnim.setValue(-height * 0.3);
+        setIsNpcCarVisible(true);
+        npcCarYAnim.setValue(-height * 0.3);
+        console.log('💥 NPC car visible and positioned');
 
-    const npcMovement = Animated.timing(npcCarYAnim, {
-      toValue: height * 0.6,
-      duration: 2000,
-      easing: Easing.linear,
-      useNativeDriver: true,
+        const npcMovement = Animated.timing(npcCarYAnim, {
+          toValue: height * 0.6,
+          duration: 2000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        });
+        npcMovement.start();
+        console.log('💥 NPC movement started');
+
+        console.log('💥 Starting player move to collision point');
+        await new Promise(res => {
+            setPlayerCarDirection("EAST");
+            Animated.parallel([
+                Animated.timing(carXAnim, {
+                    toValue: 2 * tileSize + (tileSize / 2 - carWidth / 2),
+                    duration: 800,
+                    easing: Easing.easeOut,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(scrollY, {
+                    toValue: scrollY._value - (tileSize * 1),
+                    duration: 800,
+                    easing: Easing.easeOut,
+                    useNativeDriver: true,
+                })
+            ]).start(res);
+        });
+        console.log('💥 Player moved to collision point');
+
+        setShowCollision(true);
+        setPlayerCarDirection("NORTH");
+        console.log('💥 Showing collision effect');
+
+        const shakePlayer = Animated.sequence([
+          Animated.timing(carXAnim, { toValue: carXAnim._value + 20, duration: 50, useNativeDriver: true }), // Changed
+          Animated.timing(carXAnim, { toValue: carXAnim._value - 40, duration: 50, useNativeDriver: true }), // Changed
+          Animated.timing(carXAnim, { toValue: carXAnim._value + 40, duration: 50, useNativeDriver: true }), // Changed
+          Animated.timing(carXAnim, { toValue: carXAnim._value - 20, duration: 50, useNativeDriver: true }), // Changed
+        ]);
+
+        const shakeNpc = Animated.sequence([
+          Animated.timing(npcCarXAnim, { toValue: npcCarXAnim._value - 20, duration: 50, useNativeDriver: true }), // Changed
+          Animated.timing(npcCarXAnim, { toValue: npcCarXAnim._value + 40, duration: 50, useNativeDriver: true }), // Changed
+          Animated.timing(npcCarXAnim, { toValue: npcCarXAnim._value - 40, duration: 50, useNativeDriver: true }), // Changed
+          Animated.timing(npcCarXAnim, { toValue: npcCarXAnim._value + 20, duration: 50, useNativeDriver: true }), // Changed
+        ]);
+
+        npcMovement.stop();
+        console.log('💥 Starting shake animations');
+
+        await Promise.all([
+          new Promise(res => shakePlayer.start(res)),
+          new Promise(res => shakeNpc.start(res))
+        ]);
+        console.log('💥 Shake animations complete');
+
+        console.log('💥 Waiting 800ms');
+        await new Promise(res => setTimeout(res, 800));
+        console.log('💥 Wait complete');
+
+        setShowCollision(false);
+        setIsNpcCarVisible(false);
+        console.log('💥 Collision hidden');
+
+        const centerX = width / 2 - carWidth / 2;
+        carXAnim.setValue(centerX);
+        npcCarXAnim.setValue(2 * tileSize + (tileSize / 2 - npcCarWidth / 2));
+        console.log('💥 Cars reset to position');
+
+        await new Promise(res => setTimeout(res, 200));
+        console.log('💥 Final delay complete, resolving');
+
+        resolve();
+      } catch (error) {
+        console.error('💥 ERROR in animateCollision:', error);
+        resolve(); // Resolve anyway to prevent hanging
+      }
     });
-    npcMovement.start();
-
-    await new Promise(resolve => {
-        setPlayerCarDirection("EAST");
-        Animated.parallel([
-            Animated.timing(carXAnim, {
-                toValue: 2 * tileSize + (tileSize / 2 - carWidth / 2),
-                duration: 800,
-                easing: Easing.easeOut,
-                useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-                toValue: scrollY._value - (tileSize * 1),
-                duration: 800,
-                easing: Easing.easeOut,
-                useNativeDriver: true,
-            })
-        ]).start(resolve);
-    });
-
-    setShowCollision(true);
-    setPlayerCarDirection("NORTH");
-
-    const shakePlayer = Animated.sequence([
-      Animated.timing(carXAnim, { toValue: carXAnim._value + 20, duration: 50, useNativeDriver: false }),
-      Animated.timing(carXAnim, { toValue: carXAnim._value - 40, duration: 50, useNativeDriver: false }),
-      Animated.timing(carXAnim, { toValue: carXAnim._value + 40, duration: 50, useNativeDriver: false }),
-      Animated.timing(carXAnim, { toValue: carXAnim._value - 20, duration: 50, useNativeDriver: false }),
-    ]);
-
-    const shakeNpc = Animated.sequence([
-      Animated.timing(npcCarXAnim, { toValue: npcCarXAnim._value - 20, duration: 50, useNativeDriver: false }),
-      Animated.timing(npcCarXAnim, { toValue: npcCarXAnim._value + 40, duration: 50, useNativeDriver: false }),
-      Animated.timing(npcCarXAnim, { toValue: npcCarXAnim._value - 40, duration: 50, useNativeDriver: false }),
-      Animated.timing(npcCarXAnim, { toValue: npcCarXAnim._value + 20, duration: 50, useNativeDriver: false }),
-    ]);
-
-    npcMovement.stop();
-    await Promise.all([
-      new Promise(resolve => shakePlayer.start(resolve)),
-      new Promise(resolve => shakeNpc.start(resolve))
-    ]);
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    setShowCollision(false);
-    setIsNpcCarVisible(false);
-
-    const centerX = width / 2 - carWidth / 2;
-    carXAnim.setValue(centerX);
-    npcCarXAnim.setValue(2 * tileSize + (tileSize / 2 - npcCarWidth / 2));
   };
 
   // FIXED: Make animateSafeOvertake properly awaitable
@@ -618,16 +652,16 @@ function DrivingGameContent() {
 
   // FIXED: handleAnswer function with proper async/await and sequencing
   const handleAnswer = async (answer) => {
+    console.log('🎯 handleAnswer START:', answer);
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
 
-    // Track progress first
     const currentQuestion = questions[questionIndex];
     const isCorrect = answer === currentQuestion.correct;
     await updateProgress(answer, isCorrect);
+    console.log('✅ Progress updated');
 
-    // Stop scroll animation before starting game animations
     if (scrollAnimationRef.current) {
       scrollAnimationRef.current.stop();
     }
@@ -635,17 +669,29 @@ function DrivingGameContent() {
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
 
-    // Start appropriate animation based on answer and wait for completion
-    if (answer === questions[questionIndex].correct) {
-      await animateSafeOvertake();
-    } else if (answer === " Overtake immediately since you have a broken white line on your side") {
-      await animateCollision();
-    } else if (answer === "Don't overtake since there's a yellow line present") {
-      await animateTrafficJam();
-    }
+    console.log('🎬 About to start animation for answer:', answer);
 
-    // Show feedback after animation completes
-    handleFeedback(answer);
+    try {
+      if (answer === questions[questionIndex].correct) {
+        console.log('🟢 Starting safe overtake animation');
+        await animateSafeOvertake();
+        console.log('🟢 Safe overtake complete');
+      } else if (answer === " Overtake immediately since you have a broken white line on your side") {
+        console.log('🔴 Starting collision animation');
+        await animateCollision();
+        console.log('🔴 Collision complete');
+      } else if (answer === "Don't overtake since there's a yellow line present") {
+        console.log('🟡 Starting traffic jam animation');
+        await animateTrafficJam();
+        console.log('🟡 Traffic jam complete');
+      }
+
+      console.log('🎬 Animation complete, calling handleFeedback');
+      handleFeedback(answer);
+      console.log('📝 handleFeedback called');
+    } catch (error) {
+      console.error('❌ Error in animation:', error);
+    }
   };
 
   // FIXED: handleNext function with proper navigation
@@ -799,6 +845,7 @@ function DrivingGameContent() {
             width: npcCarWidth,
             height: npcCarHeight,
             position: "absolute",
+            left: 0,
             transform: [
               { translateX: npcCarXAnim },
               { translateY: npcCarYAnim }
@@ -941,7 +988,7 @@ function DrivingGameContent() {
           width: width,
           height: height,
           backgroundColor: "rgba(255, 0, 0, 0.3)", // Red flash for collision
-          zIndex: 10,
+          zIndex: 8,
           justifyContent: "center",
           alignItems: "center",
         }}>
@@ -967,7 +1014,7 @@ function DrivingGameContent() {
             height: carHeight,
             position: "absolute",
             bottom: height * 0.1,
-            left: carXAnim,
+            transform: [{ translateX: carXAnim }],
             zIndex: 5,
           }}
         />

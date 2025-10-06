@@ -1014,7 +1014,7 @@ app.put('/sessions/:sessionId/complete', async (req, res) => {
     console.log('✅ Session completed successfully');
     res.json({
       success: true,
-      data: result,
+      data: data,
       message: 'Session completed successfully'
     });
 

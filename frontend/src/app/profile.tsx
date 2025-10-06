@@ -163,22 +163,22 @@ export default function ProfileScreen() {
 
           <View style={styles.progressItem}>
             <View style={styles.progressRow}>
-              <Text style={styles.categoryName}>ROAD SIGNS:</Text>
-              <Text style={styles.accuracy}>{calculateAccuracy("road_signs")}% ACCURACY</Text>
+              <Text style={styles.categoryName}>TRAFFIC SIGNS:</Text>
+              <Text style={styles.accuracy}>{calculateAccuracy("traffic_signs")}% ACCURACY</Text>
             </View>
             {(() => {
-              const status = getStatusBadge(calculateAccuracy("road_signs"));
+              const status = getStatusBadge(calculateAccuracy("traffic_signs"));
               return <Text style={[styles.statusLabel, { color: status.color }]}>{status.text}</Text>;
             })()}
           </View>
 
           <View style={styles.progressItem}>
             <View style={styles.progressRow}>
-              <Text style={styles.categoryName}>INTERSECTIONS:</Text>
-              <Text style={styles.accuracy}>{calculateAccuracy("intersections")}% ACCURACY</Text>
+              <Text style={styles.categoryName}>INTERSECTION & OTHERS:</Text>
+              <Text style={styles.accuracy}>{calculateAccuracy("intersection_and_others")}% ACCURACY</Text>
             </View>
             {(() => {
-              const status = getStatusBadge(calculateAccuracy("intersections"));
+              const status = getStatusBadge(calculateAccuracy("intersection_and_others"));
               return <Text style={[styles.statusLabel, { color: status.color }]}>{status.text}</Text>;
             })()}
           </View>

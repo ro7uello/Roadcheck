@@ -385,41 +385,34 @@ export default function DrivingGame() {
     setIsCorrectAnswer(null);
     setCarFrame(0);
     carXAnim.setValue(width / 2 - (280 / 2));
-    setPedestrianVisible(true);
+    //setPedestrianVisible(true);
 
     setTrafficLightState('green');
-    setIsBlinking(false);
+    //setIsBlinking(false);
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else if (currentScenario >= 10) {
-      // Last scenario - complete session
+      console.log('🎯 Scenario 10 complete! Finishing session...');
       try {
-        console.log('🔍 Completing session...');
-        const sessionResults = await completeSession();
+            const sessionResults = await completeSession();
 
-        console.log('🔍 Session results:', sessionResults);
+            console.log('📊 Session results:', sessionResults);
 
-        if (!sessionResults) {
-          console.error('❌ Session results is null');
-          Alert.alert('Error', 'Failed to complete session. Please check your connection.');
-          return;
-        }
+            if (!sessionResults) {
+              Alert.alert('Error', 'Failed to complete session. Please try again.');
+              return;
+            }
 
-        if (!sessionResults.attempts) {
-          console.error('❌ Session results missing attempts');
-          Alert.alert('Error', 'Session data incomplete. Please try again.');
-          return;
-        }
-
-        router.push({
-          pathname: '/result-page',
-          params: {
-            ...sessionResults,
-            userAttempts: JSON.stringify(sessionResults.attempts)
-          }
-        });
+            console.log('✅ Navigating to result-page');
+            router.push({
+              pathname: '/result-page',
+              params: {
+                ...sessionResults,
+                userAttempts: JSON.stringify(sessionResults.attempts)
+              }
+            });
       } catch (error) {
         console.error('Error completing session:', error);
         Alert.alert('Error', `Failed to save session results: ${error.message}`);

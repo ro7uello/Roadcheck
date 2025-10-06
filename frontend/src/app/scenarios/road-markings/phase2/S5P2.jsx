@@ -1,3 +1,4 @@
+// frontend/src/app/scenarios/road-markings/phase2/S5P2.jsx
 import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
@@ -208,7 +209,7 @@ export default function DrivingGame() {
 
   useEffect(() => {
     startScrollAnimation();
-  }, [animationSpeed]);
+  }, []);
 
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
@@ -257,7 +258,7 @@ export default function DrivingGame() {
       
     } else if (answer === "Speed up to cross before the approaching vehicle reaches the intersection") {
       // Animation: Car speeds up and goes through intersection quickly
-      setAnimationSpeed(2000); // Faster animation to show speeding up
+      //setAnimationSpeed(2000); // Faster animation to show speeding up
       const targetRow = 12; // Past the intersection
       const rowsToMove = targetRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
@@ -310,7 +311,6 @@ export default function DrivingGame() {
     setIsCorrectAnswer(null);
     setCarFrame(0);
     setCarPaused(false);
-    setAnimationSpeed(4000); // Reset to default speed
 
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);

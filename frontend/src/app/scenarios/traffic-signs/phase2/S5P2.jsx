@@ -242,7 +242,7 @@ export default function DrivingGame() {
     }).start(callback);
   };
 
-  const handleAnswer = async (answer) => {
+  const handleAnswer = async (answer) => {  // Keep parameter name
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
@@ -250,94 +250,86 @@ export default function DrivingGame() {
     const currentQuestion = questions[questionIndex];
     const isCorrect = answer === currentQuestion.correct;
     await updateProgress(answer, isCorrect);
-    const actualCorrectAnswer = questions[questionIndex].correct;
-    const originalLaneX = width / 2 - carWidth / 2; // Original lane center
-    const rightLaneX = width / 2 - carWidth / 2 + tileSize; // One lane to the right
-    const leftLaneX = width / 1.3 - carWidth / 1.3 - tileSize; // One lane to the left
 
-    if (option === actualCorrectAnswer) {
-      // Correct Answer: Player moves right, Bus passes on left
+    const actualCorrectAnswer = questions[questionIndex].correct;
+    const originalLaneX = width / 2 - carWidth / 2;
+    const rightLaneX = width / 2 - carWidth / 2 + tileSize;
+    const leftLaneX = width / 1.3 - carWidth / 1.3 - tileSize;
+
+    if (answer === actualCorrectAnswer) {  // ✅ Changed from 'option' to 'answer'
       setIsCarVisible(true);
-      setIsBusVisible(true); // Show Bus for this scenario
+      setIsBusVisible(true);
 
       Animated.sequence([
-        // 1. Player car moves to the right lane
         Animated.parallel([
           Animated.timing(carXAnim, {
-            toValue: rightLaneX, // Move to the right lane
+            toValue: rightLaneX,
             duration: 500,
             easing: Easing.easeOut,
             useNativeDriver: true,
           }),
           Animated.timing(scrollY, {
-            toValue: currentScroll.current + tileSize * 0.5, // Small forward movement
+            toValue: currentScroll.current + tileSize * 0.5,
             duration: 500,
             easing: Easing.linear,
             useNativeDriver: true,
           }),
         ]),
-        // 2. Bus passes on the left
         Animated.parallel([
           Animated.timing(BusYAnim, {
-            toValue: -carHeight, // Move off-screen to the top
-            duration: 1500, // Speed of Bus passing
+            toValue: -carHeight,
+            duration: 1500,
             easing: Easing.linear,
-            useNativeDriver: false,
+            useNativeDriver: true,  // ✅ Changed to true
           }),
           Animated.timing(BusXAnim, {
-            toValue: leftLaneX, // Ensure Bus is in the left lane
-            duration: 1, // Instantly set position
-            useNativeDriver: false,
+            toValue: leftLaneX,
+            duration: 1,
+            useNativeDriver: true,  // ✅ Changed to true
           }),
           Animated.timing(scrollY, {
-            toValue: currentScroll.current + tileSize * 3, // Player car scrolls slowly
+            toValue: currentScroll.current + tileSize * 3,
             duration: 1500,
             easing: Easing.linear,
             useNativeDriver: true,
           }),
         ]),
       ]).start(() => {
-        handleFeedback(option); // Show feedback after animation
+        handleFeedback(answer);  // ✅ Changed from 'option' to 'answer'
       });
 
-    } else if (option === "Continue in the bus lane since you're already there") {
-      // WRONG Answer: Bus overtakes from the right
-      setIsBusVisible(true); // Show Bus
+    } else if (answer === "Continue in the bus lane since you're already there") {  // ✅ Changed
+      setIsBusVisible(true);
 
-      // Ensure Bus starts from behind and in the right lane
       BusXAnim.setValue(rightLaneX);
-      BusYAnim.setValue(height * 1.5); // Start off-screen bottom
+      BusYAnim.setValue(height * 1.5);
 
       Animated.sequence([
-        // 1. Bus appears from behind and overtakes in the right lane
         Animated.parallel([
           Animated.timing(BusYAnim, {
-            toValue: -carHeight, // Move off-screen to the top
-            duration: 2500, // Duration for Bus to pass
+            toValue: -carHeight,
+            duration: 2500,
             easing: Easing.linear,
-            useNativeDriver: false,
+            useNativeDriver: true,  // ✅ Changed to true
           }),
-          // Player car continues to scroll slowly during Bus's appearance and pass
           Animated.timing(scrollY, {
-            toValue: currentScroll.current + tileSize * 5, // Scroll for 5 tiles
-            duration: 2500, // Duration adjusted to match Bus's pass
+            toValue: currentScroll.current + tileSize * 5,
+            duration: 2500,
             easing: Easing.linear,
             useNativeDriver: true,
           }),
         ])
-      ]).start(() => handleFeedback(option));
+      ]).start(() => handleFeedback(answer));  // ✅ Changed from 'option'
 
-    } else if (option === "Speed up to stay ahead of the bus") {
-      // Wrong Answer: Player car speeds up (scrolls faster and further)
+    } else if (answer === "Speed up to stay ahead of the bus") {  // ✅ Changed from 'option'
       Animated.timing(scrollY, {
-        toValue: currentScroll.current + tileSize * 18, // Target row 18 (relative to current position)
-        duration: 4000, // Speed of 4 seconds
+        toValue: currentScroll.current + tileSize * 18,
+        duration: 4000,
         easing: Easing.linear,
         useNativeDriver: true,
       }).start(() => {
-        handleFeedback(option);
+        handleFeedback(answer);  // ✅ Changed from 'option'
       });
-      // Car stays NORTH, in its original lane.
     }
   };
 
@@ -455,14 +447,18 @@ export default function DrivingGame() {
       {/* Responsive bus */}
       {isBusVisible && (
         <Animated.Image
-          source={busSprites["NORTH"][carFrame]} // bus always faces NORTH
+          source={busSprites["NORTH"][carFrame]}
           style={{
             width: carWidth,
             height: carHeight,
             position: "absolute",
-            top: BusYAnim, // Position controlled by animation
-            left: BusXAnim, // Position in the lane (starts in middle)
-            zIndex: 4, // Always behind player car
+            bottom: 0,
+            left: 0,
+            transform: [
+              { translateX: BusXAnim },
+              { translateY: BusYAnim }
+            ],
+            zIndex: 4,
           }}
         />
       )}
