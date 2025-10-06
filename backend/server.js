@@ -1,8 +1,10 @@
+// server.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { authenticate } from './middleware/auth.js';
 import { supabase } from './config/supabase.js';
+import { body, validationResult } from 'express-validator';
 
 dotenv.config();
 
@@ -65,6 +67,62 @@ app.post('/auth/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.post('/auth/signup', [
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('username').notEmpty().withMessage('Username is required'),
+  body('firstName').notEmpty().withMessage('First name is required'),
+  body('lastName').notEmpty().withMessage('Last name is required')
+], async (req, res) => {
+  // Check for validation errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg });
+  }
+
+  const { email, password, username, firstName, lastName } = req.body;
+
+  try {
+    console.log('Signup request received:', { email, username, firstName, lastName });
+
+    // Use Supabase Auth to create user
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password: password,
+      options: {
+        data: {
+          username: username,
+          first_name: firstName,
+          last_name: lastName,
+          full_name: `${firstName} ${lastName}`
+        }
+      }
+    });
+
+    if (error) {
+      console.error('Supabase signup error:', error);
+      return res.status(400).json({
+        error: error.message || 'Registration failed'
+      });
+    }
+
+    console.log('✅ User created successfully:', data.user.email);
+
+    res.status(201).json({
+      message: 'User created successfully! Please check your email to confirm.',
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        username: username
+      }
+    });
+
+  } catch (err) {
+    console.error('Signup error:', err);
+    res.status(500).json({ error: 'Server error during registration' });
   }
 });
 

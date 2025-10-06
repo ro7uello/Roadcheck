@@ -18,7 +18,7 @@ const { width, height } = Dimensions.get("window");
 const BACKGROUND_SPEED = 12000;
 
 // Use your actual API URL from environment or fallback
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.35:3001';
+const API_URL = process.env.API_URL;
 
 export default function Register() {
   const router = useRouter();
@@ -60,7 +60,7 @@ export default function Register() {
     try {
       setLoading(true);
       console.log("API_URL =>", API_URL);
-      
+      console.log("Making request to:", `${API_URL}/auth/signup`);
       const res = await fetch(`${API_URL}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,9 +72,9 @@ export default function Register() {
           lastName,
         }),
       });
-      
+      console.log("Response status:", res.status);
       const data = await res.json();
-
+      console.log("Response data:", data);
       if (res.ok) {
         Alert.alert("Success", "Account created! Please confirm your email.");
         router.push("/login");
