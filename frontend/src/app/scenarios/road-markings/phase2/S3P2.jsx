@@ -770,9 +770,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#555",
   },
+  // FIXED: Increased font size from 11 to 18
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 11),
+    fontSize: Math.min(width * 0.04, 18),
     textAlign: "center",
   },
   feedbackOverlay: {
@@ -797,6 +798,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: Math.min(width * 0.06, 28),
     fontWeight: "bold",
+    textAlign: "center",
   },
   nextButtonContainer: {
     position: "absolute",
