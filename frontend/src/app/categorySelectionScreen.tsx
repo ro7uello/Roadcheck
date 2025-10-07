@@ -275,9 +275,6 @@ export default function CategorySelectionScreen() {
         </Animated.View>
       </View>
 
-      {/* Sky overlay for better contrast */}
-      <View style={styles.skyOverlay} />
-
       {/* Animated Car */}
       <Animated.View
         style={[
@@ -504,15 +501,6 @@ const styles = StyleSheet.create({
   backgroundImage: {
     width: width,
     height: height,
-  },
-  skyOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: height * 0.7,
-    backgroundColor: 'rgba(135, 206, 235, 0.3)',
-    zIndex: 0,
   },
   carContainer: {
     position: 'absolute',
