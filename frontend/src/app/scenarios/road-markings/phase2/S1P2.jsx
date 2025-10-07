@@ -763,12 +763,11 @@ function DrivingGameContent() {
     return (
       <View style={styles.introContainer}>
         <Image
-          source={require("../../../../../assets/dialog/Dialog.png")}
+          source={require("../../../../../assets/dialog/LTO.png")}
           style={styles.introLTOImage}
         />
         <View style={styles.introTextBox}>
-          <Text style={styles.introTitle}>Road Markings - Phase 2</Text>
-          <Text style={styles.introSubtitle}>Scenario {currentScenario}/10</Text>
+          <Text style={styles.introTitle}>Welcome to ROADCHECK!</Text>
           <Text style={styles.introText}>
             Test your knowledge of road rules and signs.
             Choose the correct option to proceed safely.

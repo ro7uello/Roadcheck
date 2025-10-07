@@ -84,6 +84,12 @@ export default function DrivingGame() {
     sessionData
   } = useSession();
 
+  const [showIntro, setShowIntro] = useState(true);
+
+  const handleStartGame = () => {
+    setShowIntro(false);
+  };
+
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
       // Get phase from sessionData
@@ -373,6 +379,27 @@ export default function DrivingGame() {
     ? "Correct! SUV and other cars are allowed to enter the tunnel as long as it's not a motorcycle."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
+  if (showIntro) {
+    return (
+      <View style={styles.introContainer}>
+        <Image
+          source={require("../../../../../assets/dialog/LTO.png")}
+          style={styles.introLTOImage}
+        />
+        <View style={styles.introTextBox}>
+          <Text style={styles.introTitle}>Welcome to ROADCHECK!</Text>
+          <Text style={styles.introText}>
+            Test your knowledge of road rules and signs.
+            Choose the correct option to proceed safely.
+          </Text>
+          <TouchableOpacity style={styles.startButton} onPress={handleStartGame}>
+            <Text style={styles.startButtonText}>Start Game</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
       {/* Map */}
@@ -487,17 +514,61 @@ export default function DrivingGame() {
 
 const styles = StyleSheet.create({
   // ✅ DATABASE INTEGRATION - Added loading styles
-  loadingContainer: {
+  introContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: width * 0.05,
   },
-  loadingText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+  introLTOImage: {
+    width: width * 0.6,
+    height: height * 0.25,
+    resizeMode: "contain",
+    marginBottom: height * 0.03,
   },
-  // No intro styles (responsive)
+  introTextBox: {
+    backgroundColor: "rgba(8, 8, 8, 0.7)",
+    padding: width * 0.06,
+    borderRadius: 15,
+    alignItems: "center",
+    maxWidth: width * 0.85,
+    minHeight: height * 0.3,
+    justifyContent: "center",
+  },
+  introTitle: {
+    color: "white",
+    fontSize: Math.min(width * 0.07, 32),
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: height * 0.02,
+  },
+  introText: {
+    color: "white",
+    fontSize: Math.min(width * 0.045, 20),
+    textAlign: "center",
+    marginBottom: height * 0.04,
+    lineHeight: Math.min(width * 0.06, 26),
+    paddingHorizontal: width * 0.02,
+  },
+  startButton: {
+    backgroundColor: "#007bff",
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.08,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+    minWidth: width * 0.4,
+    alignItems: "center",
+  },
+  startButtonText: {
+    color: "white",
+    fontSize: Math.min(width * 0.055, 24),
+    fontWeight: "bold",
+  },
   // In-game responsive styles
  questionOverlay: {
     position: "absolute",
