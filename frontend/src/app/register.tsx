@@ -97,26 +97,26 @@ export default function Register() {
       <View style={styles.movingBackground}>
         <Animated.View style={[styles.bgWrapper, { transform: [{ translateX: bgTranslate }] }]}>
           <ImageBackground
-            source={require("../../assets/background/city-background.png")} // Fixed path
+            source={require("../../assets/background/city-background.png")}
             style={styles.bgImage}
-            resizeMode="stretch"
+            resizeMode="cover"
           />
         </Animated.View>
         <Animated.View style={[styles.bgWrapper, { transform: [{ translateX: Animated.add(bgTranslate, width) }] }]}>
           <ImageBackground
-            source={require("../../assets/background/city-background.png")} // Fixed path
+            source={require("../../assets/background/city-background.png")}
             style={styles.bgImage}
-            resizeMode="stretch"
+            resizeMode="cover"
           />
         </Animated.View>
       </View>
 
       {/* Car */}
       <Animated.View style={[styles.carContainer, { transform: [{ translateY: carBounce }] }]}>
-        <Image 
-          source={require("../../assets/car/blue-car.png")} // Fixed path
-          style={styles.car} 
-          resizeMode="contain" 
+        <Image
+          source={require("../../assets/car/blue-car.png")}
+          style={styles.car}
+          resizeMode="contain"
         />
       </Animated.View>
 
@@ -124,47 +124,47 @@ export default function Register() {
       <View style={styles.box}>
         <Text style={styles.title}>REGISTER</Text>
 
-        <TextInput 
-          value={username} 
-          onChangeText={setUsername} 
-          placeholder="Username" 
-          placeholderTextColor="#ccc" 
-          style={styles.input} 
+        <TextInput
+          value={username}
+          onChangeText={setUsername}
+          placeholder="Username"
+          placeholderTextColor="#ccc"
+          style={styles.input}
         />
-        <TextInput 
-          value={password} 
-          onChangeText={setPassword} 
-          placeholder="Password" 
-          placeholderTextColor="#ccc" 
-          secureTextEntry 
-          style={styles.input} 
+        <TextInput
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Password"
+          placeholderTextColor="#ccc"
+          secureTextEntry
+          style={styles.input}
         />
-        <TextInput 
-          value={firstName} 
-          onChangeText={setFirstName} 
-          placeholder="First Name" 
-          placeholderTextColor="#ccc" 
-          style={styles.input} 
+        <TextInput
+          value={firstName}
+          onChangeText={setFirstName}
+          placeholder="First Name"
+          placeholderTextColor="#ccc"
+          style={styles.input}
         />
-        <TextInput 
-          value={lastName} 
-          onChangeText={setLastName} 
-          placeholder="Last Name" 
-          placeholderTextColor="#ccc" 
-          style={styles.input} 
+        <TextInput
+          value={lastName}
+          onChangeText={setLastName}
+          placeholder="Last Name"
+          placeholderTextColor="#ccc"
+          style={styles.input}
         />
-        <TextInput 
-          value={email} 
-          onChangeText={setEmail} 
-          placeholder="Email" 
-          placeholderTextColor="#ccc" 
-          keyboardType="email-address" 
-          style={styles.input} 
+        <TextInput
+          value={email}
+          onChangeText={setEmail}
+          placeholder="Email"
+          placeholderTextColor="#ccc"
+          keyboardType="email-address"
+          style={styles.input}
         />
 
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={handleConfirm} 
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleConfirm}
           activeOpacity={0.8}
           disabled={loading}
         >
@@ -181,45 +181,62 @@ export default function Register() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  movingBackground: { ...StyleSheet.absoluteFillObject },
-  bgWrapper: { position: "absolute", width, height },
-  bgImage: { flex: 1, width: "105%", height: "105%" },
+  movingBackground: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  bgWrapper: {
+    position: "absolute",
+    width,
+    height,
+    top: 0,
+    left: 0,
+  },
+  bgImage: {
+    width,
+    height,
+  },
   carContainer: { position: "absolute", bottom: 5, left: width * 0.05 },
   car: { width: 250, height: 150 },
   box: {
     position: "absolute",
-    top: height * 0.1,
+    top: height * 0.08,
     alignSelf: "center",
     backgroundColor: "rgba(0,0,0,0.6)",
-    padding: 15,
+    paddingHorizontal: 15,
+    paddingTop: 12,
+    paddingBottom: 25,
     borderRadius: 10,
     width: "60%",
+    maxHeight: height * 0.75,
   },
   title: {
     fontSize: 14,
     color: "white",
     fontFamily: "pixel",
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 5,
   },
   input: {
     borderWidth: 1,
     borderColor: "#fff",
     borderRadius: 6,
-    padding: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
     color: "white",
     fontFamily: "pixel",
-    marginBottom: 10,
-    fontSize: 14,
+    marginBottom: 4,
+    fontSize: 11,
+    height: 28,
   },
   button: {
     backgroundColor: "rgba(0,0,0,0.8)",
-    padding: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderRadius: 8,
     alignItems: "center",
-    marginVertical: 6,
-    marginTop: -10,
-    bottom:4,
+    marginTop: 5,
+    marginBottom: 12,
   },
   buttonText: {
     fontSize: 12,
@@ -227,11 +244,10 @@ const styles = StyleSheet.create({
     fontFamily: "pixel",
   },
   link: {
-    fontSize: 9,
+    fontSize: 10,
     color: "#4ef5a2",
     fontFamily: "pixel",
-    marginTop: -10,
     textAlign: "center",
-    bottom:5,
+    paddingTop: 2,
   },
 });

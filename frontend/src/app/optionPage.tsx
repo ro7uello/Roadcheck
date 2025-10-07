@@ -183,8 +183,7 @@ const testBasicConnection = async () => {
         toValue: 1,
         duration: BACKGROUND_SPEED,
         useNativeDriver: true,
-      }),
-      { iterations: -1 }
+      })
     ).start();
   };
 
@@ -202,8 +201,7 @@ const testBasicConnection = async () => {
           duration: 1000,
           useNativeDriver: true,
         }),
-      ]),
-      { iterations: -1 }
+      ])
     ).start();
   };
 
@@ -227,7 +225,7 @@ const testBasicConnection = async () => {
       console.log('saveUserProgress result:', success);
       if (success) {
           console.log('Navigating to categorySelectionScreen...');
-        router.push('/categorySelectionScreen'); // Navigate to category selection
+        router.push('/categorySelectionScreen');
       }
     });
   };
@@ -249,7 +247,7 @@ const testBasicConnection = async () => {
     ]).start(async () => {
       const success = await saveUserProgress('pedestrian');
       if (success) {
-        router.push('/categorySelectionScreen'); // Navigate to category selection
+        router.push('/categorySelectionScreen');
       }
     });
   };
@@ -291,6 +289,7 @@ const testBasicConnection = async () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Fixed Background */}
       <View style={styles.backgroundContainer}>
         <Animated.View
           style={[
@@ -301,8 +300,7 @@ const testBasicConnection = async () => {
           <ImageBackground
             source={require('../../assets/background/city-background.png')}
             style={styles.backgroundImage}
-            resizeMode="stretch"
-            imageStyle={styles.backgroundImageStyle}
+            resizeMode="cover"
           />
         </Animated.View>
         <Animated.View
@@ -314,8 +312,7 @@ const testBasicConnection = async () => {
           <ImageBackground
             source={require('../../assets/background/city-background.png')}
             style={styles.backgroundImage}
-            resizeMode="stretch"
-            imageStyle={styles.backgroundImageStyle}
+            resizeMode="cover"
           />
         </Animated.View>
       </View>
@@ -419,11 +416,11 @@ const testBasicConnection = async () => {
                   style={styles.settingsTab}
                   resizeMode="stretch"
                 />
-      
+
                 <Text style={styles.libraryTitle}>REFERENCES</Text>
-      
+
                 <View style={styles.libraryContent}>
-                  <ScrollView 
+                  <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={true}
@@ -438,7 +435,7 @@ const testBasicConnection = async () => {
                         </TouchableOpacity>
                       </Text>
                     </View>
-      
+
                     <View style={styles.referenceContainer}>
                       <Text style={styles.referenceText}>
                         National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
@@ -451,7 +448,7 @@ const testBasicConnection = async () => {
                     </View>
                   </ScrollView>
                 </View>
-      
+
                 <TouchableOpacity
                   style={styles.libraryBackButton}
                   onPress={() => setLibraryVisible(false)}
@@ -484,21 +481,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    overflow: 'hidden',
   },
   backgroundWrapper: {
     position: 'absolute',
     width: width,
     height: height,
+    top: 0,
+    left: 0,
   },
   backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  backgroundImageStyle: {
-    width: '100%',
-    height: '100%',
-    transform: [{ scale: 1.3 }],
+    width: width,
+    height: height,
   },
   skyOverlay: {
     position: 'absolute',
@@ -694,7 +688,3 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
 });
-
-function setIsLoading(arg0: boolean) {
-    throw new Error('Function not implemented.');
-}

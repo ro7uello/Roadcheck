@@ -28,8 +28,7 @@ export default function Home() {
           toValue: 1,
           duration: BACKGROUND_SPEED,
           useNativeDriver: true,
-        }),
-        { iterations: -1 }
+        })
       ).start();
     };
 
@@ -47,8 +46,7 @@ export default function Home() {
             duration: 1000,
             useNativeDriver: true,
           }),
-        ]),
-        { iterations: -1 }
+        ])
       ).start();
     };
 
@@ -61,6 +59,7 @@ export default function Home() {
     };
   }, []);
 
+  // Fixed: Changed outputRange to create seamless loop
   const translateX = scrollAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -width],
@@ -72,7 +71,6 @@ export default function Home() {
   });
 
   const handleStartPress = () => {
-    // Navigate to login screen
     router.push('/login');
     console.log('Starting RoadCheck app...');
     console.log('All env vars:', process.env);
@@ -83,6 +81,7 @@ export default function Home() {
     <TouchableOpacity style={styles.container} onPress={handleStartPress} activeOpacity={1}>
       <SafeAreaView style={styles.container}>
         <View style={styles.movingBackgroundContainer}>
+          {/* First background instance */}
           <Animated.View
             style={[
               styles.backgroundWrapper,
@@ -90,31 +89,34 @@ export default function Home() {
             ]}
           >
             <ImageBackground
-              source={require('../../assets/background/city-background.png')} // Fixed path
+              source={require('../../assets/background/city-background.png')}
               style={styles.backgroundImage}
-              resizeMode="stretch"
-              imageStyle={styles.backgroundImageStyle}
+              resizeMode="cover"
             />
           </Animated.View>
 
+          {/* Second background instance - positioned exactly at width */}
           <Animated.View
             style={[
               styles.backgroundWrapper,
-              { transform: [{ translateX: Animated.add(translateX, width) }] }
+              {
+                transform: [{
+                  translateX: Animated.add(translateX, width)
+                }]
+              }
             ]}
           >
             <ImageBackground
-              source={require('../../assets/background/city-background.png')} // Fixed path
+              source={require('../../assets/background/city-background.png')}
               style={styles.backgroundImage}
-              resizeMode="stretch"
-              imageStyle={styles.backgroundImageStyle}
+              resizeMode="cover"
             />
           </Animated.View>
         </View>
 
         <View style={styles.overlay} />
 
-        <Animated.View 
+        <Animated.View
           style={[
             styles.carContainer,
             {
@@ -123,12 +125,12 @@ export default function Home() {
           ]}
         >
           <Image
-            source={require('../../assets/car/blue-car.png')} // Fixed path
+            source={require('../../assets/car/blue-car.png')}
             style={styles.carImage}
             resizeMode="contain"
           />
         </Animated.View>
-          
+
         <View style={styles.titleContainer}>
           <Text style={styles.title}>ROADCHECK</Text>
         </View>
@@ -155,21 +157,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
+    overflow: 'hidden', // Added to ensure clean edges
   },
   backgroundWrapper: {
     position: 'absolute',
     width: width,
     height: height,
+    top: 0,
+    left: 0,
   },
   backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  backgroundImageStyle: {
-    width: '100%',
-    height: '100%',
-    transform: [{ scale: 1.3 }],
+    width: width,
+    height: height,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
