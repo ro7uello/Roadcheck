@@ -1,4 +1,4 @@
-// frontend/src/app/scenarios/road-markings/phase2/S3P2.jsx - backend updated code
+// frontend/src/app/scenarios/road-markings/phase2/S3P2.jsx
 import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
@@ -100,15 +100,14 @@ const questions = [
   },
 ];
 
-export default function DrivingGame() {
-
+function DrivingGameContent() {
   const {
-  updateScenarioProgress,
-  moveToNextScenario,
-  completeSession,
-  currentScenario,
-  sessionData
-} = useSession();
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+    sessionData
+  } = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
@@ -156,14 +155,13 @@ export default function DrivingGame() {
   const [jeepneyFrame, setJeepneyFrame] = useState(0);
   const [oncomingJeepneyFrame, setOncomingJeepneyFrame] = useState(0);
 
-  // Player car starts in the right lane (lane 3)
-  // Player car starts in the rightmost lane (lane 3)
-    const playerCarLane = 2;
-    const playerCarInitialX = playerCarLane * tileSize + (tileSize / 2 - carWidth / 2);
-    const carXAnim = useRef(new Animated.Value(playerCarInitialX)).current;
+  // FIXED: Player car positioning - using lane 3 (rightmost)
+  const playerCarLane = 3;
+  const playerCarInitialX = playerCarLane * tileSize + (tileSize / 2 - carWidth / 2);
+  const carXAnim = useRef(new Animated.Value(playerCarInitialX)).current;
 
-  // Jeepney ahead in the same lane as player (right lane - lane 3) - positioned further ahead
-  const jeepneyLane = 2;
+  // Jeepney ahead in the same lane as player (lane 3)
+  const jeepneyLane = 3;
   const jeepneyInitialX = jeepneyLane * tileSize + (tileSize / 2 - jeepWidth / 2);
   const jeepneyYAnim = useRef(new Animated.Value(-jeepHeight * 4)).current;
 
@@ -225,7 +223,7 @@ export default function DrivingGame() {
     );
     scrollAnimationRef.current.start();
 
-    // Animate jeepney ahead into view - positioned further ahead
+    // Animate jeepney ahead into view
     jeepneyAnimationRef.current = Animated.timing(jeepneyYAnim, {
       toValue: -height * 0.25,
       duration: 2500,
@@ -305,173 +303,205 @@ export default function DrivingGame() {
     }
   };
 
-  // Animation for "Don't overtake since the opposite side has a solid line" - WRONG
+  // FIXED: Choice 1 - Animation for "Don't overtake" - shows player staying behind jeepney
   const animateNoOvertake = async () => {
-    try {
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+    return new Promise(async (resolve) => {
+      try {
+        if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
 
-      setPlayerCarFrame(0);
-      setJeepneyFrame(0);
-      setOncomingJeepneyFrame(0);
+        setPlayerCarFrame(0);
+        setJeepneyFrame(0);
+        setOncomingJeepneyFrame(0);
 
-      // Player stays behind the jeepney, missing the opportunity to overtake safely
-      // Show that the player is hesitating
-      await new Promise(resolve => setTimeout(resolve, 1000));
+        // Show hesitation
+        await new Promise(res => setTimeout(res, 1000));
 
-      // Player continues to follow slowly, missing opportunities
-      await new Promise(resolve => {
-        Animated.parallel([
-          Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 1.5),
-            duration: 3000,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          }),
-          Animated.timing(jeepneyYAnim, {
-            toValue: jeepneyYAnim._value + (tileSize * 0.5),
-            duration: 3000,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          })
-        ]).start(resolve);
-      });
+        // Player follows slowly behind jeepney - both move together showing player missing opportunity
+        await new Promise(res => {
+          Animated.parallel([
+            Animated.timing(scrollY, {
+              toValue: scrollY._value - (tileSize * 2),
+              duration: 3000,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.timing(jeepneyYAnim, {
+              toValue: jeepneyYAnim._value + (tileSize * 0.3),
+              duration: 3000,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            })
+          ]).start(res);
+        });
 
-    } catch (error) {
-      console.error('Error in animateNoOvertake:', error);
-    }
+        await new Promise(res => setTimeout(res, 500));
+        resolve();
+      } catch (error) {
+        console.error('Error in animateNoOvertake:', error);
+        resolve();
+      }
+    });
   };
 
-  // Animation for "Overtake carefully since your side has a broken line allowing it" - CORRECT
+  // FIXED: Choice 2 - Animation for "Overtake carefully" - CORRECT - shows proper overtaking
   const animateSafeOvertake = async () => {
-    try {
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+    return new Promise(async (resolve) => {
+      try {
+        if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
 
-      setPlayerCarFrame(0);
-      setJeepneyFrame(0);
-      setOncomingJeepneyFrame(0);
+        setPlayerCarFrame(0);
+        setJeepneyFrame(0);
+        setOncomingJeepneyFrame(0);
 
-      // Wait a moment to show proper decision making
-      await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait to show proper decision making
+        await new Promise(res => setTimeout(res, 1000));
 
-      // 1. Check for clear road ahead
-      await new Promise(resolve => setTimeout(resolve, 500));
+        // Check for clear road ahead
+        await new Promise(res => setTimeout(res, 500));
 
-      // 2. Signal and move to passing lane (center-right lane - lane 2)
-      await new Promise(resolve => {
-        setPlayerCarDirection("WEST");
-        Animated.timing(carXAnim, {
-          toValue: 2 * tileSize + (tileSize / 2 - carWidth / 2),
-          duration: 1500,
-          easing: Easing.easeInOut,
-          useNativeDriver: false,
-        }).start(resolve);
-      });
-
-      // 3. Accelerate past the jeepney
-      await new Promise(resolve => {
-        setPlayerCarDirection("NORTH");
-        Animated.parallel([
-          Animated.timing(jeepneyYAnim, {
-            toValue: height + jeepHeight,
-            duration: 2500,
-            easing: Easing.easeOut,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 3),
-            duration: 2500,
-            easing: Easing.easeOut,
-            useNativeDriver: true,
-          })
-        ]).start(resolve);
-      });
-
-      setIsJeepneyVisible(false);
-
-      // 4. Return to rightmost lane after safe distance
-      await new Promise(resolve => {
-        setPlayerCarDirection("EAST");
-        Animated.parallel([
+        // Move to lane 2 (center-right) to overtake
+        await new Promise(res => {
+          setPlayerCarDirection("WEST");
           Animated.timing(carXAnim, {
-            toValue: playerCarInitialX,
-            duration: 1200,
+            toValue: 2 * tileSize + (tileSize / 2 - carWidth / 2),
+            duration: 1500,
             easing: Easing.easeInOut,
             useNativeDriver: false,
-          }),
-          Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 1),
-            duration: 1200,
-            easing: Easing.easeOut,
-            useNativeDriver: true,
-          })
-        ]).start(resolve);
-      });
+          }).start(res);
+        });
 
-      // 5. Continue normal driving
-      setPlayerCarDirection("NORTH");
+        // Accelerate past the jeepney
+        await new Promise(res => {
+          setPlayerCarDirection("NORTH");
+          Animated.parallel([
+            Animated.timing(jeepneyYAnim, {
+              toValue: height + jeepHeight,
+              duration: 2500,
+              easing: Easing.easeOut,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scrollY, {
+              toValue: scrollY._value - (tileSize * 3),
+              duration: 2500,
+              easing: Easing.easeOut,
+              useNativeDriver: true,
+            })
+          ]).start(res);
+        });
 
-    } catch (error) {
-      console.error('Error in animateSafeOvertake:', error);
-      setPlayerCarDirection("NORTH");
-    }
+        setIsJeepneyVisible(false);
+
+        // Return to rightmost lane (lane 3)
+        await new Promise(res => {
+          setPlayerCarDirection("EAST");
+          Animated.parallel([
+            Animated.timing(carXAnim, {
+              toValue: playerCarInitialX,
+              duration: 1200,
+              easing: Easing.easeInOut,
+              useNativeDriver: false,
+            }),
+            Animated.timing(scrollY, {
+              toValue: scrollY._value - (tileSize * 1),
+              duration: 1200,
+              easing: Easing.easeOut,
+              useNativeDriver: true,
+            })
+          ]).start(res);
+        });
+
+        setPlayerCarDirection("NORTH");
+        resolve();
+      } catch (error) {
+        console.error('Error in animateSafeOvertake:', error);
+        setPlayerCarDirection("NORTH");
+        resolve();
+      }
+    });
   };
 
-  // Animation for "Wait for both sides to have broken lines" - WRONG
+  // FIXED: Choice 3 - Animation for "Wait for both lines" - smoother waiting animation
   const animateWaitForBothLines = async () => {
-    try {
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+    return new Promise(async (resolve) => {
+      try {
+        if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
 
-      setPlayerCarFrame(0);
-      setJeepneyFrame(0);
-      setOncomingJeepneyFrame(0);
+        setPlayerCarFrame(0);
+        setJeepneyFrame(0);
+        setOncomingJeepneyFrame(0);
 
-      // Player waits unnecessarily
-      await new Promise(resolve => setTimeout(resolve, 1000));
+        // Player waits unnecessarily - show slow crawling behind jeepney
+        await new Promise(res => setTimeout(res, 1200));
 
-      // Player continues waiting, missing safe overtaking opportunities
-      await new Promise(resolve => {
-        Animated.parallel([
-          Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 1.5),
-            duration: 3000,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          }),
-          Animated.timing(jeepneyYAnim, {
-            toValue: jeepneyYAnim._value + (tileSize * 0.5),
-            duration: 3000,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          })
-        ]).start(resolve);
-      });
+        // Continue waiting and following slowly
+        await new Promise(res => {
+          Animated.parallel([
+            Animated.timing(scrollY, {
+              toValue: scrollY._value - (tileSize * 1.8),
+              duration: 3500,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            }),
+            Animated.timing(jeepneyYAnim, {
+              toValue: jeepneyYAnim._value + (tileSize * 0.4),
+              duration: 3500,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            })
+          ]).start(res);
+        });
 
-    } catch (error) {
-      console.error('Error in animateWaitForBothLines:', error);
-    }
+        await new Promise(res => setTimeout(res, 500));
+        resolve();
+      } catch (error) {
+        console.error('Error in animateWaitForBothLines:', error);
+        resolve();
+      }
+    });
   };
 
-  // Updated handleAnswer function
+  // FIXED: handleAnswer with proper async/await
   const handleAnswer = async (answer) => {
+    console.log('🎯 handleAnswer START:', answer);
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
+
     const currentQuestion = questions[questionIndex];
-      const isCorrect = answer === currentQuestion.correct;
-      await updateProgress(answer, isCorrect);
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
+    console.log('✅ Progress updated');
+
+    if (scrollAnimationRef.current) {
+      scrollAnimationRef.current.stop();
+    }
+
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
     setIsOncomingJeepneyVisible(true);
 
-    if (answer === questions[questionIndex].correct) {
-      animateSafeOvertake();
+    console.log('🎬 About to start animation for answer:', answer);
+
+    try {
+      if (answer === questions[questionIndex].correct) {
+        console.log('🟢 Starting safe overtake animation');
+        await animateSafeOvertake();
+        console.log('🟢 Safe overtake complete');
+      } else if (answer === "Don't overtake since the opposite side has a solid line") {
+        console.log('🔴 Starting no overtake animation');
+        await animateNoOvertake();
+        console.log('🔴 No overtake complete');
+      } else if (answer === "Wait for both sides to have broken lines") {
+        console.log('🟡 Starting wait animation');
+        await animateWaitForBothLines();
+        console.log('🟡 Wait animation complete');
+      }
+
+      console.log('🎬 Animation complete, calling handleFeedback');
       handleFeedback(answer);
-    } else if (answer === "Don't overtake since the opposite side has a solid line") {
-      animateNoOvertake();
-      handleFeedback(answer);
-    } else if (answer === "Wait for both sides to have broken lines") {
-      animateWaitForBothLines();
-      handleFeedback(answer);
+      console.log('📝 handleFeedback called');
+    } catch (error) {
+      console.error('❌ Error in animation:', error);
     }
   };
 
@@ -495,34 +525,35 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else if (currentScenario >= 10) {
-          // Last scenario in phase - complete session
-          try {
-            const sessionResults = await completeSession();
-            router.push({
-              pathname: '/result',
-              params: {
-                ...sessionResults,
-                userAttempts: JSON.stringify(sessionResults.attempts)
-              }
-            });
-          } catch (error) {
-            console.error('Error completing session:', error);
-            Alert.alert('Error', 'Failed to save session results');
+      // Last scenario in phase - complete session
+      try {
+        const sessionResults = await completeSession();
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
           }
-        } else {
-          moveToNextScenario();
-          const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
-          router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-        }
-      if (scrollAnimationRef.current) {
-        scrollAnimationRef.current.stop();
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
       }
-      if (jeepneyAnimationRef.current) {
-        jeepneyAnimationRef.current.stop();
-      }
-      if (oncomingJeepneyAnimationRef.current) {
-        oncomingJeepneyAnimationRef.current.stop();
-      }
+    } else {
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P2`;
+      router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+    }
+
+    if (scrollAnimationRef.current) {
+      scrollAnimationRef.current.stop();
+    }
+    if (jeepneyAnimationRef.current) {
+      jeepneyAnimationRef.current.stop();
+    }
+    if (oncomingJeepneyAnimationRef.current) {
+      oncomingJeepneyAnimationRef.current.stop();
+    }
   };
 
   const currentQuestionData = questions[questionIndex];
@@ -601,7 +632,7 @@ export default function DrivingGame() {
         />
       )}
 
-      {/* Player Car (Blue) in right lane */}
+      {/* FIXED: Player Car positioning using transform */}
       {isPlayerCarVisible && (
         <Animated.Image
           source={playerCarSprites[playerCarDirection][playerCarFrame]}
@@ -610,13 +641,14 @@ export default function DrivingGame() {
             height: carHeight,
             position: "absolute",
             bottom: height * 0.1,
-            left: carXAnim,
+            left: 0,
+            transform: [{ translateX: carXAnim }],
             zIndex: 5,
           }}
         />
       )}
 
-      {/* Question Overlay */}
+      {/* Question Overlay - FIXED: Better LTO positioning */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -670,6 +702,19 @@ export default function DrivingGame() {
   );
 }
 
+// FIXED: Added SessionProvider wrapper
+export default function DrivingGame() {
+  return (
+    <SessionProvider
+      categoryId={1}
+      phaseId={2}
+      categoryName="Road Markings"
+    >
+      <DrivingGameContent />
+    </SessionProvider>
+  );
+}
+
 const styles = StyleSheet.create({
   questionOverlay: {
     position: "absolute",
@@ -683,12 +728,13 @@ const styles = StyleSheet.create({
     paddingBottom: height * 0.01,
     zIndex: 10,
   },
+  // FIXED: Better LTO image positioning to stay in container
   ltoImage: {
     width: ltoWidth,
     height: ltoHeight,
     resizeMode: "contain",
-    marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginLeft: -width * 0.02,
+    marginBottom: -height * 0.08,
   },
   questionBox: {
     flex: 1,
@@ -700,11 +746,13 @@ const styles = StyleSheet.create({
     padding: -height * 0.04,
     maxWidth: width * 0.6,
   },
+  // FIXED: Increased font size from 18 to 22
   questionText: {
     color: "white",
-    fontSize: Math.min(width * 0.018, 18),
+    fontSize: Math.min(width * 0.045, 22),
     fontWeight: "bold",
     textAlign: "center",
+    flexWrap: "wrap",
   },
   answersContainer: {
     position: "absolute",
