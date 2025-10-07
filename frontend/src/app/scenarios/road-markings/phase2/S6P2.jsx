@@ -1,4 +1,4 @@
-// frontend/src/app/scenarios/road-markings/phase2/S6P2.jsx
+// frontend/src/app/scenarios/road-markings/phase2/S6P2.jsx - CORRECTED & FIXED
 import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
@@ -162,7 +162,8 @@ function DrivingGameContent() {
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
 
-  // Brown car state (oncoming traffic)
+  // FIXED: Brown car state (oncoming traffic) - visible from start
+  const [showBrownCar, setShowBrownCar] = useState(true);
   const [brownCarFrame, setBrownCarFrame] = useState(0);
   const brownCarY = useRef(new Animated.Value(-carHeight)).current;
   const brownCarX = 1 * tileSize + tileSize/2 - carWidth/2;
@@ -233,27 +234,31 @@ function DrivingGameContent() {
 
   // Brown car animation frame cycling
   useEffect(() => {
-    const iv = setInterval(() => {
-      setBrownCarFrame((p) => (p + 1) % carSprites.SOUTH.length);
-    }, 200);
-    return () => clearInterval(iv);
-  }, []);
+    if (showBrownCar) {
+      const iv = setInterval(() => {
+        setBrownCarFrame((p) => (p + 1) % carSprites.SOUTH.length);
+      }, 200);
+      return () => clearInterval(iv);
+    }
+  }, [showBrownCar]);
 
-  // Brown car continuous movement
+  // FIXED: Brown car continuous movement - starts immediately
   useEffect(() => {
-    const animateBrownCar = () => {
-      brownCarY.setValue(-carHeight);
-      Animated.timing(brownCarY, {
-        toValue: height + carHeight,
-        duration: 6000,
-        useNativeDriver: true,
-      }).start(() => {
-        animateBrownCar();
-      });
-    };
+    if (showBrownCar) {
+      const animateBrownCar = () => {
+        brownCarY.setValue(-carHeight);
+        Animated.timing(brownCarY, {
+          toValue: height + carHeight,
+          duration: 6000,
+          useNativeDriver: true,
+        }).start(() => {
+          animateBrownCar();
+        });
+      };
 
-    animateBrownCar();
-  }, []);
+      animateBrownCar();
+    }
+  }, [showBrownCar]);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -319,7 +324,7 @@ function DrivingGameContent() {
 
     try {
       if (answer === "Drive closer to the center line to avoid the flooded shoulder") {
-        console.log('⬅️ Choice 1: Moving to center');
+        console.log('⬅️ Choice 1: Moving to center - brown car should be visible');
         setCarDirection("NORTHWEST");
         
         await new Promise(resolve => {
@@ -579,18 +584,20 @@ function DrivingGameContent() {
         />
       )}
 
-      {/* Brown Car (Oncoming Traffic) */}
-      <Animated.Image
-        source={carSprites.SOUTH[brownCarFrame]}
-        style={{
-          width: carWidth,
-          height: carHeight,
-          position: "absolute",
-          left: brownCarX,
-          transform: [{ translateY: brownCarY }],
-          zIndex: 5,
-        }}
-      />
+      {/* FIXED: Brown Car (Oncoming Traffic) - Always visible */}
+      {showBrownCar && (
+        <Animated.Image
+          source={carSprites.SOUTH[brownCarFrame]}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            left: brownCarX,
+            transform: [{ translateY: brownCarY }],
+            zIndex: 5,
+          }}
+        />
+      )}
 
       {/* FIXED: Question Overlay - better positioning and sizing */}
       {showQuestion && (
@@ -609,7 +616,7 @@ function DrivingGameContent() {
         </View>
       )}
 
-      {/* FIXED: Answers - moved down to avoid overlap */}
+      {/* FIXED: Answers - proper sizing */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -672,7 +679,7 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     zIndex: 10,
   },
-  // FIXED: Better LTO positioning
+  // FIXED: Better LTO positioning to stay in container
   ltoImage: {
     width: ltoWidth,
     height: ltoHeight,
@@ -688,31 +695,31 @@ const styles = StyleSheet.create({
   },
   questionTextContainer: {
     padding: -height * 0.04,
-    maxWidth: width * 0.55, // FIXED: Reduced from 0.6/0.7 to prevent overflow
+    maxWidth: width * 0.55, // FIXED: Reduced from 0.6-0.7
   },
-  // FIXED: Increased font size to 22 and added line height
+  // FIXED: Increased font size to 22
   questionText: {
     flexWrap: "wrap",
     color: "white",
     fontSize: Math.min(width * 0.045, 22),
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: Math.min(width * 0.055, 26), // FIXED: Added for better readability
+    lineHeight: Math.min(width * 0.055, 26),
   },
-  // FIXED: Moved answers down from 0.076 to 0.18 to avoid overlap
+  // FIXED: Proper sizing - not too large
   answersContainer: {
     position: "absolute",
-    top: height * 0.18, // CHANGED from 0.076/0.25 to 0.18
+    top: height * 0.18,
     right: sideMargin,
-    width: width * 0.35,
-    height: height * 0.21,
+    width: width * 0.35, // Kept at reasonable size
+    height: height * 0.21, // FIXED: Reduced from 0.23
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
     padding: height * 0.015,
     borderRadius: 8,
-    marginBottom: height * 0.012, // FIXED: Slightly reduced spacing
+    marginBottom: height * 0.012,
     borderWidth: 1,
     borderColor: "#555",
   },
@@ -739,15 +746,15 @@ const styles = StyleSheet.create({
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: width * 0.05, // FIXED: Added padding
+    paddingHorizontal: width * 0.05,
   },
-  // FIXED: Reduced font size slightly to prevent overflow
+  // FIXED: Reduced font size to prevent overflow
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.05, 24), // CHANGED from 0.06/28
+    fontSize: Math.min(width * 0.05, 24),
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: Math.min(width * 0.06, 28), // FIXED: Added line height
+    lineHeight: Math.min(width * 0.06, 28),
   },
   nextButtonContainer: {
     position: "absolute",
