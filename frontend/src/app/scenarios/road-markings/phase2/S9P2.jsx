@@ -1,4 +1,5 @@
-import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
+// frontend/src/app/scenarios/road-markings/phase2/S9P2.jsx
+import { useSession } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
 import { router } from 'expo-router';
@@ -116,7 +117,7 @@ const trafficLightSprites = {
 
 const questions = [
   {
-    question: "You're behind several vehicles at a stop line before an intersection. The light turns red, but the vehicle in front stops past the stop line, blocking the crosswalk.",
+    question: "You're approaching an intersection at a stop line. The light turns red, but the vehicle in front stops past the stop line, blocking the crosswalk.",
     options: [
       "Also cross the stop line to keep traffic moving", 
       "Stop at the proper stop line position even if it creates a gap", 
@@ -133,12 +134,12 @@ const questions = [
 export default function DrivingGame() {
 
   const {
-  updateScenarioProgress,
-  moveToNextScenario,
-  completeSession,
-  currentScenario,
-  sessionData
-} = useSession();
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+    sessionData
+  } = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
@@ -170,8 +171,7 @@ export default function DrivingGame() {
   const [isOtherCarVisible, setIsOtherCarVisible] = useState(true);
 
   // Calculate start offset to show cars at rows 9-10 (intersection area)
-  // We want row 9-10 to be in the middle of the screen
-  const targetRow = 9.5; // Between rows 9 and 10
+  const targetRow = 9.5;
   const startOffset = -(targetRow * tileSize - height / 2);
 
   const scrollY = useRef(new Animated.Value(startOffset)).current;
@@ -212,10 +212,10 @@ export default function DrivingGame() {
   // Honk effect
   const [showHonk, setShowHonk] = useState(false);
 
-  // Car positioning with grid-based system
-  // Red car starts at column 2, row 9 (road57 - stops past stop line, blocking crosswalk)
+  // FIXED: Car positioning - both cars in CENTER lane (column 2)
+  // Red car starts at column 2, row 9 (past stop line, blocking crosswalk)
   const redCarStartPos = getGridPosition(2, 9);
-  // Blue car starts at column 2, row 11 (road3 - behind red car at proper stop line)  
+  // Blue car starts at column 2, row 11 (behind red car at proper stop line)  
   const blueCarStartPos = getGridPosition(2, 11);
 
   const carXAnim = useRef(new Animated.Value(0)).current;
@@ -229,7 +229,6 @@ export default function DrivingGame() {
 
   // Initialize car positions
   useEffect(() => {
-    // Set initial positions relative to the map
     carXAnim.setValue(blueCarStartPos.x);
     carYAnim.setValue(blueCarStartPos.y);
     otherCarXAnim.setValue(redCarStartPos.x);
@@ -261,40 +260,33 @@ export default function DrivingGame() {
   const scrollAnimationRef = useRef(null);
 
   function startScrollAnimation() {
-    // Set initial position to show cars immediately
     scrollY.setValue(startOffset);
-    setTrafficLightState('green'); // Start with green light
+    setTrafficLightState('green');
     setLightChangeTriggered(false);
     
-    // Cars start moving forward initially
     setCarPaused(false);
     setOtherCarPaused(false);
 
-    // Reset car positions to starting positions
     carXAnim.setValue(blueCarStartPos.x);
     carYAnim.setValue(blueCarStartPos.y);
     otherCarXAnim.setValue(redCarStartPos.x);
     otherCarYAnim.setValue(redCarStartPos.y);
 
-    // Start with cars moving forward slowly
     const moveForwardAnimation = Animated.parallel([
       Animated.timing(scrollY, {
-        toValue: startOffset - tileSize, // Move forward one tile
+        toValue: startOffset - tileSize,
         duration: 2000,
         useNativeDriver: true,
       })
     ]);
 
     moveForwardAnimation.start(() => {
-      // Stop cars when they reach the intersection
       setCarPaused(true);
       setOtherCarPaused(true);
       
-      // Traffic light changes to red
       setTrafficLightState('red');
       setLightChangeTriggered(true);
       
-      // Show question after light turns red
       setTimeout(() => {
         setShowQuestion(true);
         setTimeout(() => {
@@ -316,7 +308,6 @@ export default function DrivingGame() {
     if (answerGiven === currentQuestion.correct) {
       setIsCorrectAnswer(true);
       setAnimationType("correct");
-      // Show feedback after 0.5 second delay
       setTimeout(() => {
         Animated.timing(correctAnim, {
           toValue: 1,
@@ -330,7 +321,6 @@ export default function DrivingGame() {
     } else {
       setIsCorrectAnswer(false);
       setAnimationType("wrong");
-      // Show feedback after 0.5 second delay
       setTimeout(() => {
         Animated.timing(wrongAnim, {
           toValue: 1,
@@ -378,56 +368,71 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
     const currentQuestion = questions[questionIndex];
-      const isCorrect = answer === currentQuestion.correct;
-      await updateProgress(answer, isCorrect);
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
+
     if (answer === "Also cross the stop line to keep traffic moving") {
-      // Animation: Blue car moves to road4 (2nd column, row 11) then to road57 (column 2, row 10) beside red car
-      setCarDirection("WEST");
+      // FIXED: Blue car now follows red car smoothly
+      setCarDirection("NORTH");
+      setCarPaused(false);
+      setOtherCarPaused(false);
       
-      const road4Pos = getGridPosition(1, 11); // road4 position (2nd column)
-      const road57Pos = getGridPosition(1, 9); // road57 position beside red car
+      const stopPastLinePos = getGridPosition(2, 8); // Stop past the stop line like red car
       
-      // First move to road4 (left lane)
-      Animated.timing(carXAnim, {
-        toValue: road4Pos.x,
-        duration: 1000,
-        useNativeDriver: false,
-      }).start(() => {
-        // Then move forward to be beside red car
-        setCarDirection("NORTH");
+      // Both cars move forward together
+      Animated.parallel([
         Animated.timing(carYAnim, {
-          toValue: road57Pos.y,
-          duration: 1000,
+          toValue: stopPastLinePos.y,
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
           useNativeDriver: false,
-        }).start(() => {
-          handleFeedback(answer);
-        });
+        }),
+        Animated.timing(otherCarYAnim, {
+          toValue: getGridPosition(2, 7).y, // Red car moves further
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+      ]).start(() => {
+        setCarPaused(true);
+        setOtherCarPaused(true);
+        handleFeedback(answer);
       });
       
     } else if (answer === "Stop at the proper stop line position even if it creates a gap") {
-      // Animation: Blue car stays at proper stop line, waits for green light, then proceeds
-      setCarPaused(true);
+      // IMPROVED: Smooth movement from frontend version
+      setCarDirection("NORTH");
+      setCarPaused(false);
       
-      // Wait, then turn green
-      setTimeout(() => {
-        setTrafficLightState('green');
+      const stopBeforeRedCarPos = getGridPosition(2, 10);
+      
+      Animated.timing(carYAnim, {
+        toValue: stopBeforeRedCarPos.y,
+        duration: 1500,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      }).start(() => {
+        setCarPaused(true);
+        
         setTimeout(() => {
-          setCarPaused(false);
-          setOtherCarPaused(false);
-          
-          // Move map forward to simulate cars proceeding
-          Animated.timing(scrollY, {
-            toValue: startOffset - tileSize * 2,
-            duration: 2000,
-            useNativeDriver: true,
-          }).start(() => {
-            handleFeedback(answer);
-          });
+          setTrafficLightState('green');
+          setTimeout(() => {
+            setCarPaused(false);
+            setOtherCarPaused(false);
+            
+            Animated.timing(scrollY, {
+              toValue: startOffset - tileSize * 2,
+              duration: 2000,
+              useNativeDriver: true,
+            }).start(() => {
+              handleFeedback(answer);
+            });
+          }, 1000);
         }, 1000);
-      }, 1500);
+      });
       
     } else if (answer === "Honk at the vehicle ahead to move forward") {
-      // Animation: Show honking effect, wait for green light, then proceed
+      // IMPROVED: Smooth parallel movement from frontend version
       setCarPaused(true);
       showHonkEffect();
       
@@ -437,12 +442,29 @@ export default function DrivingGame() {
           setCarPaused(false);
           setOtherCarPaused(false);
           
-          // Move map forward to simulate cars proceeding  
-          Animated.timing(scrollY, {
-            toValue: startOffset - tileSize * 2,
-            duration: 2000,
-            useNativeDriver: true,
-          }).start(() => {
+          const currentBlueCarY = carYAnim._value;
+          const currentRedCarY = otherCarYAnim._value;
+          
+          Animated.parallel([
+            Animated.timing(carYAnim, {
+              toValue: currentBlueCarY - tileSize * 4,
+              duration: 3000,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: false,
+            }),
+            Animated.timing(otherCarYAnim, {
+              toValue: currentRedCarY - tileSize * 4,
+              duration: 3000,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: false,
+            }),
+            Animated.timing(scrollY, {
+              toValue: startOffset - tileSize * 4,
+              duration: 3000,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            })
+          ]).start(() => {
             handleFeedback(answer);
           });
         }, 1000);
@@ -461,7 +483,6 @@ export default function DrivingGame() {
     setOtherCarPaused(false);
     setShowHonk(false);
 
-    // Reset positions
     carXAnim.setValue(blueCarStartPos.x);
     carYAnim.setValue(blueCarStartPos.y);
     otherCarXAnim.setValue(redCarStartPos.x);
@@ -479,32 +500,29 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else if (currentScenario >= 10) {
-              // Last scenario in phase - complete session
-              try {
-                const sessionResults = await completeSession();
-                router.push({
-                  pathname: '/result',
-                  params: {
-                    ...sessionResults,
-                    userAttempts: JSON.stringify(sessionResults.attempts)
-                  }
-                });
-              } catch (error) {
-                console.error('Error completing session:', error);
-                Alert.alert('Error', 'Failed to save session results');
-              }
-            } else {
-              moveToNextScenario();
-              const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
-              router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-            }
-      };
+      try {
+        const sessionResults = await completeSession();
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
+    } else {
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P2`;
+      router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+    }
+  };
 
-  // Calculate traffic light position
   const trafficLightLeft = trafficLightColIndex * tileSize + trafficLightXOffset;
   const trafficLightTop = trafficLightRowIndex * tileSize;
 
-  // Feedback message
   let feedbackMessage = "";
   
   if (isCorrectAnswer) {
@@ -517,7 +535,6 @@ export default function DrivingGame() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
-      {/* Map */}
       <Animated.View
         style={{
           position: "absolute",
@@ -545,7 +562,6 @@ export default function DrivingGame() {
           ))
         )}
         
-        {/* Traffic Light */}
         <Image
           source={trafficLightSprites[trafficLightState === 'green' ? 'normal' : trafficLightState]}
           style={{
@@ -559,7 +575,6 @@ export default function DrivingGame() {
           resizeMode="contain"
         />
 
-        {/* Red Car (positioned on the map) */}
         {isOtherCarVisible && (
           <Animated.Image
             source={otherCarSprites[otherCarDirection][otherCarFrame]}
@@ -574,7 +589,6 @@ export default function DrivingGame() {
           />
         )}
 
-        {/* Blue Car (positioned on the map) */}
         {isCarVisible && (
           <Animated.Image
             source={carSprites[carDirection][carFrame]}
@@ -590,7 +604,6 @@ export default function DrivingGame() {
         )}
       </Animated.View>
 
-      {/* Honk Effect */}
       {showHonk && (
         <Animated.View
           style={{
@@ -605,7 +618,6 @@ export default function DrivingGame() {
         </Animated.View>
       )}
 
-      {/* Question Overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -622,7 +634,6 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -637,7 +648,6 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
@@ -647,7 +657,6 @@ export default function DrivingGame() {
         </Animated.View>
       )}
 
-      {/* Next Button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
@@ -669,15 +678,15 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
     width: ltoWidth,
     height: ltoHeight,
     resizeMode: "contain",
-    marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginLeft: -width * 0.02,
+    marginBottom: -height * 0.10,
   },
   questionBox: {
     flex: 1,
@@ -687,17 +696,18 @@ const styles = StyleSheet.create({
     paddingBottom: height * 0.05,
   },
   questionTextContainer: {
-    maxWidth: width * 0.6,
+    maxWidth: width * 0.55,
   },
   questionText: {
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: Math.min(width * 0.045, 22),
     fontWeight: "bold",
     textAlign: "center",
+    lineHeight: Math.min(width * 0.06, 28),
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.25,
+    top: height * 0.175,
     right: sideMargin,
     width: width * 0.35,
     zIndex: 11,
