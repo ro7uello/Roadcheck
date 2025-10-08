@@ -1,14 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
@@ -79,23 +72,32 @@ const carSprites = {
 };
 
 const trafficSign = {
-    sign: require("../../../../../assets/signs/dir_sign_6.png"),
+    sign: require("../../../../../assets/signs/warning_sign2.png"),
 };
 
 const questions = [
   {
-    question: "You're traveling north on NLEX and see an END EXPRWAY 1 km sign. You need to continue north toward Baguio, but you're not familiar with the area beyond the expressway.",
-    options: ["Exit immediately at the next available ramp", "Continue to the expressway end and follow directional signs for your destination", "Stop and ask for directions from other drivers"],
-    correct: "Continue to the expressway end and follow directional signs for your destination",
+    question: "You're on the Skyway and encounter a REDUCE SPEED NOW sign. You've been maintaining 100 kph, which is the normal expressway speed limit, but traffic ahead seems to be slowing down.",
+    options: ["Maintain your current speed since you're within the speed limit", "Gradually reduce speed and observe traffic conditions ahead", "Brake hard immediately to comply with the sign"],
+    correct: "Gradually reduce speed and observe traffic conditions ahead",
     wrongExplanation: {
-      "Exit immediately at the next available ramp": "Wrong! Exiting before the expressway ends may not lead to your intended destination and could cause unnecessary detours.",
-      "Stop and ask for directions from other drivers": "Wrong! Stopping to ask directions on or near expressways is dangerous and illegal except in emergencies."
+      "Maintain your current speed since you're within the speed limit": "Wrong! Special regulatory signs override general speed limits. The sign indicates hazardous conditions ahead requiring reduced speed.",
+      "Brake hard immediately to comply with the sign": "Wrong! Hard braking can cause rear-end collisions and is unnecessary unless there's an immediate danger."
     }
   },
   // Add more questions here as needed
 ];
 
 export default function DrivingGame() {
+
+  const {
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+    sessionData
+  } = useSession();
+
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
@@ -130,6 +132,24 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const middleLaneX = width * 0.5 - carWidth / 2;
   const carXAnim = useRef(new Animated.Value(middleLaneX)).current;
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      
+      const scenarioId = 70 + currentScenario;  
+      
+      console.log('🔍 SCENARIO DEBUG:', {
+        currentScenario,
+        calculatedScenarioId: scenarioId,
+        selectedOption,
+        isCorrect
+      });
+      
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -186,46 +206,30 @@ export default function DrivingGame() {
     }
   };
 
-  const handleAnswer = (answer) => {
+  const handleAnswer = async (answer) => {  
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
 
-    if (answer === "Exit immediately at the next available ramp") {
-      // Lane change to right side
-      const rightLaneX = width * 0.7 - carWidth / 2;
-      
-      // Start with NORTHEAST direction
-      setCarDirection("NORTHEAST");
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
+
+    if (answer === "Maintain your current speed since you're within the speed limit") {
+      // Drive straight at same speed
+      setCarDirection("NORTH");
       setCarFrame(0);
       
-      // Animate lane change and scroll simultaneously
-      Animated.parallel([
-        Animated.timing(carXAnim, {
-          toValue: rightLaneX,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 5,
-          duration: 2500,
-          useNativeDriver: true,
-        })
-      ]).start();
-      
-      // Change to NORTH direction halfway through lane change
-      setTimeout(() => {
-        setCarDirection("NORTH");
-      }, 600);
-      
-      // Hide car at the end
-      setTimeout(() => {
+      Animated.timing(scrollY, {
+        toValue: currentScroll.current + tileSize * 5,
+        duration: 2500,
+        useNativeDriver: true,
+      }).start(() => {
         setIsCarVisible(false);
         handleFeedback(answer);
-      }, 2500);
-      
+      });
       return;
-    } else if (answer === "Continue to the expressway end and follow directional signs for your destination") {
+    } else if (answer === "Gradually reduce speed and observe traffic conditions ahead") {
       // Drive straight at reduced speed (slower animation)
       setCarDirection("NORTH");
       setCarFrame(0);
@@ -239,7 +243,7 @@ export default function DrivingGame() {
         handleFeedback(answer);
       });
       return;
-    } else if (answer === "Stop and ask for directions from other drivers") {
+    } else if (answer === "Brake hard immediately to comply with the sign") {
       // Drive straight then brake (quick stop)
       setCarDirection("NORTH");
       setCarFrame(0);
@@ -261,11 +265,12 @@ export default function DrivingGame() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setCarFrame(0);
+    setIsCorrectAnswer(null);
     
     // Reset car position and visibility to middle lane
     const middleLaneX = width * 0.5 - carWidth / 2;
@@ -277,10 +282,32 @@ export default function DrivingGame() {
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
+    } else if (currentScenario === 10) {
+      try {
+        console.log('🔍 Completing session for scenario 10...');
+        const sessionResults = await completeSession();
+        
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session.');
+          return;
+        }
+        
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
     } else {
-      router.push('/driver-game/intersections/phase-2/S7P2');
-      setQuestionIndex(0);
-      setShowQuestion(false);
+      // Move to next scenario
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P2`;  
+      router.push(`/scenarios/intersection/phase2/${nextScreen}`); 
     }
   };
 
@@ -290,7 +317,7 @@ export default function DrivingGame() {
   // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Expressway ends are designed with directional signage to guide traffic to connecting roads. Follow the system as designed."
+    ? "Correct! Gradual speed reduction maintains traffic flow safety while allowing you to assess the reason for the speed reduction warning."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction
@@ -350,7 +377,7 @@ export default function DrivingGame() {
             height: carHeight,
             position: "absolute",
             bottom: 80,
-            transform: [{ translateX: carXAnim }],
+            left: carXAnim,
             zIndex: 8,
           }}
         />
@@ -486,7 +513,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 16),
+    fontSize: Math.min(width * 0.04, 18),
     textAlign: "center",
   },
   feedbackOverlay: {

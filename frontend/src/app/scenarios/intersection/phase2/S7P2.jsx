@@ -1,14 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
@@ -22,30 +15,32 @@ const sideMargin = width * 0.05;
 
 const roadTiles = {
     road2: require("../../../../../assets/road/road2.png"),
+    road3: require("../../../../../assets/road/road3.png"),
+    road4: require("../../../../../assets/road/road4.png"),
+    road79: require("../../../../../assets/road/road79.png"),
+    road88: require("../../../../../assets/road/road88.png"),
+    road89: require("../../../../../assets/road/road89.png"),
+    road90: require("../../../../../assets/road/road90.png"),
+    road91: require("../../../../../assets/road/road91.png"),
     road80: require("../../../../../assets/road/road80.png"),
 };
 
 const mapLayout = [
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
+  ["road80", "road79", "road2", "road2", "road80"],
+  ["road80", "road79", "road2", "road2", "road80"],
+  ["road80", "road79", "road2", "road2", "road80"],
+  ["road80", "road79", "road2", "road2", "road80"],
+  ["road80", "road79", "road2", "road2", "road80"],
+  ["road80", "road79", "road2", "road2", "road80"],
+  ["road80", "road79", "road2", "road2", "road80"],
+  ["road80", "road79", "road2", "road2", "road80"],
+  ["road90", "road91", "road2", "road2", "road80"],
+  ["road90", "road91", "road2", "road2", "road80"],
+  ["road90", "road91", "road2", "road2", "road80"],
+  ["road90", "road91", "road2", "road2", "road80"],
+  ["road88", "road89", "road2", "road2", "road80"],
+  ["road3", "road4", "road2", "road2", "road80"],
+  ["road3", "road4", "road2", "road2", "road80"],
   ["road2", "road2", "road2", "road2", "road80"],
   ["road2", "road2", "road2", "road2", "road80"],
   ["road2", "road2", "road2", "road2", "road80"],
@@ -79,23 +74,32 @@ const carSprites = {
 };
 
 const trafficSign = {
-    sign: require("../../../../../assets/signs/warning_sign2.png"),
+    sign: require("../../../../../assets/signs/no_entry.png"),
 };
 
 const questions = [
   {
-    question: "You're on the Skyway and encounter a REDUCE SPEED NOW sign. You've been maintaining 100 kph, which is the normal expressway speed limit, but traffic ahead seems to be slowing down.",
-    options: ["Maintain your current speed since you're within the speed limit", "Gradually reduce speed and observe traffic conditions ahead", "Brake hard immediately to comply with the sign"],
-    correct: "Gradually reduce speed and observe traffic conditions ahead",
+    question: "You're exiting SLEX and accidentally start to enter an off-ramp. You immediately see a WRONG WAY GO BACK sign and realize your mistake.",
+    options: ["Continue and try to merge with expressway traffic", "Stop immediately, put on hazard lights, and carefully back out if safe", "Make a U-turn on the ramp"],
+    correct: "Stop immediately, put on hazard lights, and carefully back out if safe",
     wrongExplanation: {
-      "Maintain your current speed since you're within the speed limit": "Wrong! Special regulatory signs override general speed limits. The sign indicates hazardous conditions ahead requiring reduced speed.",
-      "Brake hard immediately to comply with the sign": "Wrong! Hard braking can cause rear-end collisions and is unnecessary unless there's an immediate danger."
+      "Continue and try to merge with expressway traffic": "Accident Prone! Continuing against traffic flow is extremely dangerous and could cause fatal head-on collisions.",
+      "Make a U-turn on the ramp": "Wrong! U-turns on expressway ramps are illegal and dangerous due to limited visibility and space."
     }
   },
   // Add more questions here as needed
 ];
 
 export default function DrivingGame() {
+
+  const {
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+    sessionData
+  } = useSession();
+
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
@@ -130,6 +134,24 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const middleLaneX = width * 0.5 - carWidth / 2;
   const carXAnim = useRef(new Animated.Value(middleLaneX)).current;
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      
+      const scenarioId = 70 + currentScenario;  
+      
+      console.log('🔍 SCENARIO DEBUG:', {
+        currentScenario,
+        calculatedScenarioId: scenarioId,
+        selectedOption,
+        isCorrect
+      });
+      
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -186,13 +208,17 @@ export default function DrivingGame() {
     }
   };
 
-  const handleAnswer = (answer) => {
+  const handleAnswer = async (answer) => {  
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
 
-    if (answer === "Maintain your current speed since you're within the speed limit") {
-      // Drive straight at same speed
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
+
+    if (answer === "Continue and try to merge with expressway traffic") {
+      // Drive straight - continue forward
       setCarDirection("NORTH");
       setCarFrame(0);
       
@@ -205,47 +231,112 @@ export default function DrivingGame() {
         handleFeedback(answer);
       });
       return;
-    } else if (answer === "Gradually reduce speed and observe traffic conditions ahead") {
-      // Drive straight at reduced speed (slower animation)
+    } else if (answer === "Stop immediately, put on hazard lights, and carefully back out if safe") {
+      // Move forward briefly, stop, then reverse back 2 rows
       setCarDirection("NORTH");
       setCarFrame(0);
       
+      // Move forward 1 row
       Animated.timing(scrollY, {
-        toValue: currentScroll.current + tileSize * 5,
-        duration: 4000, // Slower duration = reduced speed
+        toValue: currentScroll.current + tileSize * 1,
+        duration: 600,
         useNativeDriver: true,
       }).start(() => {
-        setIsCarVisible(false);
-        handleFeedback(answer);
-      });
-      return;
-    } else if (answer === "Brake hard immediately to comply with the sign") {
-      // Drive straight then brake (quick stop)
-      setCarDirection("NORTH");
-      setCarFrame(0);
-      
-      // Move forward briefly
-      Animated.timing(scrollY, {
-        toValue: currentScroll.current + tileSize * 1.5,
-        duration: 800,
-        useNativeDriver: true,
-      }).start(() => {
-        // Sudden stop - pause briefly to simulate braking
+        // Stop and pause
         setCarPaused(true);
         setTimeout(() => {
-          setIsCarVisible(false);
-          handleFeedback(answer);
-        }, 500);
+          // Change to SOUTH direction for backing up
+          setCarDirection("SOUTH");
+          setCarPaused(false);
+          
+          // Reverse back 2 rows
+          Animated.timing(scrollY, {
+            toValue: currentScroll.current - tileSize * 2,
+            duration: 1500,
+            useNativeDriver: true,
+          }).start(() => {
+            setIsCarVisible(false);
+            handleFeedback(answer);
+          });
+        }, 800);
+      });
+      return;
+    } else if (answer === "Make a U-turn on the ramp") {
+      // Smooth U-turn animation using multiple sprites
+      setCarDirection("NORTH");
+      setCarFrame(0);
+      
+      const currentCarX = middleLaneX;
+      const oneLaneWidth = tileSize;
+      
+      // Step 1: Move forward and turn NORTHEAST
+      Animated.timing(scrollY, {
+        toValue: currentScroll.current + tileSize * 0.5,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        setCarDirection("NORTHEAST");
+        
+        // Step 2: Continue turning to EAST while moving
+        Animated.parallel([
+          Animated.timing(scrollY, {
+            toValue: currentScroll.current + tileSize * 0.5,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(carXAnim, {
+            toValue: currentCarX + oneLaneWidth * 0.5,
+            duration: 500,
+            useNativeDriver: true,
+          })
+        ]).start(() => {
+          setCarDirection("EAST");
+          
+          // Step 3: Turn to SOUTHEAST
+          Animated.parallel([
+            Animated.timing(scrollY, {
+              toValue: currentScroll.current + tileSize * 0.5,
+              duration: 500,
+              useNativeDriver: true,
+            }),
+            Animated.timing(carXAnim, {
+              toValue: currentCarX + oneLaneWidth,
+              duration: 500,
+              useNativeDriver: true,
+            })
+          ]).start(() => {
+            setCarDirection("SOUTHEAST");
+            
+            // Step 4: Complete turn to SOUTH
+            Animated.parallel([
+              Animated.timing(scrollY, {
+                toValue: currentScroll.current + tileSize * -3,
+                duration: 500,
+                useNativeDriver: true,
+              }),
+              Animated.timing(carXAnim, {
+                toValue: currentCarX + oneLaneWidth * 0.5,
+                duration: 500,
+                useNativeDriver: true,
+              })
+            ]).start(() => {
+              setCarDirection("SOUTH");
+              setIsCarVisible(false);
+              handleFeedback(answer);
+            });
+          });
+        });
       });
       return;
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setCarFrame(0);
+    setIsCorrectAnswer(null);
     
     // Reset car position and visibility to middle lane
     const middleLaneX = width * 0.5 - carWidth / 2;
@@ -257,10 +348,32 @@ export default function DrivingGame() {
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
+    } else if (currentScenario === 10) {
+      try {
+        console.log('🔍 Completing session for scenario 10...');
+        const sessionResults = await completeSession();
+        
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session.');
+          return;
+        }
+        
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
     } else {
-      router.push('S7P2');
-      setQuestionIndex(0);
-      setShowQuestion(false);
+      // Move to next scenario
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P2`;  
+      router.push(`/scenarios/intersection/phase2/${nextScreen}`); 
     }
   };
 
@@ -270,7 +383,7 @@ export default function DrivingGame() {
   // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Gradual speed reduction maintains traffic flow safety while allowing you to assess the reason for the speed reduction warning."
+    ? "Correct! Immediate recognition of the error, hazard lights for visibility, and careful backing out (if safe) or waiting for assistance is the safest response."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction
