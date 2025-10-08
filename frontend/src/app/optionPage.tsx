@@ -425,29 +425,65 @@ const testBasicConnection = async () => {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={true}
                   >
-                    <View style={styles.referenceContainer}>
-                      <Text style={styles.referenceText}>
-                        Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
-                        <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
-                          <Text style={[styles.referenceText, styles.linkText]}>
-                            https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
-                          </Text>
-                        </TouchableOpacity>
-                      </Text>
-                    </View>
+                  <View style={styles.referenceContainer}>
+                    <Text style={styles.sectionTitle}>Some Basic Signs and Markings to Remember</Text>
+                    
+                    <Text style={styles.subsectionTitle}>Traffic Signs</Text>
+                    <Text style={styles.referenceText}>
+                      • Red Signal - means bring your vehicle to a stop at a marked line.{'\n\n'}
+                      • Flashing Red - means bring your vehicle to a STOP and proceed only when it is safe.{'\n\n'}
+                      • Yellow Signal - means the red signal is about to appear. Prepare to stop.{'\n\n'}
+                      • Flashing Yellow - means slow down and proceed with caution.{'\n\n'}
+                      • Green Signal - means you can proceed, yield if needed.{'\n\n'}
+                      • Flashing Green - proceed with caution. yield for pedestrian.{'\n'}
+                    </Text>
+                    
+                    <Text style={styles.subsectionTitle}>Road Markings</Text>
+                    <Text style={styles.referenceText}>
+                      • Solid White line - Crossing is discouraged and requires special care when doing so.{'\n\n'}
+                      • Broken White line - Changing of lane is allowed provided with care.{'\n\n'}
+                      • Double Solid Yellow line - No overtaking and No crossing{'\n\n'}
+                      • Single Solid Yellow line - Crossing is allowed but no overtaking{'\n\n'}
+                      • Broken Yellow line - Crossing and overtaking is allowed with necessary care.{'\n\n'}
+                      • Edge Line - Used to separate the outside edge of the road from the shoulder.{'\n'}
+                    </Text>
+                  </View>
+                  <View style={styles.referenceContainer}>
+                    <Text style={styles.referenceText}>
+                      Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
+                      <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
+                        <Text style={[styles.referenceText, styles.linkText]}>
+                          https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
+                        </Text>
+                      </TouchableOpacity>
+                    </Text>
+                  </View>
 
-                    <View style={styles.referenceContainer}>
-                      <Text style={styles.referenceText}>
-                        National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
-                        <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
-                          <Text style={[styles.referenceText, styles.linkText]}>
-                            https://www.nhtsa.gov/road-safety/pedestrian-safety
-                          </Text>
-                        </TouchableOpacity>
-                      </Text>
-                    </View>
-                  </ScrollView>
-                </View>
+                  <View style={styles.referenceContainer}>
+                    <Text style={styles.sectionTitle}>Basic Pedestrian Safety Tips</Text>
+                    <Text style={styles.referenceText}>
+                      • Follow the rules of the road and obey signs and signals{'\n\n'}
+                      • Walk on sidewalks whenever possible. If there are no sidewalk, walk facing and as far from traffic as possible{'\n\n'}
+                      • Cross streets at crosswalks.{'\n\n'}
+                      • If a crosswalk is not available, walk at a well lit area where you have the best view of traffic. Wait for a gap in traffic that allows enough time to cross safely but continue to watch for traffic as you cross.{'\n\n'}
+                      • Watch for cars entering or exiting driveways or backing up.{'\n\n'}
+                      • When crossing the street, stay alert: <Text style={[styles.referenceText, { textDecorationLine: 'underline' }]}>check for signals, signs, and actions of drivers, cyclists, and pedestrians around you</Text>.{'\n\n'}
+                      • Do not rely on others to keep you safe.{'\n'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.referenceContainer}>
+                    <Text style={styles.referenceText}>
+                      National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
+                      <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
+                        <Text style={[styles.referenceText, styles.linkText]}>
+                          https://www.nhtsa.gov/road-safety/pedestrian-safety
+                        </Text>
+                      </TouchableOpacity>
+                    </Text>
+                  </View>
+                </ScrollView>
+              </View>
 
                 <TouchableOpacity
                   style={styles.libraryBackButton}
@@ -676,7 +712,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   referenceText: {
-    fontSize: 10,
+    fontSize: 9,
     color: 'black',
     fontFamily: "Pixel3",
     lineHeight: 14,
@@ -686,5 +722,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 25,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subsectionTitle: {
+    fontSize: 10,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginTop: 10,
+    marginBottom: 5,
+    textDecorationLine: 'underline',
   },
 });
