@@ -118,7 +118,7 @@ const questions = [
   },
 ];
 
-function DrivingGameContent() {
+export default function DrivingGame() {
   // Session Management
   const {
     updateScenarioProgress,
@@ -992,20 +992,8 @@ function DrivingGameContent() {
   );
 }
 
-export default function DrivingGame() {
-  return (
-    <SessionProvider
-      categoryId={1}
-      phaseId={2}
-      categoryName="Road Markings"
-    >
-      <DrivingGameContent />
-    </SessionProvider>
-  );
-}
-
 const styles = StyleSheet.create({
-  // Intro styles (responsive)
+  // Intro styles (keep existing)
   introContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -1061,26 +1049,25 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
-
-  // In-game responsive styles - FIXED: Larger text sizes
+  // In-game responsive styles
   questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
     width: ltoWidth,
     height: ltoHeight,
     resizeMode: "contain",
-    marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginLeft: width * 0.02,
+    marginBottom: 0,
   },
   questionBox: {
     flex: 1,
@@ -1090,19 +1077,18 @@ const styles = StyleSheet.create({
   },
   questionTextContainer: {
     padding: -height * 0.04,
-    maxWidth: width * 0.6,
+    maxWidth: width * 0.7,
   },
-  // FIXED: Increased font size for scenario description (was 18, now 22)
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 22), // Increased from 18 to 22
+    fontSize: Math.min(width * 0.045, 20),
     fontWeight: "bold",
     textAlign: "center",
-    flexWrap: "wrap",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.1,
+    top: height * 0.2,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
@@ -1116,10 +1102,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#555",
   },
-  // FIXED: Increased font size for choice options (was 11, now 18)
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 18), // Increased from 11 to 18
+    fontSize: Math.min(width * 0.04, 16),
     textAlign: "center",
   },
   feedbackOverlay: {
@@ -1127,7 +1112,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -1142,7 +1127,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
   },

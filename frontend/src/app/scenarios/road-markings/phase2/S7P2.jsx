@@ -107,7 +107,7 @@ const questions = [
   },
 ];
 
-function DrivingGameContent() {
+export default function DrivingGame() {
   const {
     updateScenarioProgress,
     moveToNextScenario,
@@ -487,19 +487,6 @@ function DrivingGameContent() {
         </View>
       )}
     </View>
-  );
-}
-
-// FIXED: Added SessionProvider wrapper
-export default function DrivingGame() {
-  return (
-    <SessionProvider
-      categoryId={1}
-      phaseId={2}
-      categoryName="Road Markings"
-    >
-      <DrivingGameContent />
-    </SessionProvider>
   );
 }
 
