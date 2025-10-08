@@ -1,14 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
@@ -124,17 +117,26 @@ const treePositions = [
 
 const questions = [
   {
-    question: "You're approaching a Roundabout (Rotunda) in Iloilo City. There's moderate traffic, and you need to take the third exit. A motorcycle is already in the roundabout to your left.",
-    options: ["Enter the roundabout immediately since you have the right of way", "Yield to traffic already in the roundabout, then enter when safe", "Stop and wait for the roundabout to be completely empty"],
+    question: "You're approaching a busy roundabout in Makati during lunch time. There's a Roundabout ahead sign, and you can see the circular intersection has continuous traffic. You need to take the second exit, and there's a motorcycle beside you also approaching the roundabout.",
+    options: ["Race the motorcycle to enter the roundabout first", "Yield to traffic in the roundabout, coordinate with the motorcycle, and enter when both can safely do so", "Stop and wait for traffic to completely clear"],
     correct: "Yield to traffic already in the roundabout, then enter when safe",
     wrongExplanation: {
-      "Enter the roundabout immediately since you have the right of way": "Accident Prone! Vehicles already in the roundabout have the right of way. Entering without yielding can cause accidents.",
-      "Stop and wait for the roundabout to be completely empty": "Wrong! Waiting for complete emptiness is unnecessary and creates traffic backup. Enter when there's a reasonable safe gap."
+      "Race the motorcycle to enter the roundabout first": "Accident Prone! Racing other vehicles is dangerous and illegal, especially near intersections and roundabouts.",
+      "Stop and wait for traffic to completely clear": "Wrong! Waiting for complete clearance in heavy traffic areas like Makati would create massive traffic jams. Enter when there's a reasonable safe gap."
     }
   },
   // Add more questions here as needed
 ];
+
 export default function DrivingGame() {
+  
+  const {
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+    sessionData
+  } = useSession();
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
@@ -165,6 +167,24 @@ export default function DrivingGame() {
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      // Intersection Phase 1: scenarios 61-70
+      const scenarioId = 60 + currentScenario;
+      
+      console.log('🔍 SCENARIO DEBUG:', {
+        currentScenario,
+        calculatedScenarioId: scenarioId,
+        selectedOption,
+        isCorrect
+      });
+      
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -231,15 +251,18 @@ export default function DrivingGame() {
       }
     };
   
-
-  const handleAnswer = (answer) => {
+  const handleAnswer = async (answer) => {  
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
+
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
-    if (answer === "Enter the roundabout immediately since you have the right of way") {
+    if (answer === "Race the motorcycle to enter the roundabout first") {
       const turnStartRow = 10;
       const turnEndRow = 11;
 
@@ -302,7 +325,7 @@ export default function DrivingGame() {
         animateTurnAndMove();
       });
       return;
-    } else if (answer === "Stop and wait for the roundabout to be completely empty") {
+    } else if (answer === "C. Stop and wait for traffic to completely clear") {
         const targetRow = 8;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
@@ -318,7 +341,7 @@ export default function DrivingGame() {
                 handleFeedback(answer);
             });
         }); // Added delay duration
-    } else if(answer === "Yield to traffic already in the roundabout, then enter when safe"){
+    } else if(answer === "Yield to traffic in the roundabout, coordinate with the motorcycle, and enter when both can safely do so"){
         const turnStartRow = 10;
         const turnEndRow = 11;
 
@@ -387,7 +410,7 @@ export default function DrivingGame() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
@@ -401,19 +424,43 @@ export default function DrivingGame() {
     setCarPaused(false);
     
     if (questionIndex < questions.length - 1) {
+      // Next question in current scenario
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
+    } else if (currentScenario === 10) {
+      // Last scenario - complete session
+      try {
+        console.log('🔍 Completing session for scenario 10...');
+        const sessionResults = await completeSession();
+        
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session.');
+          return;
+        }
+        
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
     } else {
-      router.push('/driver-game/intersections/phase-1/S4P1');
-      setQuestionIndex(0);
-      setShowQuestion(false);
+      // Move to next scenario
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P1`;
+      router.push(`/scenarios/intersection/phase1/${nextScreen}`);
     }
   };
 
   // Calculate traffic Sign position
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! This is the fundamental roundabout rule - yield to traffic already circulating, then enter when there's a safe gap."
+    ? "Correct! Safe roundabout navigation requires yielding to circulating traffic and being aware of adjacent vehicles. Coordination prevents conflicts."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction

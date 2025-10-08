@@ -1,14 +1,8 @@
+// frontend\src\app\scenarios\intersection\phase1\S1P1.jsx
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
@@ -24,31 +18,37 @@ const roadTiles = {
     road1: require("../../../../../assets/road/road1.png"),
     road3: require("../../../../../assets/road/road3.png"),
     road4: require("../../../../../assets/road/road4.png"),
+    road16: require("../../../../../assets/road/road16.png"),
     road17: require("../../../../../assets/road/road17.png"),
     road18: require("../../../../../assets/road/road18.png"),
-    road19: require("../../../../../assets/road/road19.png"), 
+    road19: require("../../../../../assets/road/road19.png"),
     road20: require("../../../../../assets/road/road20.png"),
+    road23: require("../../../../../assets/road/road23.png"),
+    road24: require("../../../../../assets/road/road24.png"),
+    road49: require("../../../../../assets/road/road49.png"),
     road50: require("../../../../../assets/road/road50.png"),
-    road65: require("../../../../../assets/road/road65.png"),
+    road51: require("../../../../../assets/road/road51.png"),
+    road52: require("../../../../../assets/road/road52.png"),
+    road57: require("../../../../../assets/road/road57.png"),
+    road58: require("../../../../../assets/road/road58.png"),
+    road59: require("../../../../../assets/road/road59.png"),
+    road60: require("../../../../../assets/road/road60.png"),
     road76: require("../../../../../assets/road/road76.png"),
     road84: require("../../../../../assets/road/road84.png"),
-    road86: require("../../../../../assets/road/road86.png"),
-    int1: require("../../../../../assets/road/int1.png"),
-    int2: require("../../../../../assets/road/int2.png"),
-    int3: require("../../../../../assets/road/int3.png"),
-    int4: require("../../../../../assets/road/int4.png"),
+    road85: require("../../../../../assets/road/road85.png"),
+  int1: require("../../../../../assets/road/int1.png"),
+  int2: require("../../../../../assets/road/int2.png"),
+  int3: require("../../../../../assets/road/int3.png"),
+  int4: require("../../../../../assets/road/int4.png"),
 };
 
 const mapLayout = [
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],  
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road86", "road1", "road17", "road20"],
-  ["road65", "int3", "int4", "road17", "road20"],
-  ["road84", "int2", "int1", "road17", "road20"],
-  ["road19", "road1", "road76", "road17", "road20"],
+  ["road20", "road20", "road20", "road20", "road20"],
+  ["road20", "road20", "road20", "road20", "road20"],
+  ["road52", "road52", "road52", "road52", "road52"],
+  ["road24", "int3", "int4", "road85", "road24"],
+  ["road84", "int2", "int1", "road23", "road23"],
+  ["road19", "road1", "road76", "road16", "road51"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
@@ -75,35 +75,15 @@ const carSprites = {
   ],
 };
 
-const jeepSprites = {
-    NORTH: [
-        require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
-        require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
-    ],
-    EAST: [
-        require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/EAST/SEPARATED/Brown_JEEP_CLEAN_EAST_000.png"),
-        require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/EAST/SEPARATED/Brown_JEEP_CLEAN_EAST_001.png"),
-    ],
-    NORTHEAST: [
-        require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTHEAST/SEPARATED/Brown_JEEP_CLEAN_NORTHEAST_000.png"),
-        require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTHEAST/SEPARATED/Brown_JEEP_CLEAN_NORTHEAST_001.png"),
-    ],
-};
-
 const treeSprites = {
   tree1: require("../../../../../assets/tree/Tree3_idle_s.png"),
-  // Add more tree variations if you have them
-  // tree2: require("../assets/tree/Tree2_idle_s"),
-  // tree3: require("../assets/tree/Tree1_idle_s"),
 };
 
 const treePositions = [
   // Left side trees (column -1, outside the road)
-    { row: 1, col: 0, type: 'tree1' },
-    { row: 2, col: 0, type: 'tree1' },
-    { row: 3, col: 0, type: 'tree1' },
-    { row: 4, col: 0, type: 'tree1' },
     { row: 5, col: 0, type: 'tree1' },
+    { row: 6, col: 0, type: 'tree1' },
+    { row: 7, col: 0, type: 'tree1' },
     { row: 8, col: 0, type: 'tree1' },
     { row: 9, col: 0, type: 'tree1' },
     { row: 10, col: 0, type: 'tree1' },
@@ -111,14 +91,7 @@ const treePositions = [
     { row: 12, col: 0, type: 'tree1' },
     { row: 13, col: 0, type: 'tree1' },
     { row: 14, col: 0, type: 'tree1' },
-    { row: 15, col: 0, type: 'tree1' },
-    { row: 16, col: 0, type: 'tree1' },
-    
   // right side trees
-    { row: 1, col: 3.5, type: 'tree1' },
-    { row: 2, col: 3.5, type: 'tree1' },
-    { row: 3, col: 3.5, type: 'tree1' },
-    { row: 4, col: 3.5, type: 'tree1' },
     { row: 5, col: 3.5, type: 'tree1' },
     { row: 6, col: 3.5, type: 'tree1' },
     { row: 7, col: 3.5, type: 'tree1' },
@@ -129,13 +102,7 @@ const treePositions = [
     { row: 12, col: 3.5, type: 'tree1' },
     { row: 13, col: 3.5, type: 'tree1' },
     { row: 14, col: 3.5, type: 'tree1' },
-    { row: 15, col: 3.5, type: 'tree1' },
-    { row: 16, col: 3.5, type: 'tree1' },
 // scattered trees right side
-    { row: 1.5, col: 4, type: 'tree1' },
-    { row: 2.5, col: 4, type: 'tree1' },
-    { row: 3.5, col: 4, type: 'tree1' },
-    { row: 4.5, col: 4, type: 'tree1' },
     { row: 5.5, col: 4, type: 'tree1' },
     { row: 6.5, col: 4, type: 'tree1' },
     { row: 7.5, col: 4, type: 'tree1' },
@@ -146,28 +113,47 @@ const treePositions = [
     { row: 12.5, col: 4, type: 'tree1' },
     { row: 13.5, col: 4, type: 'tree1' },
     { row: 14.5, col: 4, type: 'tree1' },
-    { row: 15.5, col: 4, type: 'tree1' },
-    { row: 16.5, col: 4, type: 'tree1' },
+    //top side trees
+    { row: 1.4, col: 0, type: 'tree1' },
+    { row: 1.4, col: 1, type: 'tree1' },
+    { row: 1.4, col: 2, type: 'tree1' },
+    { row: 1.4, col: 3, type: 'tree1' },
+    { row: 1.4, col: 4, type: 'tree1' },
+    { row: 1, col: 0.5, type: 'tree1' },
+    { row: 1, col: 1.5, type: 'tree1' },
+    { row: 1, col: 2.5, type: 'tree1' },
+    { row: 1, col: 3.5, type: 'tree1' },
+    { row: 1, col: 4.5, type: 'tree1' },
 ];
 
 const questions = [
   {
-    question: "You're driving along Commonwealth Avenue when you see a Side road junction ahead warning sign. As you approach the junction, you notice a jeepney from the side road is already halfway into the main road, blocking part of your lane while waiting for a gap in oncoming traffic.",
-    options: ["Slow down and give a brief courtesy honk to alert the jeepney of your presence", "Change lanes to the left if clear, while reducing speed as you pass", "Stop completely and wait for the jeepney to finish its maneuver before proceeding"],
-    correct: "Stop completely and wait for the jeepney to finish its maneuver before proceeding",
+    question: "You're driving along EDSA and see a T-Junction ahead warning sign followed by an intersection direction sign showing Mandaluyong ➡ and Makati ⬅. Traffic is moderate, and you need to go to Makati.",
+    options: ["Speed up to beat the traffic and make a quick left turn", "Slow down, check for oncoming traffic, signal left, and turn when safe", "Stop completely at the intersection and wait for all traffic to clear"],
+    correct: "Slow down, check for oncoming traffic, signal left, and turn when safe",
     wrongExplanation: {
-      "Slow down and give a brief courtesy honk to alert the jeepney of your presence": "Wrong!  While a brief honk isn't inherently dangerous, slowing down without stopping when the jeepney is blocking your lane could still result in a collision if it moves unpredictably.",
-      "Change lanes to the left if clear, while reducing speed as you pass": "Wrong! Changing lanes near an intersection with a vehicle blocking traffic creates additional hazards. Other drivers may not expect the lane change, and you're moving into a potentially unsafe situation."
+      "Speed up to beat the traffic and make a quick left turn": "Wrong! Speeding up near intersections is dangerous and violates traffic safety rules. The T-junction sign warns you to prepare for the intersection.",
+      "Stop completely at the intersection and wait for all traffic to clear": "Wrong! Stopping completely when not required can cause traffic congestion and rear-end collisions. You only need to yield, not stop completely."
     }
   },
-  // Add more questions here as needed
 ];
 
 const trafficSign = {
-  sign: require("../../../../../assets/signs/t_junction3.png"),
+  sign: require("../../../../../assets/signs/dir_sign_1.png"),
+};
+const trafficSign2 = {
+  sign: require("../../../../../assets/signs/t_junction1.png"),
 };
 
 export default function DrivingGame() {
+
+  const {
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+    sessionData
+  } = useSession();
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
@@ -179,10 +165,14 @@ export default function DrivingGame() {
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  // Traffic Sign position (place it before the pedestrian crossing)
-  const trafficSignRowIndex = 4.8; // One row before the 'crossing' point
-  const trafficSignColIndex = 3; // Left side of the road
+  // Traffic Sign position
+  const trafficSignRowIndex = 4.8;
+  const trafficSignColIndex = 3;
   const trafficSignXOffset = -30;
+
+  const trafficSign2RowIndex = 5.3;
+  const trafficSign2ColIndex = 3;
+  const trafficSign2XOffset = -30;
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -204,16 +194,27 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
 
-  // Jeepney states and animations
-  const [showJeepney, setShowJeepney] = useState(false);
-  const [jeepneyFrame, setJeepneyFrame] = useState(0);
-  const [jeepneyDirection, setJeepneyDirection] = useState("EAST");
-  const jeepneyXAnim = useRef(new Animated.Value(-carWidth)).current;
-  const jeepneyYAnim = useRef(new Animated.Value(0)).current;
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      // Intersection Phase 1: scenarios 61-70
+      const scenarioId = 60 + currentScenario;
+      
+      console.log('🔍 SCENARIO DEBUG:', {
+        currentScenario,
+        calculatedScenarioId: scenarioId,
+        selectedOption,
+        isCorrect
+      });
+      
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 8.5; // Adjusted to match the visual stop point
+    const stopRow = 8;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -232,7 +233,6 @@ export default function DrivingGame() {
     startScrollAnimation();
   }, []);
 
-  // Car sprite frame loop (stops when carPaused=true)
   useEffect(() => {
     let iv;
     if (!carPaused && carSprites[carDirection]) {
@@ -243,118 +243,16 @@ export default function DrivingGame() {
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
 
-  // Jeepney sprite frame loop
-  useEffect(() => {
-    let iv;
-    if (showJeepney && jeepSprites[jeepneyDirection]) {
-      iv = setInterval(() => {
-        setJeepneyFrame((p) => (p + 1) % jeepSprites[jeepneyDirection].length);
-      }, 200);
-    }
-    return () => clearInterval(iv);
-  }, [showJeepney, jeepneyDirection]);
-
   // feedback anims
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
   const [animationType, setAnimationType] = useState(null);
   const [showNext, setShowNext] = useState(false);
 
-  const animateJeepney = (scenario) => {
-    setShowJeepney(true);
-    
-    // Position jeepney at row 10 (intersection area)
-    const jeepneyStartRow = 8;
-    const jeepneyRowPosition = jeepneyStartRow * tileSize;
-    const mapTopPosition = Math.abs(currentScroll.current - startOffset);
-    const jeepneyScreenY = jeepneyRowPosition - mapTopPosition;
-    
-    jeepneyYAnim.setValue(jeepneyScreenY);
-    jeepneyXAnim.setValue(-carWidth); // Start from left side
-
-    if (scenario === "courtesy_honk" || scenario === "change_lanes") {
-      // Jeepney turns from left side road into main road
-      setJeepneyDirection("EAST");
-      
-      // Move jeepney from left to center of road
-      Animated.sequence([
-        // Phase 1: Move east into the intersection
-        Animated.timing(jeepneyXAnim, {
-          toValue: tileSize * 1.5, // Move to center of intersection
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        // Phase 2: Change direction to northeast and continue
-        Animated.timing(jeepneyXAnim, {
-          toValue: tileSize * 2, // Move slightly more right
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        // Phase 3: Turn north and continue up the road
-        setJeepneyDirection("NORTHEAST");
-        setTimeout(() => {
-          setJeepneyDirection("NORTH");
-          Animated.parallel([
-            Animated.timing(jeepneyXAnim, {
-              toValue: tileSize * 2.2, // Align with right lane
-              duration: 1000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(jeepneyYAnim, {
-              toValue: jeepneyScreenY - tileSize * 3, // Move up the road
-              duration: 2000,
-              useNativeDriver: true,
-            }),
-          ]).start();
-        }, 300);
-      });
-    } else if (scenario === "stop_and_wait") {
-      // Jeepney completes full turn and exits before car moves
-      setJeepneyDirection("EAST");
-      
-      Animated.sequence([
-        // Move across intersection
-        Animated.timing(jeepneyXAnim, {
-          toValue: tileSize * 1.5,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        // Turn northeast
-        Animated.timing(jeepneyXAnim, {
-          toValue: tileSize * 2,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setJeepneyDirection("NORTHEAST");
-        setTimeout(() => {
-          setJeepneyDirection("NORTH");
-          // Complete the turn and move away
-          Animated.parallel([
-            Animated.timing(jeepneyXAnim, {
-              toValue: tileSize * 2.2,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(jeepneyYAnim, {
-              toValue: jeepneyScreenY - tileSize * 5, // Move far up
-              duration: 2500,
-              useNativeDriver: true,
-            }),
-          ]).start(() => {
-            // Hide jeepney after it's far away
-            setTimeout(() => setShowJeepney(false), 1000);
-          });
-        }, 400);
-      });
-    }
-  };
-
   const handleFeedback = (answerGiven) => {
       const currentQuestion = questions[questionIndex];
       if (answerGiven === currentQuestion.correct) {
-        setIsCorrectAnswer(true); // Set to true for correct feedback
+        setIsCorrectAnswer(true);
         setAnimationType("correct");
         Animated.timing(correctAnim, {
           toValue: 1,
@@ -365,7 +263,7 @@ export default function DrivingGame() {
           setShowNext(true);
         });
       } else {
-        setIsCorrectAnswer(false); // Set to false for wrong feedback
+        setIsCorrectAnswer(false);
         setAnimationType("wrong");
         Animated.timing(wrongAnim, {
           toValue: 1,
@@ -378,75 +276,85 @@ export default function DrivingGame() {
       }
     };
   
-
-  const handleAnswer = (answer) => {
+  const handleAnswer = async (answer) => {  
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
+
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
-    if (answer === "Slow down and give a brief courtesy honk to alert the jeepney of your presence") {
-        // Start jeepney animation immediately
-        animateJeepney("courtesy_honk");
-        
-        const targetRow = 11;
-        const rowsToMove = targetRow - currentRow;
-        const nextTarget = currentScroll.current + rowsToMove * tileSize;
+    if (answer === "Speed up to beat the traffic and make a quick left turn") {
+      const turnStartRow = 10;
+      const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
-        // Car slows down but continues moving
-        setTimeout(() => {
-            Animated.timing(scrollY, {
-                toValue: nextTarget,
-                duration: 4000, // Slower movement
+      Animated.timing(scrollY, {
+        toValue: initialScrollTarget,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start(() => {
+        const turnSequence = ["NORTH", "NORTHWEST", "WEST"];
+        let currentTurnStep = 0;
+
+        const animateTurnAndMove = () => {
+          if (currentTurnStep < turnSequence.length) {
+            setCarDirection(turnSequence[currentTurnStep]);
+            setCarFrame(0);
+
+            let deltaX = 0;
+            let deltaYScroll = 0;
+
+            if (turnSequence[currentTurnStep] === "NORTHWEST") {
+              deltaX = -tileSize / 4;
+              deltaYScroll = tileSize / 4;
+            } else if (turnSequence[currentTurnStep] === "WEST") {
+              deltaX = -tileSize / 2;
+              deltaYScroll = tileSize / 2;
+            }
+
+            const currentCarX = carXAnim._value;
+            const currentScrollY = scrollY._value;
+
+            Animated.parallel([
+              Animated.timing(carXAnim, {
+                toValue: currentCarX + deltaX,
+                duration: 300,
+                useNativeDriver: false,
+              }),
+              Animated.timing(scrollY, {
+                toValue: currentScrollY + deltaYScroll,
+                duration: 300,
                 useNativeDriver: true,
-            }).start(() => {
-                handleFeedback(answer);
+              }),
+            ]).start(() => {
+              currentTurnStep++;
+              animateTurnAndMove();
             });
-        }, 1000);
-        
-    } else if (answer === "Change lanes to the left if clear, while reducing speed as you pass") {
-        // Start jeepney animation
-        animateJeepney("change_lanes");
-        
-        const targetRow = 10;
-        const rowsToMove = targetRow - currentRow;
-        const nextTarget = currentScroll.current + rowsToMove * tileSize;
-
-        // Car changes lanes (moves left) and then continues
-        setTimeout(() => {
-            setCarDirection("NORTHWEST");
-            // Move car to left lane
+          } else {
             Animated.timing(carXAnim, {
-                toValue: width / 2 - carWidth / 2 - tileSize * 0.8, // Move to left lane
-                duration: 1000,
-                useNativeDriver: true,
+              toValue: -width,
+              duration: 2500,
+              useNativeDriver: false,
             }).start(() => {
-                // Continue forward in left lane
-                setCarDirection("NORTH");
-                Animated.timing(scrollY, {
-                    toValue: nextTarget,
-                    duration: 3000,
-                    useNativeDriver: true,
-                }).start(() => {
-                    handleFeedback(answer);
-                });
+              setIsCarVisible(false);
+              handleFeedback(answer);
             });
-        }, 1500);
-        
-    } else if(answer === "Stop completely and wait for the jeepney to finish its maneuver before proceeding"){
-        // Start jeepney animation first
-        animateJeepney("stop_and_wait");
-        
-        const targetRow = 10;
+          }
+        };
+        animateTurnAndMove();
+      });
+      return;
+    } else if (answer === "Stop completely at the intersection and wait for all traffic to clear") {
+        const targetRow = 8;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-        setCarPaused(true); // Car stops completely
-        
-        // Wait for jeepney to complete its maneuver (longer delay)
+        setCarPaused(true);
         setTimeout(() => {
-            setCarPaused(false); // Car resumes after jeepney is clear
+            setCarPaused(false);
             Animated.timing(scrollY, {
                 toValue: nextTarget,
                 duration: 2000,
@@ -454,16 +362,78 @@ export default function DrivingGame() {
             }).start(() => {
                 handleFeedback(answer);
             });
-        }, 5000); // Wait 5 seconds for jeepney to clear
-    }
-};
+        }, 1500);
+    } else if(answer === "Slow down, check for oncoming traffic, signal left, and turn when safe"){
+        const turnStartRow = 10;
+        const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
-  const handleNext = () => {
+        Animated.timing(scrollY, {
+          toValue: initialScrollTarget,
+          duration: 2000,
+          useNativeDriver: true,
+        }).start(() => {
+          setTimeout(() => {
+            const turnSequence = ["NORTH", "NORTHWEST", "WEST"];
+            let currentTurnStep = 0;
+
+            const animateTurnAndMove = () => {
+              if (currentTurnStep < turnSequence.length) {
+                setCarDirection(turnSequence[currentTurnStep]);
+                setCarFrame(0);
+
+                let deltaX = 0;
+                let deltaYScroll = 0;
+
+                if (turnSequence[currentTurnStep] === "NORTHWEST") {
+                  deltaX = -tileSize / 4;
+                  deltaYScroll = tileSize / 4;
+                } else if (turnSequence[currentTurnStep] === "WEST") {
+                  deltaX = -tileSize / 2;
+                  deltaYScroll = tileSize / 2;
+                }
+
+                const currentCarX = carXAnim._value;
+                const currentScrollY = scrollY._value;
+
+                Animated.parallel([
+                  Animated.timing(carXAnim, {
+                    toValue: currentCarX + deltaX,
+                    duration: 500,
+                    useNativeDriver: false,
+                  }),
+                  Animated.timing(scrollY, {
+                    toValue: currentScrollY + deltaYScroll,
+                    duration: 500,
+                    useNativeDriver: true,
+                  }),
+                ]).start(() => {
+                  currentTurnStep++;
+                  animateTurnAndMove();
+                });
+              } else {
+                Animated.timing(carXAnim, {
+                  toValue: -width,
+                  duration: 1000,
+                  useNativeDriver: false,
+                }).start(() => {
+                  setIsCarVisible(false);
+                  handleFeedback(answer);
+                });
+              }
+            };
+            animateTurnAndMove();
+          }, 1000);
+        });
+      return;
+    }
+  };
+
+  const handleNext = async () => { 
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setCarFrame(0);
-    setShowJeepney(false);
+    setIsCorrectAnswer(null);
     
     // Reset car position and visibility
     const centerX = width / 2 - carWidth / 2;
@@ -472,19 +442,37 @@ export default function DrivingGame() {
     setIsCarVisible(true);
     setCarPaused(false);
     
-    // Reset jeepney
-    jeepneyXAnim.setValue(-carWidth);
-    jeepneyYAnim.setValue(0);
-    setJeepneyDirection("EAST");
-    setJeepneyFrame(0);
-    
     if (questionIndex < questions.length - 1) {
+      // Next question in current scenario
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
+    } else if (currentScenario === 10) {
+      // Last scenario - complete session
+      try {
+        console.log('🔍 Completing session for scenario 10...');
+        const sessionResults = await completeSession();
+        
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session.');
+          return;
+        }
+        
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
     } else {
-      router.push('/driver-game/intersections/phase-1/S3P1');
-      setQuestionIndex(0);
-      setShowQuestion(false);
+      // Move to next scenario (S1P1 → S2P1 → ... → S10P1)
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P1`;
+      router.push(`/scenarios/intersection/phase1/${nextScreen}`);
     }
   };
 
@@ -492,24 +480,20 @@ export default function DrivingGame() {
   const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;
   const trafficSignTop = trafficSignRowIndex * tileSize;
 
+  const trafficSign2Left = trafficSign2ColIndex * tileSize + trafficSign2XOffset;
+  const trafficSign2Top = trafficSign2RowIndex * tileSize;
+
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct!  When a vehicle is already occupying part of your travel path at an intersection, the safest action is to stop and allow it to complete its maneuver. This prevents accidents and follows proper defensive driving principles."
+    ? "Correct! This follows proper intersection protocol - reduce speed when approaching intersections, signal your intention, check for oncoming traffic, and proceed when safe."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
-  // Ensure car sprite exists for current direction
   const currentCarSprite = carSprites[carDirection] && carSprites[carDirection][carFrame] 
     ? carSprites[carDirection][carFrame] 
     : carSprites["NORTH"][0];
 
-  // Ensure jeepney sprite exists for current direction
-  const currentJeepneySprite = jeepSprites[jeepneyDirection] && jeepSprites[jeepneyDirection][jeepneyFrame]
-    ? jeepSprites[jeepneyDirection][jeepneyFrame]
-    : jeepSprites["EAST"][0];
-
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
-      {/* Map */}
       <Animated.View
         style={{
           position: "absolute",
@@ -536,7 +520,6 @@ export default function DrivingGame() {
             />
           ))
         )}
-        {/* Traffic Sign */}
         <Image
                 source={trafficSign.sign}
                 style={{
@@ -549,6 +532,18 @@ export default function DrivingGame() {
                 }}
                 resizeMode="contain"
                 />
+        <Image
+                source={trafficSign2.sign}
+                style={{
+                    width: tileSize * .8,
+                    height: tileSize *.8,
+                    position: "absolute",
+                    top: trafficSign2Top,
+                    left: trafficSign2Left,
+                    zIndex: 11,
+                }}
+                resizeMode="contain"
+                />        
 
         {treePositions.map((tree, index) => (
                           <Image
@@ -567,22 +562,6 @@ export default function DrivingGame() {
                         ))}
       </Animated.View>
 
-      {/* Jeepney - positioned relative to map */}
-      {showJeepney && (
-        <Animated.Image
-          source={currentJeepneySprite}
-          style={{
-            width: carWidth,
-            height: carHeight,
-            position: "absolute",
-            left: jeepneyXAnim,
-            top: jeepneyYAnim,
-            zIndex: 7,
-          }}
-        />
-      )}
-
-      {/* Car - fixed */}
       {isCarVisible && (
         <Animated.Image
           source={currentCarSprite}
@@ -597,7 +576,6 @@ export default function DrivingGame() {
         />
       )}
 
-      {/* Question overlay - moved to bottom */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -614,7 +592,6 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Answers - moved above bottom overlay */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -629,7 +606,6 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Feedback - moved to bottom */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -650,7 +626,6 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Next button - positioned above bottom overlay */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
@@ -663,7 +638,6 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -674,14 +648,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  // No intro styles (responsive)
-  // In-game responsive styles
  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -738,7 +710,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -753,7 +725,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 22),
+    fontSize: Math.min(width * 0.06, 20),
     fontWeight: "bold",
     textAlign: "center",
   },
