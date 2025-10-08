@@ -92,9 +92,9 @@ export default function ProfileScreen() {
 
   const calculateAccuracy = (categoryKey) => {
     if (!stats || !stats[categoryKey]) return 0;
-    const { completed_scenarios, correct_answers } = stats[categoryKey];
-    if (completed_scenarios === 0) return 0;
-    return Math.round((correct_answers / completed_scenarios) * 100);
+    const { correct_answers } = stats[categoryKey];
+    // Calculate percentage out of 30
+    return Math.round((correct_answers / 30) * 100);
   };
 
   const getStatusBadge = (accuracy) => {
@@ -194,7 +194,7 @@ export default function ProfileScreen() {
                 {key.replace(/_/g, " ").toUpperCase()}:
               </Text>
               <Text style={styles.statValue}>
-                {data.correct_answers || 0}/{data.completed_scenarios || 0} correct
+                {data.correct_answers || 0}/30 correct
               </Text>
             </View>
           ))}

@@ -660,11 +660,11 @@ app.post('/user-progress/scenario', async (req, res) => {
   }
 });
 
-// GET /user-stats/:userId - Fetch aggregated user statistics
+// GET /user-stats/:userId - Fetch aggregated user statistics (UNIQUE SCENARIOS)
 app.get('/user-stats/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     // Get all categories
     const { data: categories, error: categoriesError } = await supabase
       .from('categories')
@@ -680,22 +680,21 @@ app.get('/user-stats/:userId', async (req, res) => {
 
     const stats = {};
 
-    // For each category, calculate statistics
+    // For each category, calculate statistics based on UNIQUE correct scenarios
     for (const category of categories) {
       const categoryKey = category.name.toLowerCase().replace(/\s+/g, '_');
-      
+
       try {
         // Get phases for this category
         const { data: phases } = await supabase
           .from('phases')
           .select('id')
           .eq('category_id', category.id);
-        
+
         if (!phases || phases.length === 0) {
           stats[categoryKey] = {
-            total_scenarios: 0,
+            total_scenarios: 30, // Always 30 per category
             completed_scenarios: 0,
-            total_attempts: 0,
             correct_answers: 0
           };
           continue;
@@ -707,43 +706,53 @@ app.get('/user-stats/:userId', async (req, res) => {
           .from('scenarios')
           .select('id')
           .in('phase_id', phaseIds);
-        
+
         if (!scenarios || scenarios.length === 0) {
           stats[categoryKey] = {
-            total_scenarios: 0,
+            total_scenarios: 30,
             completed_scenarios: 0,
-            total_attempts: 0,
             correct_answers: 0
           };
           continue;
         }
 
-        // Get user attempts for these scenarios
         const scenarioIds = scenarios.map(s => s.id);
-        const { data: attempts } = await supabase
+
+        // KEY CHANGE: Get DISTINCT scenario_ids where user got it correct AT LEAST ONCE
+        const { data: correctAttempts } = await supabase
           .from('user_attempts')
-          .select('scenario_id, is_correct')
+          .select('scenario_id')
+          .eq('user_id', userId)
+          .eq('is_correct', true)
+          .in('scenario_id', scenarioIds);
+
+        // Get unique scenario IDs that were answered correctly
+        const uniqueCorrectScenarios = correctAttempts
+          ? [...new Set(correctAttempts.map(a => a.scenario_id))]
+          : [];
+
+        // Get all attempted scenarios (for completed_scenarios count)
+        const { data: allAttempts } = await supabase
+          .from('user_attempts')
+          .select('scenario_id')
           .eq('user_id', userId)
           .in('scenario_id', scenarioIds);
 
-        const totalScenarios = scenarios.length;
-        const userAttempts = attempts || [];
-        const completedScenarios = new Set(userAttempts.map(a => a.scenario_id)).size;
-        const totalAttempts = userAttempts.length;
-        const correctAnswers = userAttempts.filter(a => a.is_correct).length;
+        const uniqueAttemptedScenarios = allAttempts
+          ? [...new Set(allAttempts.map(a => a.scenario_id))]
+          : [];
 
         stats[categoryKey] = {
-          total_scenarios: totalScenarios,
-          completed_scenarios: completedScenarios,
-          total_attempts: totalAttempts,
-          correct_answers: correctAnswers
+          total_scenarios: 30, // Fixed at 30 per category
+          completed_scenarios: uniqueAttemptedScenarios.length,
+          correct_answers: uniqueCorrectScenarios.length // This is what matters for /30
         };
+
       } catch (err) {
         console.error(`Error processing category ${category.name}:`, err);
         stats[categoryKey] = {
-          total_scenarios: 0,
+          total_scenarios: 30,
           completed_scenarios: 0,
-          total_attempts: 0,
           correct_answers: 0
         };
       }
