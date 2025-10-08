@@ -119,7 +119,7 @@ const questions = [
   {
     question: "You're approaching a busy roundabout in Makati during lunch time. There's a Roundabout ahead sign, and you can see the circular intersection has continuous traffic. You need to take the second exit, and there's a motorcycle beside you also approaching the roundabout.",
     options: ["Race the motorcycle to enter the roundabout first", "Yield to traffic in the roundabout, coordinate with the motorcycle, and enter when both can safely do so", "Stop and wait for traffic to completely clear"],
-    correct: "Yield to traffic already in the roundabout, then enter when safe",
+    correct: "Yield to traffic in the roundabout, coordinate with the motorcycle, and enter when both can safely do so",
     wrongExplanation: {
       "Race the motorcycle to enter the roundabout first": "Accident Prone! Racing other vehicles is dangerous and illegal, especially near intersections and roundabouts.",
       "Stop and wait for traffic to completely clear": "Wrong! Waiting for complete clearance in heavy traffic areas like Makati would create massive traffic jams. Enter when there's a reasonable safe gap."
@@ -340,7 +340,7 @@ export default function DrivingGame() {
             }).start(() => {
                 handleFeedback(answer);
             });
-        }); // Added delay duration
+        }, 1500); // Added delay duration
     } else if(answer === "Yield to traffic in the roundabout, coordinate with the motorcycle, and enter when both can safely do so"){
         const turnStartRow = 10;
         const turnEndRow = 11;
@@ -427,29 +427,22 @@ export default function DrivingGame() {
       // Next question in current scenario
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-    } else if (currentScenario === 10) {
-      // Last scenario - complete session
-      try {
-        console.log('🔍 Completing session for scenario 10...');
-        const sessionResults = await completeSession();
-        
-        if (!sessionResults) {
-          Alert.alert('Error', 'Failed to complete session.');
-          return;
+      } else if (currentScenario >= 10) {
+        // Last scenario - complete session
+        try {
+          const sessionResults = await completeSession();
+          router.push({
+            pathname: '/result-page',
+            params: {
+              ...sessionResults,
+              userAttempts: JSON.stringify(sessionResults.attempts)
+            }
+          });
+        } catch (error) {
+          console.error('Error completing session:', error);
+          Alert.alert('Error', 'Failed to save session results');
         }
-        
-        router.push({
-          pathname: '/result',
-          params: {
-            ...sessionResults,
-            userAttempts: JSON.stringify(sessionResults.attempts)
-          }
-        });
-      } catch (error) {
-        console.error('Error completing session:', error);
-        Alert.alert('Error', 'Failed to save session results');
-      }
-    } else {
+      } else {
       // Move to next scenario
       moveToNextScenario();
       const nextScreen = `S${currentScenario + 1}P1`;
