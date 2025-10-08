@@ -324,7 +324,7 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      router.push('/driver-game/intersections/phase-2/S7P2');
+      router.push('S8P2');
       setQuestionIndex(0);
       setShowQuestion(false);
     }
