@@ -21,30 +21,30 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 const roadTiles = {
-  road1: require("../../../../assets/road/road1.png"),
-  road2: require("../../../../assets/road/road2.png"),
-  road3: require("../../../../assets/road/road3.png"),
-  road4: require("../../../../assets/road/road4.png"),
-  road9: require("../../../../assets/road/road9.png"),
-  road11: require("../../../../assets/road/road11.png"),
-  road12: require("../../../../assets/road/road12.png"),
-  road15: require("../../../../assets/road/road15.png"),
-  road16: require("../../../../assets/road/road16.png"),
-  road17: require("../../../../assets/road/road17.png"), 
-  road47: require("../../../../assets/road/road47.png"),
-  road48: require("../../../../assets/road/road48.png"),
-  road50: require("../../../../assets/road/road50.png"),
-  road54: require("../../../../assets/road/road54.png"),
-  road55: require("../../../../assets/road/road55.png"),
-  road56: require("../../../../assets/road/road56.png"),
-  road76: require("../../../../assets/road/road76.png"),
-  int1: require("../../../../assets/road/int1.png"),
-  int4: require("../../../../assets/road/int4.png"),
-  int10: require("../../../../assets/road/int10.png"),
-  int12: require("../../../../assets/road/int12.png"),
-  int13: require("../../../../assets/road/int13.png"),
-  int14: require("../../../../assets/road/int14.png"),
-  int15: require("../../../../assets/road/int15.png"),
+  road1: require("../../../../../assets/road/road1.png"),
+  road2: require("../../../../../assets/road/road2.png"),
+  road3: require("../../../../../assets/road/road3.png"),
+  road4: require("../../../../../assets/road/road4.png"),
+  road9: require("../../../../../assets/road/road9.png"),
+  road11: require("../../../../../assets/road/road11.png"),
+  road12: require("../../../../../assets/road/road12.png"),
+  road15: require("../../../../../assets/road/road15.png"),
+  road16: require("../../../../../assets/road/road16.png"),
+  road17: require("../../../../../assets/road/road17.png"), 
+  road47: require("../../../../../assets/road/road47.png"),
+  road48: require("../../../../../assets/road/road48.png"),
+  road50: require("../../../../../assets/road/road50.png"),
+  road54: require("../../../../../assets/road/road54.png"),
+  road55: require("../../../../../assets/road/road55.png"),
+  road56: require("../../../../../assets/road/road56.png"),
+  road76: require("../../../../../assets/road/road76.png"),
+  int1: require("../../../../../assets/road/int1.png"),
+  int4: require("../../../../../assets/road/int4.png"),
+  int10: require("../../../../../assets/road/int10.png"),
+  int12: require("../../../../../assets/road/int12.png"),
+  int13: require("../../../../../assets/road/int13.png"),
+  int14: require("../../../../../assets/road/int14.png"),
+  int15: require("../../../../../assets/road/int15.png"),
 };
 
 const mapLayout = [
@@ -72,28 +72,28 @@ const mapLayout = [
 
 const carSprites = {
   NORTH: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
   EAST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
   ],
   NORTHEAST: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
   ],
 };
 
 const busSprites = {
   NORTH: [
-    require("../../../../assets/car/BUS TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_BUS_CLEAN_NORTH_000.png"),
-    require("../../../../assets/car/BUS TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_BUS_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/BUS TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_BUS_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/BUS TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_BUS_CLEAN_NORTH_001.png"),
   ],
 };
 
 const treeSprites = {
-  tree1: require("../../../../assets/tree/Tree3_idle_s.png"),
+  tree1: require("../../../../../assets/tree/Tree3_idle_s.png"),
   // Add more tree variations if you have them
   // tree2: require("../assets/tree/Tree2_idle_s"),
   // tree3: require("../assets/tree/Tree1_idle_s"),
@@ -131,10 +131,10 @@ const questions = [
 ];
 
 const trafficSign = {
-  sign: require("../../../../assets/signs/dir_sign_3.png"),
+  sign: require("../../../../../assets/signs/dir_sign_3.png"),
 };
 const trafficSign2 = {
-  sign: require("../../../../assets/signs/t_junction4.png"),
+  sign: require("../../../../../assets/signs/t_junction4.png"),
 };
 
 export default function DrivingGame() {
@@ -509,7 +509,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../assets/dialog/LTO.png")}
+            source={require("../../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -540,7 +540,7 @@ export default function DrivingGame() {
       {/* Feedback - moved to bottom */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -549,7 +549,7 @@ export default function DrivingGame() {
 
       {animationType === "wrong" && (
         <View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>
                 {feedbackMessage}

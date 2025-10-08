@@ -22,22 +22,22 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 const roadTiles = {
-    road1: require("../../../../assets/road/road1.png"),
-    road3: require("../../../../assets/road/road3.png"),
-    road4: require("../../../../assets/road/road4.png"),
-    road17: require("../../../../assets/road/road17.png"),
-    road18: require("../../../../assets/road/road18.png"),
-    road19: require("../../../../assets/road/road19.png"), 
-    road20: require("../../../../assets/road/road20.png"),
-    road21: require("../../../../assets/road/road21.png"),
-    road50: require("../../../../assets/road/road50.png"),
-    road76: require("../../../../assets/road/road76.png"),
-    road84: require("../../../../assets/road/road84.png"),
-    road86: require("../../../../assets/road/road86.png"),
-    int1: require("../../../../assets/road/int1.png"),
-    int2: require("../../../../assets/road/int2.png"),
-    int3: require("../../../../assets/road/int3.png"),
-    int4: require("../../../../assets/road/int4.png"),
+    road1: require("../../../../../assets/road/road1.png"),
+    road3: require("../../../../../assets/road/road3.png"),
+    road4: require("../../../../../assets/road/road4.png"),
+    road17: require("../../../../../assets/road/road17.png"),
+    road18: require("../../../../../assets/road/road18.png"),
+    road19: require("../../../../../assets/road/road19.png"), 
+    road20: require("../../../../../assets/road/road20.png"),
+    road21: require("../../../../../assets/road/road21.png"),
+    road50: require("../../../../../assets/road/road50.png"),
+    road76: require("../../../../../assets/road/road76.png"),
+    road84: require("../../../../../assets/road/road84.png"),
+    road86: require("../../../../../assets/road/road86.png"),
+    int1: require("../../../../../assets/road/int1.png"),
+    int2: require("../../../../../assets/road/int2.png"),
+    int3: require("../../../../../assets/road/int3.png"),
+    int4: require("../../../../../assets/road/int4.png"),
 };
 
 const mapLayout = [
@@ -63,29 +63,29 @@ const mapLayout = [
 
 const carSprites = {
   NORTH: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
 
 };
 
 const jeepSprites = {
     NORTH: [
-        require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
-        require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
+        require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
+        require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
     ],
     EAST: [
-        require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/EAST/SEPARATED/Brown_JEEP_CLEAN_EAST_000.png"),
-        require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/EAST/SEPARATED/Brown_JEEP_CLEAN_EAST_001.png"),
+        require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/EAST/SEPARATED/Brown_JEEP_CLEAN_EAST_000.png"),
+        require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/EAST/SEPARATED/Brown_JEEP_CLEAN_EAST_001.png"),
     ],
     NORTHEAST: [
-        require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTHEAST/SEPARATED/Brown_JEEP_CLEAN_NORTHEAST_000.png"),
-        require("../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTHEAST/SEPARATED/Brown_JEEP_CLEAN_NORTHEAST_001.png"),
+        require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTHEAST/SEPARATED/Brown_JEEP_CLEAN_NORTHEAST_000.png"),
+        require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTHEAST/SEPARATED/Brown_JEEP_CLEAN_NORTHEAST_001.png"),
     ],
 };
 
 const treeSprites = {
-  tree1: require("../../../../assets/tree/Tree3_idle_s.png"),
+  tree1: require("../../../../../assets/tree/Tree3_idle_s.png"),
   // Add more tree variations if you have them
   // tree2: require("../assets/tree/Tree2_idle_s"),
   // tree3: require("../assets/tree/Tree1_idle_s"),
@@ -158,7 +158,7 @@ const questions = [
 ];
 
 const trafficSign = {
-  sign: require("../../../../assets/signs/t_junction3.png"),
+  sign: require("../../../../../assets/signs/t_junction3.png"),
 };
 
 export default function DrivingGame() {
@@ -585,7 +585,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../assets/dialog/LTO.png")}
+            source={require("../../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -616,7 +616,7 @@ export default function DrivingGame() {
       {/* Feedback - moved to bottom */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -625,7 +625,7 @@ export default function DrivingGame() {
 
       {animationType === "wrong" && (
         <View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>
                 {feedbackMessage}

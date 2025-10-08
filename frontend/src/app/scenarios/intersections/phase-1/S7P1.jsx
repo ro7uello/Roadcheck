@@ -23,13 +23,13 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 const roadTiles = {
-  road2: require("../../../../assets/road/road2.png"),
-  road3: require("../../../../assets/road/road3.png"),
-  road4: require("../../../../assets/road/road4.png"),
-  road48: require("../../../../assets/road/road48.png"),
-  road80: require("../../../../assets/road/road80.png"),
-  road87: require("../../../../assets/road/road87.png"),
-  road92: require("../../../../assets/road/road92.png"),
+  road2: require("../../../../../assets/road/road2.png"),
+  road3: require("../../../../../assets/road/road3.png"),
+  road4: require("../../../../../assets/road/road4.png"),
+  road48: require("../../../../../assets/road/road48.png"),
+  road80: require("../../../../../assets/road/road80.png"),
+  road87: require("../../../../../assets/road/road87.png"),
+  road92: require("../../../../../assets/road/road92.png"),
 };
 
 const mapLayout = [
@@ -50,38 +50,38 @@ const mapLayout = [
 
 const carSprites = {
   NORTH: [
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
 };
 
 const truckSprites = {
   NORTH: [
-    require("../../../../assets/car/BOX TRUCK TOPDOWN/White/MOVE/NORTH/SEPARATED/White_BOXTRUCK_CLEAN_NORTH_000.png"),
-    require("../../../../assets/car/BOX TRUCK TOPDOWN/White/MOVE/NORTH/SEPARATED/White_BOXTRUCK_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/BOX TRUCK TOPDOWN/White/MOVE/NORTH/SEPARATED/White_BOXTRUCK_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/BOX TRUCK TOPDOWN/White/MOVE/NORTH/SEPARATED/White_BOXTRUCK_CLEAN_NORTH_001.png"),
   ], 
   NORTHWEST: [
-    require("../../../../assets/car/BOX TRUCK TOPDOWN/White/MOVE/NORTHWEST/SEPARATED/White_BOXTRUCK_CLEAN_NORTHWEST_000.png"),
-    require("../../../../assets/car/BOX TRUCK TOPDOWN/White/MOVE/NORTHWEST/SEPARATED/White_BOXTRUCK_CLEAN_NORTHWEST_001.png"),
+    require("../../../../../assets/car/BOX TRUCK TOPDOWN/White/MOVE/NORTHWEST/SEPARATED/White_BOXTRUCK_CLEAN_NORTHWEST_000.png"),
+    require("../../../../../assets/car/BOX TRUCK TOPDOWN/White/MOVE/NORTHWEST/SEPARATED/White_BOXTRUCK_CLEAN_NORTHWEST_001.png"),
   ]
 };
 
 const npcCarSprite1 = {
   NORTH: [
-    require("../../../../assets/car/SEDAN TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_SEDAN_CLEAN_NORTH_000.png"),
-    require("../../../../assets/car/SEDAN TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_SEDAN_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/SEDAN TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_SEDAN_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/SEDAN TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_SEDAN_CLEAN_NORTH_001.png"),
   ],
 };
 const npcCarSprite2 = {
   NORTH: [
-    require("../../../../assets/car/SEDAN TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_SEDAN_CLEAN_NORTH_000.png"),
-    require("../../../../assets/car/SEDAN TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_SEDAN_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/SEDAN TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_SEDAN_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/SEDAN TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_SEDAN_CLEAN_NORTH_001.png"),
   ],
 };
 const npcCarSprite3 = {
   NORTH: [
-    require("../../../../assets/car/SEDAN TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_SEDAN_CLEAN_NORTH_000.png"),
-    require("../../../../assets/car/SEDAN TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_SEDAN_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/SEDAN TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_SEDAN_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/SEDAN TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_SEDAN_CLEAN_NORTH_001.png"),
   ],
 };
 const questions = [
@@ -98,7 +98,7 @@ const questions = [
 ];
 
 const trafficSign = {
-  sign: require("../../../../assets/signs/t_junction5.png"),
+  sign: require("../../../../../assets/signs/t_junction5.png"),
 };
 
 export default function DrivingGame() {
@@ -506,7 +506,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../assets/dialog/LTO.png")}
+            source={require("../../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -537,7 +537,7 @@ export default function DrivingGame() {
       {/* Feedback - moved to bottom */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -546,7 +546,7 @@ export default function DrivingGame() {
 
       {animationType === "wrong" && (
         <View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>
                 {feedbackMessage}
