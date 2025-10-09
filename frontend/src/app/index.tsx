@@ -1,5 +1,5 @@
 // src/app/index.tsx
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -9,7 +9,8 @@ import {
   ImageBackground,
   SafeAreaView,
   Animated,
-  Image
+  Image,
+  Modal
 } from 'react-native';
 import { router } from 'expo-router';
 
@@ -19,6 +20,7 @@ const BACKGROUND_SPEED = 12000;
 export default function Home() {
   const scrollAnimation = useRef(new Animated.Value(0)).current;
   const carAnimation = useRef(new Animated.Value(0)).current;
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
 
   React.useEffect(() => {
     const startBackgroundAnimation = () => {
@@ -71,10 +73,15 @@ export default function Home() {
   });
 
   const handleStartPress = () => {
-    router.push('/login');
+    setShowDisclaimer(true);
     console.log('Starting RoadCheck app...');
     console.log('All env vars:', process.env);
     console.log('API_URL specifically:', process.env.API_URL);
+  };
+
+  const handleDisclaimerAccept = () => {
+    setShowDisclaimer(false);
+    router.push('/login');
   };
 
   return (
@@ -140,6 +147,40 @@ export default function Home() {
         <View style={styles.startButton}>
           <Text style={styles.startText}>TAP ANYWHERE TO START!</Text>
         </View>
+
+        {/* Disclaimer Modal */}
+        <Modal
+          visible={showDisclaimer}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => {}} // Prevent closing without accepting
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.disclaimerModal}>
+              <View style={styles.disclaimerHeader}>
+                <Text style={styles.disclaimerTitle}>IMPORTANT DISCLAIMER</Text>
+              </View>
+              
+              <View style={styles.disclaimerContent}>
+                <Text style={styles.disclaimerText}>
+                  RoadCheck is a driving decision simulator. It only simulates scenarios that may or may not be encountered by the user on the road.{'\n\n'}
+                  
+                  Road directions and locations may not be accurate in real life.{'\n\n'}
+                  
+                  Please exercise defensive driving and adjust accordingly when you encounter these scenarios in real life.
+                </Text>
+              </View>
+
+              <TouchableOpacity 
+                style={styles.disclaimerButton}
+                onPress={handleDisclaimerAccept}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.disclaimerButtonText}>I UNDERSTAND</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </TouchableOpacity>
   );
@@ -227,5 +268,60 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
     letterSpacing: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  disclaimerModal: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    width: width * 0.85,
+    maxHeight: height * 0.75, 
+    minHeight: height * 0.65,
+    overflow: 'hidden',
+  },
+  disclaimerHeader: {
+    backgroundColor: '#ff4444',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  disclaimerTitle: {
+    fontSize: 16,
+    fontFamily: 'Pixel3',
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
+  },
+  disclaimerContent: {
+    flex: 1, // Added flex to take available space
+    padding: 20,
+    paddingBottom: 10,
+    justifyContent: 'center',
+  },
+  disclaimerText: {
+    fontSize: 11,
+    color: '#333',
+    lineHeight: 16,
+    fontFamily: 'Pixel3',
+    textAlign: 'center',
+  },
+  disclaimerButton: {
+    backgroundColor: '#4ef5a2',
+    marginHorizontal: 20,
+    marginBottom: 20, // Increased bottom margin
+    marginTop: 5, // Added top margin
+    paddingVertical: 10, // Increased padding for better visibility
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  disclaimerButtonText: {
+    color: 'white',
+    fontFamily: 'Pixel3',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
