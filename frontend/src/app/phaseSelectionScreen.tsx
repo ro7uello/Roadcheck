@@ -1,3 +1,4 @@
+// src/app/phaseSelectionScreen.tsx
 import { useFonts } from 'expo-font';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -132,7 +133,7 @@ export default function PhaseSelectionScreen() {
       console.log('=== PROGRESS UPDATE DEBUG ===');
 
       // Get user ID from storage (same way as optionPage)
-      let userId = await AsyncStorage.getItem('user_id');
+      let userId = await AsyncStorage.getItem('userId');
       if (!userId) {
         console.log('No user ID found in storage');
         return;
@@ -188,7 +189,7 @@ export default function PhaseSelectionScreen() {
     const categorySlugMap: { [key: string]: string } = {
       '1': 'road-markings',
       '2': 'traffic-signs',
-      '3': 'intersections'
+      '3': 'intersection'
     };
 
     let phaseNumber = 1; // Default

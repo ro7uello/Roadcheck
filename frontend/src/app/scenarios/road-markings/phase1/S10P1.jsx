@@ -1,14 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing, // <-- import Easing correctly
-} from "react-native";
+import { router } from 'expo-router';
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert, Easing } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
@@ -460,79 +452,68 @@ export default function DrivingGame() {
   };
 
   const handleNext = async () => {
-
     console.log('=== S10P1 HANDLE NEXT DEBUG ===');
-      console.log('Current scenario from session:', currentScenario);
-      console.log('Question index:', questionIndex);
-      console.log('Questions length:', questions.length);
-      console.log('Session data:', sessionData);
-      console.log('================================');
+    console.log('Current scenario from session:', currentScenario);
+    console.log('Question index:', questionIndex);
+    console.log('Questions length:', questions.length);
+    console.log('Session data:', sessionData);
+    console.log('================================');
+
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setIsCorrectAnswer(null);
-    setPlayerCarFrame(0);
-    setBusFrame(0);
+    setCarFrame(0);
 
-    const centerX = width / 2 - playerCarWidth / 2;
-    playerCarXAnim.setValue(centerX);
-    setPlayerCarDirection("NORTH");
-    setIsPlayerCarVisible(true);
-    setIsBusVisible(true);
+    const centerX = width / 2 - carWidth / 2;
+    carXAnim.setValue(centerX);
+    setCarDirection("NORTH");
 
-    busYAnim.setValue(-busHeight);
-
-    if (currentScenario >= 10 || true) {
+    if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-    } else {
-      // This is the last scenario (S10P1)
+    } else if (currentScenario >= 10) {
+      console.log('🎯 Scenario 10 complete! Finishing session...');
       try {
         const sessionResults = await completeSession();
 
-        if (sessionResults) {
-          console.log('Session results to pass:', sessionResults);
+        console.log('📊 Session results:', sessionResults);
 
-          navigation.navigate('ResultPage', {
-            sessionId: sessionResults.sessionId,
-            categoryId: sessionResults.categoryId,
-            phaseId: sessionResults.phaseId,
-            categoryName: sessionResults.categoryName,
-            totalTime: sessionResults.totalTime,
-            userAttempts: JSON.stringify(sessionResults.attempts),
-            scenarioProgress: JSON.stringify(sessionResults.scenarioProgress),
-            scenarioCount: '10'
-          });
-        } else {
-          console.error('No session results received');
-          // Fallback navigation
-          navigation.navigate('ResultPage', {
-            categoryId: sessionData?.category_id || '1',
-            phaseId: sessionData?.phase_id || '1',
-            categoryName: categoryName || 'Road Markings',
-            scenarioCount: '10'
-          });
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session. Please try again.');
+          return;
         }
-      } catch (error) {
-        console.error('Error completing session:', error);
-        // Fallback navigation
-        navigation.navigate('ResultPage', {
-          categoryId: sessionData?.category_id || '1',
-          phaseId: sessionData?.phase_id || '1',
-          categoryName: categoryName || 'Road Markings',
-          scenarioCount: '10'
+
+        console.log('✅ Navigating to result-page');
+        router.push({
+          pathname: '/result-page',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
         });
+      } catch (error) {
+        console.error('❌ Error completing session:', error);
+        Alert.alert('Error', `Failed to save session results: ${error.message}`);
+      }
+    } else {
+      // Move to next scenario
+      moveToNextScenario();
+
+      let phaseNumber;
+      const categoryId = sessionData?.category_id;
+      const phaseId = sessionData?.phase_id;
+
+      if (categoryId === 1) {
+        phaseNumber = phaseId;
+      } else if (categoryId === 2) {
+        phaseNumber = phaseId - 3;
+      } else if (categoryId === 3) {
+        phaseNumber = phaseId - 6;
       }
 
-      setShowQuestion(false);
-
-      // Cleanup animations
-      if (scrollAnimationRef.current) {
-        scrollAnimationRef.current.stop();
-      }
-      if (busAnimationRef.current) {
-        busAnimationRef.current.stop();
-      }
+      const nextScreen = `S${currentScenario + 1}P${phaseNumber}`;
+      router.push(`/scenarios/road-markings/phase${phaseNumber}/${nextScreen}`);
     }
   };
 

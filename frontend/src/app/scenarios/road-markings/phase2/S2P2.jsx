@@ -1,4 +1,5 @@
-import { useSession } from '../../../../contexts/SessionManager';
+// frontend/src/app/scenarios/road-markings/phase2/S2P2.jsx - backend updated code
+import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
 import { router } from 'expo-router';

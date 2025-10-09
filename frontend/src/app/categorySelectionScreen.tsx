@@ -27,9 +27,9 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.35:300
 export default function CategorySelectionScreen() {
   // Load font
   const [fontsLoaded] = useFonts({
-    'pixel': require('../../assets/fonts/pixel3.ttf'), // Fixed path
+    'pixel': require('../../assets/fonts/pixel3.ttf'),
   });
-  
+
   // State
   const [selectedMode, setSelectedMode] = useState('driver');
   const [isLoading, setIsLoading] = useState(false);
@@ -65,11 +65,8 @@ export default function CategorySelectionScreen() {
 
   const loadUserData = async () => {
     try {
-      // Load selected mode
       const mode = await AsyncStorage.getItem('selectedMode');
       setSelectedMode(mode || 'driver');
-      
-      // Load user progress
       await loadUserProgress();
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -77,53 +74,48 @@ export default function CategorySelectionScreen() {
   };
 
   const loadUserProgress = async () => {
-  try {
-    const token = await AsyncStorage.getItem('access_token');
-    if (token) {
-      // Use existing /attempts endpoint instead
-      const response = await fetch(`${API_BASE_URL}/attempts`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        const attempts = await response.json();
-        // Process attempts data to calculate progress
-        setUserProgress(attempts);
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      if (token) {
+        const response = await fetch(`${API_BASE_URL}/attempts`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const attempts = await response.json();
+          setUserProgress(attempts);
+        }
       }
+    } catch (error) {
+      console.error('Error loading user progress:', error);
     }
-  } catch (error) {
-    console.error('Error loading user progress:', error);
-  }
-};
+  };
 
-const saveUserProgress = async (categoryId, categoryName, route) => {
-  try {
-    setIsLoading(true);
-    
-    // Store locally first
-    await AsyncStorage.setItem('selectedCategory', JSON.stringify({
-      id: categoryId,
-      name: categoryName,
-      selectedAt: new Date().toISOString()
-    }));
-    
-    // Navigate immediately (don't wait for backend)
-    router.push(route);
-    
-  } catch (error) {
-    console.error('Error saving category progress:', error);
-    // Still navigate
-    router.push(route);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  const saveUserProgress = async (categoryId, categoryName, route) => {
+    try {
+      setIsLoading(true);
 
-useEffect(() => {
+      await AsyncStorage.setItem('selectedCategory', JSON.stringify({
+        id: categoryId,
+        name: categoryName,
+        selectedAt: new Date().toISOString()
+      }));
+
+      router.push(route);
+
+    } catch (error) {
+      console.error('Error saving category progress:', error);
+      router.push(route);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     Animated.spring(libraryModalScale, {
       toValue: libraryVisible ? 1 : 0,
       tension: 100,
@@ -139,8 +131,7 @@ useEffect(() => {
         toValue: 1,
         duration: BACKGROUND_SPEED,
         useNativeDriver: true,
-      }),
-      { iterations: -1 }
+      })
     ).start();
   };
 
@@ -158,12 +149,9 @@ useEffect(() => {
           duration: 1000,
           useNativeDriver: true,
         }),
-      ]),
-      { iterations: -1 }
+      ])
     ).start();
   };
-
-  // Replace the three handler functions in your categorySelectionScreen.tsx
 
   const handleRoadMarkingsPress = () => {
     if (isLoading) return;
@@ -180,7 +168,6 @@ useEffect(() => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      // Navigate to phase selection with category parameters
       saveUserProgress(1, 'Road Markings', '/phaseSelectionScreen?categoryId=1&categoryName=Road Markings&categorySlug=road-markings');
     });
   };
@@ -200,7 +187,6 @@ useEffect(() => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      // Navigate to phase selection with category parameters
       saveUserProgress(2, 'Traffic Signs', '/phaseSelectionScreen?categoryId=2&categoryName=Traffic Signs&categorySlug=traffic-signs');
     });
   };
@@ -220,24 +206,22 @@ useEffect(() => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      // Navigate to phase selection with category parameters
       saveUserProgress(3, 'Intersection and Others', '/phaseSelectionScreen?categoryId=3&categoryName=Intersection and Others&categorySlug=intersection-and-others');
     });
   };
 
-    const handleSettingsPress = () => {
-      router.push('/profile');
-    };
-  
-    const handleLibraryPress = async () => {
-        try {
-          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        } catch (error) {
-          // Haptics not available
-        }
-        setLibraryVisible(true);
-    };
-  
+  const handleSettingsPress = () => {
+    router.push('/profile');
+  };
+
+  const handleLibraryPress = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      // Haptics not available
+    }
+    setLibraryVisible(true);
+  };
 
   const goBack = () => {
     router.back();
@@ -251,7 +235,6 @@ useEffect(() => {
     );
   }
 
-  // Animation interpolations
   const backgroundTranslate = backgroundAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -width],
@@ -264,7 +247,7 @@ useEffect(() => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Moving Background */}
+      {/* Moving Background - FIXED */}
       <View style={styles.backgroundContainer}>
         <Animated.View
           style={[
@@ -273,10 +256,9 @@ useEffect(() => {
           ]}
         >
           <ImageBackground
-            source={require('../../assets/background/city-background.png')} // Fixed path
+            source={require('../../assets/background/city-background.png')}
             style={styles.backgroundImage}
-            resizeMode="stretch"
-            imageStyle={styles.backgroundImageStyle}
+            resizeMode="cover"
           />
         </Animated.View>
         <Animated.View
@@ -286,16 +268,12 @@ useEffect(() => {
           ]}
         >
           <ImageBackground
-            source={require('../../assets/background/city-background.png')} // Fixed path
+            source={require('../../assets/background/city-background.png')}
             style={styles.backgroundImage}
-            resizeMode="stretch"
-            imageStyle={styles.backgroundImageStyle}
+            resizeMode="cover"
           />
         </Animated.View>
       </View>
-
-      {/* Sky overlay for better contrast */}
-      <View style={styles.skyOverlay} />
 
       {/* Animated Car */}
       <Animated.View
@@ -307,7 +285,7 @@ useEffect(() => {
         ]}
       >
         <Image
-          source={require('../../assets/car/blue-car.png')} // Fixed path
+          source={require('../../assets/car/blue-car.png')}
           style={styles.carImage}
           resizeMode="contain"
         />
@@ -315,31 +293,31 @@ useEffect(() => {
 
       {/* Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
-              <Image
-                source={require('../../assets/icon/backButton.png')}
-                style={styles.backButtonImage}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
+        <Image
+          source={require('../../assets/icon/backButton.png')}
+          style={styles.backButtonImage}
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
 
       {/* Top Right Icons */}
       <View style={styles.topRightIcons}>
-              <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
-                <Image
-                  source={require('../../assets/icon/Settings.png')}
-                  style={styles.topIcon}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-      
-              <TouchableOpacity style={styles.iconButton} onPress={handleLibraryPress}>
-                <Image
-                  source={require('../../assets/icon/Library.png')}
-                  style={styles.topIcon}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            </View>
+        <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
+          <Image
+            source={require('../../assets/icon/Settings.png')}
+            style={styles.topIcon}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.iconButton} onPress={handleLibraryPress}>
+          <Image
+            source={require('../../assets/icon/Library.png')}
+            style={styles.topIcon}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Title */}
       <View style={styles.titleContainer}>
@@ -358,7 +336,7 @@ useEffect(() => {
           >
             <View style={styles.iconContainer}>
               <Image
-                source={require('../../assets/icon/roadmarkings.png')} // Fixed path
+                source={require('../../assets/icon/roadmarkings.png')}
                 style={styles.optionImage}
                 resizeMode="contain"
               />
@@ -384,7 +362,7 @@ useEffect(() => {
           >
             <View style={styles.iconContainer}>
               <Image
-                source={require('../../assets/icon/roadsigns.png')} // Fixed path
+                source={require('../../assets/icon/roadsigns.png')}
                 style={styles.optionImage}
                 resizeMode="contain"
               />
@@ -410,7 +388,7 @@ useEffect(() => {
           >
             <View style={styles.iconContainer}>
               <Image
-                source={require('../../assets/icon/intersection.png')} // Fixed path
+                source={require('../../assets/icon/intersection.png')}
                 style={styles.optionImage}
                 resizeMode="contain"
               />
@@ -435,61 +413,97 @@ useEffect(() => {
       )}
 
       {libraryVisible && (
-                    <Animated.View
-                      style={[
-                        styles.libraryPanel,
-                        { transform: [{ scale: libraryModalScale }] },
-                      ]}
-                    >
-                      <Image
-                        source={require('../../assets/background/settings-tab.png')}
-                        style={styles.settingsTab}
-                        resizeMode="stretch"
-                      />
-            
-                      <Text style={styles.libraryTitle}>REFERENCES</Text>
-            
-                      <View style={styles.libraryContent}>
-                        <ScrollView 
-                          style={styles.scrollView}
-                          contentContainerStyle={styles.scrollContent}
-                          showsVerticalScrollIndicator={true}
-                        >
-                          <View style={styles.referenceContainer}>
-                            <Text style={styles.referenceText}>
-                              Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
-                              <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
-                                <Text style={[styles.referenceText, styles.linkText]}>
-                                  https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
-                                </Text>
-                              </TouchableOpacity>
-                            </Text>
-                          </View>
-            
-                          <View style={styles.referenceContainer}>
-                            <Text style={styles.referenceText}>
-                              National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
-                              <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
-                                <Text style={[styles.referenceText, styles.linkText]}>
-                                  https://www.nhtsa.gov/road-safety/pedestrian-safety
-                                </Text>
-                              </TouchableOpacity>
-                            </Text>
-                          </View>
-                        </ScrollView>
-                      </View>
-            
-                      <TouchableOpacity
-                        style={styles.libraryBackButton}
-                        onPress={() => setLibraryVisible(false)}
-                      >
-                        <Image
-                          source={require('../../assets/background/back.png')}
-                          style={styles.backButtonImage}
-                        />
-                      </TouchableOpacity>
-                    </Animated.View>
-                  )}
+        <Animated.View
+          style={[
+            styles.libraryPanel,
+            { transform: [{ scale: libraryModalScale }] },
+          ]}
+        >
+          <Image
+            source={require('../../assets/background/settings-tab.png')}
+            style={styles.settingsTab}
+            resizeMode="stretch"
+          />
+
+          <Text style={styles.libraryTitle}>REFERENCES</Text>
+
+          <View style={styles.libraryContent}>
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={true}
+            >
+            <View style={styles.referenceContainer}>
+                <Text style={styles.sectionTitle}>Some Basic Signs and Markings to Remember</Text>
+                
+                <Text style={styles.subsectionTitle}>Traffic Signs</Text>
+                <Text style={styles.referenceText}>
+                  • Red Signal - means bring your vehicle to a stop at a marked line.{'\n\n'}
+                  • Flashing Red - means bring your vehicle to a STOP and proceed only when it is safe.{'\n\n'}
+                  • Yellow Signal - means the red signal is about to appear. Prepare to stop.{'\n\n'}
+                  • Flashing Yellow - means slow down and proceed with caution.{'\n\n'}
+                  • Green Signal - means you can proceed, yield if needed.{'\n\n'}
+                  • Flashing Green - proceed with caution. yield for pedestrian.{'\n'}
+                </Text>
+                
+                <Text style={styles.subsectionTitle}>Road Markings</Text>
+                <Text style={styles.referenceText}>
+                  • Solid White line - Crossing is discouraged and requires special care when doing so.{'\n\n'}
+                  • Broken White line - Changing of lane is allowed provided with care.{'\n\n'}
+                  • Double Solid Yellow line - No overtaking and No crossing{'\n\n'}
+                  • Single Solid Yellow line - Crossing is allowed but no overtaking{'\n\n'}
+                  • Broken Yellow line - Crossing and overtaking is allowed with necessary care.{'\n\n'}
+                  • Edge Line - Used to separate the outside edge of the road from the shoulder.{'\n'}
+                </Text>
+              </View>
+              <View style={styles.referenceContainer}>
+                <Text style={styles.referenceText}>
+                  Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
+                  <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
+                    <Text style={[styles.referenceText, styles.linkText]}>
+                      https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
+                    </Text>
+                  </TouchableOpacity>
+                </Text>
+              </View>
+
+              <View style={styles.referenceContainer}>
+                <Text style={styles.sectionTitle}>Basic Pedestrian Safety Tips</Text>
+                <Text style={styles.referenceText}>
+                  • Follow the rules of the road and obey signs and signals{'\n\n'}
+                  • Walk on sidewalks whenever possible. If there are no sidewalk, walk facing and as far from traffic as possible{'\n'}
+                  • Cross streets at crosswalks.{'\n\n'}
+                  • If a crosswalk is not available, walk at a well lit area where you have the best view of traffic. Wait for a gap in traffic that allows enough time to cross safely but continue to watch for traffic as you cross.{'\n\n'}
+                  • Watch for cars entering or exiting driveways or backing up.{'\n\n'}
+                  • When crossing the street, stay alert: <Text style={[styles.referenceText, { textDecorationLine: 'underline' }]}>check for signals, signs, and actions of drivers, cyclists, and pedestrians around you</Text>.{'\n\n'}
+                  • Do not rely on others to keep you safe.{'\n'}
+                </Text>
+              </View>
+
+              <View style={styles.referenceContainer}>
+                <Text style={styles.referenceText}>
+                  National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
+                  <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
+                    <Text style={[styles.referenceText, styles.linkText]}>
+                      https://www.nhtsa.gov/road-safety/pedestrian-safety
+                    </Text>
+                  </TouchableOpacity>
+                </Text>
+              </View>
+            </ScrollView>
+          </View>
+
+          <TouchableOpacity
+            style={styles.libraryBackButton}
+            onPress={() => setLibraryVisible(false)}
+          >
+            <Image
+              source={require('../../assets/background/back.png')}
+              style={styles.backButtonImage}
+            />
+          </TouchableOpacity>
+        </Animated.View>
+      )}
     </SafeAreaView>
   );
 }
@@ -511,30 +525,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    overflow: 'hidden',
   },
   backgroundWrapper: {
     position: 'absolute',
     width: width,
     height: height,
-  },
-  backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  backgroundImageStyle: {
-    width: '100%',
-    height: '100%',
-    transform: [{ scale: 1.3 }],
-  },
-  skyOverlay: {
-    position: 'absolute',
     top: 0,
     left: 0,
-    right: 0,
-    height: height * 0.7,
-    backgroundColor: 'rgba(135, 206, 235, 0.3)',
-    zIndex: 0,
+  },
+  backgroundImage: {
+    width: width,
+    height: height,
   },
   carContainer: {
     position: 'absolute',
@@ -675,21 +677,22 @@ const styles = StyleSheet.create({
     fontFamily: 'pixel',
     textAlign: 'center',
   },
-
-  backButtonImage: { width: 100, height: 30, resizeMode: 'contain', marginBottom:5 },
-
+  backButtonImage: {
+    width: 100,
+    height: 30,
+    resizeMode: 'contain',
+    marginBottom: 5
+  },
   settingsTab: {
     ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
   },
-
   linkText: {
     color: '#0066CC',
     textDecorationLine: 'underline',
   },
-
-   libraryPanel: {
+  libraryPanel: {
     position: 'absolute',
     top: height * 0.1,
     alignSelf: 'center',
@@ -724,7 +727,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   referenceText: {
-    fontSize: 10,
+    fontSize: 9,
     color: 'black',
     fontFamily: "Pixel3",
     lineHeight: 14,
@@ -734,5 +737,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 25,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subsectionTitle: {
+    fontSize: 10,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginTop: 10,
+    marginBottom: 5,
+    textDecorationLine: 'underline',
   },
 });

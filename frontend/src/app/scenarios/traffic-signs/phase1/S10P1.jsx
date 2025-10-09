@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
-import { useSession } from '../../../../contexts/SessionManager';
+import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
@@ -166,13 +166,26 @@ export default function DrivingGame() {
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      // Traffic Signs Phase 1: scenarios 31-40
-      // Traffic Signs Phase 2: scenarios 41-50
-      const phaseId = sessionData?.phase_id || 1;
-      const baseId = phaseId === 1 ? 30 : 40; // Adjust based on phase
-      const scenarioId = baseId + currentScenario;
+      // Get phase from sessionData
+      const phaseId = sessionData?.phase_id;
+
+      // Traffic Signs Phase 1 (phaseId = 4): scenarios 31-40
+      // Traffic Signs Phase 2 (phaseId = 5): scenarios 41-50
+      let scenarioId;
+
+      if (phaseId === 4) {
+        // Phase 1: scenarios 31-40
+        scenarioId = 30 + currentScenario;
+      } else if (phaseId === 5) {
+        // Phase 2: scenarios 41-50
+        scenarioId = 40 + currentScenario;
+      } else {
+        console.error('Unknown phase ID:', phaseId);
+        return;
+      }
 
       console.log('🔍 SCENARIO DEBUG:', {
+        phaseId,
         currentScenario,
         calculatedScenarioId: scenarioId,
         selectedOption,
@@ -372,41 +385,34 @@ export default function DrivingGame() {
     setIsCorrectAnswer(null);
     setCarFrame(0);
     carXAnim.setValue(width / 2 - (280 / 2));
-    setPedestrianVisible(true);
+    //setPedestrianVisible(true);
 
     setTrafficLightState('green');
-    setIsBlinking(false);
+    //setIsBlinking(false);
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-    } else if (currentScenario === 10) {
-      // Last scenario - complete session
+    } else if (currentScenario >= 10) {
+      console.log('🎯 Scenario 10 complete! Finishing session...');
       try {
-        console.log('🔍 Completing session...');
-        const sessionResults = await completeSession();
+            const sessionResults = await completeSession();
 
-        console.log('🔍 Session results:', sessionResults);
+            console.log('📊 Session results:', sessionResults);
 
-        if (!sessionResults) {
-          console.error('❌ Session results is null');
-          Alert.alert('Error', 'Failed to complete session. Please check your connection.');
-          return;
-        }
+            if (!sessionResults) {
+              Alert.alert('Error', 'Failed to complete session. Please try again.');
+              return;
+            }
 
-        if (!sessionResults.attempts) {
-          console.error('❌ Session results missing attempts');
-          Alert.alert('Error', 'Session data incomplete. Please try again.');
-          return;
-        }
-
-        router.push({
-          pathname: '/result',
-          params: {
-            ...sessionResults,
-            userAttempts: JSON.stringify(sessionResults.attempts)
-          }
-        });
+            console.log('✅ Navigating to result-page');
+            router.push({
+              pathname: '/result-page',
+              params: {
+                ...sessionResults,
+                userAttempts: JSON.stringify(sessionResults.attempts)
+              }
+            });
       } catch (error) {
         console.error('Error completing session:', error);
         Alert.alert('Error', `Failed to save session results: ${error.message}`);
@@ -414,7 +420,21 @@ export default function DrivingGame() {
     } else {
       // Move to next scenario
       moveToNextScenario();
-      const phaseNumber = sessionData?.phase_id || 1;
+      let phaseNumber;
+      const categoryId = sessionData?.category_id;
+      const phaseId = sessionData?.phase_id;
+
+      if (categoryId === 1) {
+        // Road Markings: phase IDs 1,2,3 → phase numbers 1,2,3
+        phaseNumber = phaseId;
+      } else if (categoryId === 2) {
+        // Traffic Signs: phase IDs 4,5,6 → phase numbers 1,2,3
+        phaseNumber = phaseId - 3;
+      } else if (categoryId === 3) {
+        // Intersection: phase IDs 7,8,9 → phase numbers 1,2,3
+        phaseNumber = phaseId - 6;
+      }
+
       const nextScreen = `S${currentScenario + 1}P${phaseNumber}`;
       router.push(`/scenarios/traffic-signs/phase${phaseNumber}/${nextScreen}`);
     }

@@ -1,8 +1,10 @@
+// server.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { authenticate } from './middleware/auth.js';
 import { supabase } from './config/supabase.js';
+import { body, validationResult } from 'express-validator';
 
 dotenv.config();
 
@@ -10,10 +12,39 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: '*',  // Allow all origins for testing
+  origin: '*',
   credentials: true
 }));
 app.use(express.json());
+
+// ===========================
+// PASSWORD VALIDATION HELPER
+// ===========================
+const validatePassword = (password) => {
+  const errors = [];
+
+  if (password.length < 8) {
+    errors.push('Password must be at least 8 characters long');
+  }
+
+  if (!/[a-z]/.test(password)) {
+    errors.push('Password must contain at least one lowercase letter');
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Password must contain at least one uppercase letter');
+  }
+
+  if (!/[0-9]/.test(password)) {
+    errors.push('Password must contain at least one number');
+  }
+
+  if (!/[./!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) {
+    errors.push('Password must contain at least one special character (./!@#$%^&*()_+-=[]{}|;:,.<>?)');
+  }
+
+  return errors;
+};
 
 // ===========================
 // AUTHENTICATION ROUTES
@@ -22,34 +53,33 @@ app.use(express.json());
 app.post('/auth/login', async (req, res) => {
   try {
     console.log('Login request received:', req.body);
-    
+
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       console.log('Missing email or password');
       return res.status(400).json({ message: 'Email and password are required' });
     }
-    
+
     console.log('Attempting Supabase login for:', email);
-    
-    // Use Supabase authentication
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password: password
     });
-    
+
     if (error) {
       console.log('Supabase login error:', error.message);
       return res.status(401).json({ message: error.message || 'Invalid credentials' });
     }
-    
+
     if (!data.user || !data.session) {
       console.log('No user or session returned from Supabase');
       return res.status(401).json({ message: 'Login failed' });
     }
-    
+
     console.log('✅ Supabase login successful for:', data.user.email);
-    
+
     const response = {
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token,
@@ -58,13 +88,213 @@ app.post('/auth/login', async (req, res) => {
         email: data.user.email
       }
     };
-    
+
     console.log('Sending response with real token');
     res.json(response);
-    
+
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// NEW: Check username availability endpoint
+app.get('/auth/check-username/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+
+    // Validate username format
+    if (!/^[a-zA-Z0-9_-]{3,20}$/.test(username)) {
+      return res.json({
+        available: false,
+        message: 'Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens'
+      });
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', username.toLowerCase())
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      throw error;
+    }
+
+    const available = !data;
+
+    res.json({
+      available,
+      message: available ? 'Username is available' : 'Username is already taken'
+    });
+
+  } catch (error) {
+    console.error('Check username error:', error);
+    res.status(500).json({ error: 'Server error checking username' });
+  }
+});
+
+// NEW: Check email availability endpoint
+app.get('/auth/check-email/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.json({
+        available: false,
+        message: 'Invalid email format'
+      });
+    }
+
+    // Check in Supabase Auth using admin API
+    const { data: { users }, error } = await supabase.auth.admin.listUsers();
+
+    if (error) {
+      console.error('Error listing users:', error);
+      throw error;
+    }
+
+    const emailExists = users.some(user =>
+      user.email?.toLowerCase() === email.toLowerCase()
+    );
+
+    res.json({
+      available: !emailExists,
+      message: emailExists ? 'Email is already registered' : 'Email is available'
+    });
+
+  } catch (error) {
+    console.error('Check email error:', error);
+    res.status(500).json({ error: 'Server error checking email' });
+  }
+});
+
+app.post('/auth/signup', [
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('password').custom((value) => {
+    const errors = validatePassword(value);
+    if (errors.length > 0) {
+      throw new Error(errors.join(', '));
+    }
+    return true;
+  }),
+  body('username')
+    .trim()
+    .isLength({ min: 3, max: 20 }).withMessage('Username must be 3-20 characters')
+    .matches(/^[a-zA-Z0-9_-]+$/).withMessage('Username can only contain letters, numbers, underscores, and hyphens')
+    .notEmpty().withMessage('Username is required'),
+  body('firstName').trim().notEmpty().withMessage('First name is required'),
+  body('lastName').trim().notEmpty().withMessage('Last name is required')
+], async (req, res) => {
+  // Check for validation errors
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg });
+  }
+
+  const { email, password, username, firstName, lastName } = req.body;
+  const usernameLower = username.toLowerCase().trim();
+
+  try {
+    console.log('Signup request received:', { email, username: usernameLower, firstName, lastName });
+
+    // Check if username already exists
+    const { data: existingUsername } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', usernameLower)
+      .single();
+
+    if (existingUsername) {
+      return res.status(400).json({
+        error: 'Username is already taken'
+      });
+    }
+
+    // Use Supabase Auth to create user
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password: password,
+      options: {
+        data: {
+          username: usernameLower,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          full_name: `${firstName.trim()} ${lastName.trim()}`
+        }
+      }
+    });
+
+    if (error) {
+      console.error('Supabase signup error:', error);
+      return res.status(400).json({
+        error: error.message || 'Registration failed'
+      });
+    }
+
+    console.log('✅ User created in auth:', data.user.id);
+
+    // Create profile entry with username
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: data.user.id,
+        username: usernameLower,
+        full_name: `${firstName.trim()} ${lastName.trim()}`,
+        avatar_url: null
+      });
+
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
+      // If profile creation fails due to duplicate username, delete the auth user
+      if (profileError.code === '23505') { // Unique violation
+        await supabase.auth.admin.deleteUser(data.user.id);
+        return res.status(400).json({
+          error: 'Username is already taken'
+        });
+      }
+      throw profileError;
+    } else {
+      console.log('✅ Profile created');
+    }
+
+    // Initialize user progress
+    const { error: progressError } = await supabase
+      .from('user_progress')
+      .insert({
+        user_id: data.user.id,
+        current_phase: 1,
+        current_category_id: 1,
+        current_scenario_index: 0,
+        completed_scenarios: [],
+        phase_scores: { "1": 0, "2": 0, "3": 0 },
+        total_score: 0,
+        last_scenario_id: null
+      });
+
+    if (progressError) {
+      console.error('Progress initialization error:', progressError);
+    } else {
+      console.log('✅ User progress initialized');
+    }
+
+    console.log('✅ User signup complete:', data.user.email);
+
+    res.status(201).json({
+      message: 'User created successfully! Please check your email to confirm.',
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        username: usernameLower,
+        full_name: `${firstName.trim()} ${lastName.trim()}`
+      }
+    });
+
+  } catch (err) {
+    console.error('Signup error:', err);
+    res.status(500).json({ error: 'Server error during registration' });
   }
 });
 
@@ -72,7 +302,6 @@ app.post('/auth/login', async (req, res) => {
 // CATEGORY & PHASE ROUTES
 // ===========================
 
-// GET /categories - Fetch all categories
 app.get('/categories', async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -102,11 +331,10 @@ app.get('/categories', async (req, res) => {
   }
 });
 
-// GET /phases/category/:categoryId - Fetch phases for a specific category
 app.get('/phases/category/:categoryId', async (req, res) => {
   try {
     const { categoryId } = req.params;
-    
+
     const { data, error } = await supabase
       .from('phases')
       .select('id, name, category_id')
@@ -139,13 +367,12 @@ app.get('/phases/category/:categoryId', async (req, res) => {
 // SCENARIO ROUTES
 // ===========================
 
-// GET /scenarios - Fetch all scenarios
 app.get('/scenarios', authenticate, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('scenarios')
       .select('*');
-    
+
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -153,29 +380,25 @@ app.get('/scenarios', authenticate, async (req, res) => {
   }
 });
 
-// GET /scenarios/:id - Fetch specific scenario
 app.get('/scenarios/:id', authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Get scenario details
+
     const { data: scenario, error: scenarioError } = await supabase
       .from('scenarios')
       .select('*')
       .eq('id', id)
       .single();
-    
+
     if (scenarioError) throw scenarioError;
-    
-    // Get scenario choices
+
     const { data: choices, error: choicesError } = await supabase
       .from('scenario_choices')
       .select('*')
       .eq('scenario_id', id);
-    
+
     if (choicesError) throw choicesError;
-    
-    // Transform data to match frontend format
+
     const response = {
       success: true,
       data: {
@@ -190,27 +413,26 @@ app.get('/scenarios/:id', authenticate, async (req, res) => {
         }, {})
       }
     };
-    
+
     res.json(response);
   } catch (error) {
     console.error('Get scenario error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: error.message 
+      error: error.message
     });
   }
 });
 
-// GET /scenario_choices/:scenario_id - Fetch choices for a scenario
 app.get('/scenario_choices/:scenario_id', authenticate, async (req, res) => {
   try {
     const { scenario_id } = req.params;
-    
+
     const { data, error } = await supabase
       .from('scenario_choices')
       .select('*')
       .eq('scenario_id', scenario_id);
-    
+
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -223,7 +445,6 @@ app.get('/scenario_choices/:scenario_id', authenticate, async (req, res) => {
 // USER PROFILE ROUTES
 // ===========================
 
-// GET /user/profile - Fetch current user profile (legacy route)
 app.get('/user/profile', authenticate, async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -231,7 +452,7 @@ app.get('/user/profile', authenticate, async (req, res) => {
       .select('*')
       .eq('id', req.user.sub || req.user.id)
       .single();
-    
+
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -239,14 +460,13 @@ app.get('/user/profile', authenticate, async (req, res) => {
   }
 });
 
-// GET /profiles/:userId - Fetch user profile information
 app.get('/profiles/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, full_name, avatar_url, created_at')
+      .select('id, username, full_name, avatar_url, created_at')
       .eq('id', userId)
       .single();
 
@@ -276,11 +496,10 @@ app.get('/profiles/:userId', async (req, res) => {
 // USER PROGRESS ROUTES
 // ===========================
 
-// GET /user-progress/:userId - Fetch user progress
 app.get('/user-progress/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     const { data, error } = await supabase
       .from('user_progress')
       .select('*')
@@ -288,7 +507,6 @@ app.get('/user-progress/:userId', async (req, res) => {
       .single();
 
     if (error) {
-      // If no progress found, return default values matching schema
       if (error.code === 'PGRST116') {
         return res.json({
           success: true,
@@ -304,7 +522,7 @@ app.get('/user-progress/:userId', async (req, res) => {
           }
         });
       }
-      
+
       return res.status(400).json({
         success: false,
         message: 'Error fetching user progress',
@@ -326,11 +544,10 @@ app.get('/user-progress/:userId', async (req, res) => {
   }
 });
 
-// PUT /user-progress - Update user progress
 app.put('/user-progress', async (req, res) => {
   try {
     const { user_id, current_category_id, current_phase, current_scenario_index } = req.body;
-    
+
     const { data, error } = await supabase
       .from('user_progress')
       .upsert({
@@ -368,12 +585,11 @@ app.put('/user-progress', async (req, res) => {
   }
 });
 
-// POST /progress/category - Update category progress (legacy route)
 app.post('/progress/category', authenticate, async (req, res) => {
   try {
     const { category_id } = req.body;
     const user_id = req.user.id;
-    
+
     const { data, error } = await supabase
       .from('user_progress')
       .upsert({
@@ -385,7 +601,7 @@ app.post('/progress/category', authenticate, async (req, res) => {
       }, {
         onConflict: 'user_id'
       });
-      
+
     if (error) throw error;
     res.json({ success: true });
   } catch (err) {
@@ -393,12 +609,11 @@ app.post('/progress/category', authenticate, async (req, res) => {
   }
 });
 
-// POST /progress/phase - Update phase progress (legacy route)
 app.post('/progress/phase', authenticate, async (req, res) => {
   try {
     const { phase } = req.body;
     const user_id = req.user.id;
-    
+
     const { data, error } = await supabase
       .from('user_progress')
       .update({
@@ -407,7 +622,7 @@ app.post('/progress/phase', authenticate, async (req, res) => {
         updated_at: new Date().toISOString()
       })
       .eq('user_id', user_id);
-      
+
     if (error) throw error;
     res.json({ success: true });
   } catch (err) {
@@ -419,7 +634,6 @@ app.post('/progress/phase', authenticate, async (req, res) => {
 // USER ATTEMPTS & STATS ROUTES
 // ===========================
 
-// POST /attempts - Record user attempt (legacy route)
 app.post('/attempts', authenticate, async (req, res) => {
   try {
     console.log("=== ATTEMPTS DEBUG ===");
@@ -428,23 +642,22 @@ app.post('/attempts', authenticate, async (req, res) => {
     console.log("===================");
 
     const { scenario_id, selected_option } = req.body;
-    
+
     if (!req.user || !req.user.id) {
       return res.status(401).json({ error: "User not authenticated properly" });
     }
-    
+
     const user_id = req.user.id;
-    
+
     console.log("Extracted values:", { scenario_id, selected_option, user_id });
 
     if (!scenario_id || !selected_option) {
-      return res.status(400).json({ 
-        error: "Missing required fields", 
+      return res.status(400).json({
+        error: "Missing required fields",
         received: { scenario_id, selected_option, user_id }
       });
     }
 
-    // Get the correct answer
     const { data: correctChoice, error: choiceError } = await supabase
       .from('scenario_choices')
       .select('*')
@@ -461,12 +674,11 @@ app.post('/attempts', authenticate, async (req, res) => {
 
     console.log("About to insert:", {
       user_id,
-      scenario_id, 
+      scenario_id,
       chosen_option: selected_option,
       is_correct
     });
 
-    // Save the attempt
     const { data: attempt, error: attemptError } = await supabase
       .from('user_attempts')
       .insert({
@@ -491,12 +703,10 @@ app.post('/attempts', authenticate, async (req, res) => {
   }
 });
 
-// POST /user-progress/scenario - Enhanced scenario completion tracking
 app.post('/user-progress/scenario', async (req, res) => {
   try {
     const { user_id, scenario_id, selected_answer, is_correct } = req.body;
-    
-    // Insert user attempt record
+
     const { data: attemptData, error: attemptError } = await supabase
       .from('user_attempts')
       .insert({
@@ -517,9 +727,7 @@ app.post('/user-progress/scenario', async (req, res) => {
       });
     }
 
-    // Update user progress if correct answer
     if (is_correct) {
-      // Get current progress
       const { data: currentProgress } = await supabase
         .from('user_progress')
         .select('completed_scenarios, total_score, user_id')
@@ -527,10 +735,9 @@ app.post('/user-progress/scenario', async (req, res) => {
         .single();
 
       if (currentProgress) {
-        // Add scenario to completed_scenarios array if not already there
         const completedScenarios = currentProgress.completed_scenarios || [];
         const scenarioIdInt = parseInt(scenario_id);
-        
+
         if (!completedScenarios.includes(scenarioIdInt)) {
           completedScenarios.push(scenarioIdInt);
         }
@@ -564,12 +771,10 @@ app.post('/user-progress/scenario', async (req, res) => {
   }
 });
 
-// GET /user-stats/:userId - Fetch aggregated user statistics
 app.get('/user-stats/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    
-    // Get all categories
+
     const { data: categories, error: categoriesError } = await supabase
       .from('categories')
       .select('id, name');
@@ -584,70 +789,73 @@ app.get('/user-stats/:userId', async (req, res) => {
 
     const stats = {};
 
-    // For each category, calculate statistics
     for (const category of categories) {
       const categoryKey = category.name.toLowerCase().replace(/\s+/g, '_');
-      
+
       try {
-        // Get phases for this category
         const { data: phases } = await supabase
           .from('phases')
           .select('id')
           .eq('category_id', category.id);
-        
+
         if (!phases || phases.length === 0) {
           stats[categoryKey] = {
-            total_scenarios: 0,
+            total_scenarios: 30,
             completed_scenarios: 0,
-            total_attempts: 0,
             correct_answers: 0
           };
           continue;
         }
 
-        // Get scenarios for these phases
         const phaseIds = phases.map(p => p.id);
         const { data: scenarios } = await supabase
           .from('scenarios')
           .select('id')
           .in('phase_id', phaseIds);
-        
+
         if (!scenarios || scenarios.length === 0) {
           stats[categoryKey] = {
-            total_scenarios: 0,
+            total_scenarios: 30,
             completed_scenarios: 0,
-            total_attempts: 0,
             correct_answers: 0
           };
           continue;
         }
 
-        // Get user attempts for these scenarios
         const scenarioIds = scenarios.map(s => s.id);
-        const { data: attempts } = await supabase
+
+        const { data: correctAttempts } = await supabase
           .from('user_attempts')
-          .select('scenario_id, is_correct')
+          .select('scenario_id')
+          .eq('user_id', userId)
+          .eq('is_correct', true)
+          .in('scenario_id', scenarioIds);
+
+        const uniqueCorrectScenarios = correctAttempts
+          ? [...new Set(correctAttempts.map(a => a.scenario_id))]
+          : [];
+
+        const { data: allAttempts } = await supabase
+          .from('user_attempts')
+          .select('scenario_id')
           .eq('user_id', userId)
           .in('scenario_id', scenarioIds);
 
-        const totalScenarios = scenarios.length;
-        const userAttempts = attempts || [];
-        const completedScenarios = new Set(userAttempts.map(a => a.scenario_id)).size;
-        const totalAttempts = userAttempts.length;
-        const correctAnswers = userAttempts.filter(a => a.is_correct).length;
+        const uniqueAttemptedScenarios = allAttempts
+          ? [...new Set(allAttempts.map(a => a.scenario_id))]
+          : [];
 
         stats[categoryKey] = {
-          total_scenarios: totalScenarios,
-          completed_scenarios: completedScenarios,
-          total_attempts: totalAttempts,
-          correct_answers: correctAnswers
+          total_scenarios: 30,
+          completed_scenarios: uniqueAttemptedScenarios.length,
+          correct_answers: uniqueCorrectScenarios.length
         };
+
       } catch (err) {
         console.error(`Error processing category ${category.name}:`, err);
         stats[categoryKey] = {
-          total_scenarios: 0,
+          total_scenarios: 30,
           completed_scenarios: 0,
-          total_attempts: 0,
           correct_answers: 0
         };
       }
@@ -667,7 +875,6 @@ app.get('/user-stats/:userId', async (req, res) => {
   }
 });
 
-// POST /sessions/start - Start a new session
 app.post('/sessions/start', async (req, res) => {
   try {
     const { user_id, category_id, phase_id } = req.body;
@@ -698,12 +905,11 @@ app.post('/sessions/start', async (req, res) => {
       });
     }
 
-    // Initialize scenario progress for all 10 scenarios
     const scenarioProgressData = [];
     for (let i = 1; i <= 10; i++) {
       scenarioProgressData.push({
         session_id: data.id,
-        scenario_id: i, // Assuming scenario IDs 1-10
+        scenario_id: i,
         scenario_number: i,
         is_attempted: false,
         is_correct: false
@@ -734,7 +940,6 @@ app.post('/sessions/start', async (req, res) => {
   }
 });
 
-// PUT /sessions/:sessionId/scenario/:scenarioNumber - Update specific scenario progress
 app.put('/sessions/:sessionId/scenario/:scenarioId', async (req, res) => {
   const { sessionId, scenarioId } = req.params;
   const { selected_answer, is_correct, time_taken_seconds } = req.body;
@@ -748,19 +953,26 @@ app.put('/sessions/:sessionId/scenario/:scenarioId', async (req, res) => {
       time_taken_seconds
     });
 
-    // Calculate scenario_number from scenarioId
-    // Phase 1: scenarioId 1-10 → scenario_number 1-10
-    // Phase 2: scenarioId 11-20 → scenario_number 1-10
-    // Phase 3: scenarioId 21-30 → scenario_number 1-10
-    const scenarioNumber = ((parseInt(scenarioId) - 1) % 10) + 1;
+    const { data: sessionData, error: sessionError } = await supabase
+      .from('user_sessions')
+      .select('user_id')
+      .eq('id', sessionId)
+      .single();
 
+    if (sessionError) {
+      console.error('Error fetching session:', sessionError);
+      throw sessionError;
+    }
+
+    console.log('Session user_id:', sessionData.user_id);
+
+    const scenarioNumber = ((parseInt(scenarioId) - 1) % 10) + 1;
     console.log('Calculated scenario_number:', scenarioNumber);
 
-    // Update the scenario_progress table
     const { data, error } = await supabase
       .from('scenario_progress')
       .update({
-        scenario_id: parseInt(scenarioId), // Store the actual scenario ID
+        scenario_id: parseInt(scenarioId),
         selected_answer,
         is_correct,
         time_taken_seconds,
@@ -779,11 +991,10 @@ app.put('/sessions/:sessionId/scenario/:scenarioId', async (req, res) => {
 
     console.log('Updated scenario progress:', data);
 
-    // Also insert into user_attempts table for detailed tracking
     const { data: attemptData, error: attemptError } = await supabase
       .from('user_attempts')
       .insert({
-        user_id: data.user_id || req.user?.id, // You may need to adjust this
+        user_id: sessionData.user_id,
         scenario_id: parseInt(scenarioId),
         chosen_option: selected_answer,
         is_correct
@@ -791,7 +1002,8 @@ app.put('/sessions/:sessionId/scenario/:scenarioId', async (req, res) => {
 
     if (attemptError) {
       console.error('Error inserting user attempt:', attemptError);
-      // Don't fail the whole request for this
+    } else {
+      console.log('✅ User attempt saved successfully');
     }
 
     res.json({ success: true, data });
@@ -806,12 +1018,10 @@ app.put('/sessions/:sessionId/scenario/:scenarioId', async (req, res) => {
   }
 });
 
-// GET /sessions/:sessionId/progress - Get detailed session progress
 app.get('/sessions/:sessionId/progress', async (req, res) => {
   try {
     const { sessionId } = req.params;
 
-    // Get session data
     const { data: session, error: sessionError } = await supabase
       .from('user_sessions')
       .select('*')
@@ -826,7 +1036,6 @@ app.get('/sessions/:sessionId/progress', async (req, res) => {
       });
     }
 
-    // Get scenario progress
     const { data: scenarios, error: scenariosError } = await supabase
       .from('scenario_progress')
       .select('*')
@@ -841,7 +1050,6 @@ app.get('/sessions/:sessionId/progress', async (req, res) => {
       });
     }
 
-    // Calculate summary statistics
     const attemptedScenarios = scenarios.filter(s => s.is_attempted);
     const correctScenarios = scenarios.filter(s => s.is_correct);
     const totalTime = scenarios.reduce((sum, s) => sum + (s.time_taken_seconds || 0), 0);
@@ -876,7 +1084,6 @@ app.get('/sessions/:sessionId/progress', async (req, res) => {
   }
 });
 
-// PUT /sessions/:sessionId/complete - Mark session as complete
 app.put('/sessions/:sessionId/complete', async (req, res) => {
   console.log('🔍 Complete session called for:', req.params.sessionId);
   console.log('🔍 Request body:', req.body);
@@ -906,7 +1113,7 @@ app.put('/sessions/:sessionId/complete', async (req, res) => {
     console.log('✅ Session completed successfully');
     res.json({
       success: true,
-      data: result,
+      data: data,
       message: 'Session completed successfully'
     });
 
@@ -920,7 +1127,6 @@ app.put('/sessions/:sessionId/complete', async (req, res) => {
   }
 });
 
-// GET /users/:userId/recent-sessions - Get user's recent sessions
 app.get('/users/:userId/recent-sessions', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -992,7 +1198,6 @@ app.get('/api/scenarios', async (req, res) => {
   }
 });
 
-// 2. Get scenario choices by ID range
 app.get('/api/scenario-choices', async (req, res) => {
   try {
     const { start_id, end_id, scenario_ids } = req.query;
@@ -1002,11 +1207,9 @@ app.get('/api/scenario-choices', async (req, res) => {
       .select('*');
 
     if (scenario_ids) {
-      // If specific scenario IDs provided (e.g., "41,42,43,44,45")
       const ids = scenario_ids.split(',').map(id => parseInt(id));
       query = query.in('scenario_id', ids);
     } else if (start_id && end_id) {
-      // If ID range provided
       query = query.gte('id', start_id).lte('id', end_id);
     }
 
@@ -1021,12 +1224,10 @@ app.get('/api/scenario-choices', async (req, res) => {
   }
 });
 
-// 3. Get complete scenario with choices (recommended)
 app.get('/api/scenarios-with-choices', async (req, res) => {
   try {
     const { scenario_start, scenario_end } = req.query;
 
-    // Get scenarios 41-50
     const { data: scenarios, error: scenariosError } = await supabase
       .from('scenarios')
       .select(`
@@ -1054,11 +1255,7 @@ app.get('/api/scenarios-with-choices', async (req, res) => {
   }
 });
 
-// ===========================
-// SERVER STARTUP
-// ===========================
-
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
   console.log(`🚀 RoadCheck Server running on port ${PORT}`);
 });

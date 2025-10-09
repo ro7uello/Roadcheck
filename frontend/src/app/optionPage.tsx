@@ -80,27 +80,29 @@ export default function OptionPage() {
 
     try {
       setIsLoading(true);
-      console.log('Loading state set to true');
 
       const token = await AsyncStorage.getItem('access_token');
       console.log('Token from storage:', token ? 'exists' : 'null');
 
       if (!token) {
-        console.log('No token found, proceeding without saving');
-        return true;
+        console.log('No token found, cannot save progress');
+        Alert.alert('Error', 'Please log in again');
+        router.replace('/login');
+        return false;
       }
 
-      // Get or generate user ID
-      let userId = await AsyncStorage.getItem('user_id');
+      // Get the authenticated user ID - FIXED KEY
+      const userId = await AsyncStorage.getItem('userId');
       console.log('User ID from storage:', userId);
 
       if (!userId) {
-        userId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        await AsyncStorage.setItem('user_id', userId);
-        console.log('Generated new user ID:', userId);
+        console.log('❌ No authenticated user ID found');
+        Alert.alert('Error', 'Session expired. Please log in again');
+        router.replace('/login');
+        return false;
       }
 
-      console.log(`About to make API call to:${API_BASE_URL}/user-progress`);
+      console.log(`Making API call to: ${API_BASE_URL}/user-progress`);
       console.log('Request body:', {
         user_id: userId,
         current_category_id: 1,
@@ -108,7 +110,6 @@ export default function OptionPage() {
         current_scenario_index: 0
       });
 
-      // Call your backend's PUT /user-progress endpoint
       const response = await fetch(`${API_BASE_URL}/user-progress`, {
         method: 'PUT',
         headers: {
@@ -124,32 +125,24 @@ export default function OptionPage() {
       });
 
       console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Progress saved successfully:', result);
+        console.log('✅ Progress saved successfully:', result);
       } else {
         const errorText = await response.text();
-        console.log('Failed to save progress:', response.status, errorText);
+        console.log('❌ Failed to save progress:', response.status, errorText);
       }
 
       // Store locally as backup
       await AsyncStorage.setItem('selectedMode', selectedMode);
-      await AsyncStorage.setItem('lastProgress', JSON.stringify({
-        action: 'mode_selection',
-        selectedMode,
-        timestamp: new Date().toISOString()
-      }));
-
       return true;
+
     } catch (error) {
-      console.error('Error saving progress:', error);
-      console.log('Full error details:', error.message, error.stack);
+      console.error('❌ Error saving progress:', error);
       await AsyncStorage.setItem('selectedMode', selectedMode);
       return true;
     } finally {
-      console.log('Setting loading to false');
       setIsLoading(false);
     }
   };
@@ -190,8 +183,7 @@ const testBasicConnection = async () => {
         toValue: 1,
         duration: BACKGROUND_SPEED,
         useNativeDriver: true,
-      }),
-      { iterations: -1 }
+      })
     ).start();
   };
 
@@ -209,8 +201,7 @@ const testBasicConnection = async () => {
           duration: 1000,
           useNativeDriver: true,
         }),
-      ]),
-      { iterations: -1 }
+      ])
     ).start();
   };
 
@@ -234,7 +225,7 @@ const testBasicConnection = async () => {
       console.log('saveUserProgress result:', success);
       if (success) {
           console.log('Navigating to categorySelectionScreen...');
-        router.push('/categorySelectionScreen'); // Navigate to category selection
+        router.push('/categorySelectionScreen');
       }
     });
   };
@@ -256,7 +247,7 @@ const testBasicConnection = async () => {
     ]).start(async () => {
       const success = await saveUserProgress('pedestrian');
       if (success) {
-        router.push('/categorySelectionScreen'); // Navigate to category selection
+        router.push('/categorySelectionScreen');
       }
     });
   };
@@ -298,6 +289,7 @@ const testBasicConnection = async () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Fixed Background */}
       <View style={styles.backgroundContainer}>
         <Animated.View
           style={[
@@ -308,8 +300,7 @@ const testBasicConnection = async () => {
           <ImageBackground
             source={require('../../assets/background/city-background.png')}
             style={styles.backgroundImage}
-            resizeMode="stretch"
-            imageStyle={styles.backgroundImageStyle}
+            resizeMode="cover"
           />
         </Animated.View>
         <Animated.View
@@ -321,8 +312,7 @@ const testBasicConnection = async () => {
           <ImageBackground
             source={require('../../assets/background/city-background.png')}
             style={styles.backgroundImage}
-            resizeMode="stretch"
-            imageStyle={styles.backgroundImageStyle}
+            resizeMode="cover"
           />
         </Animated.View>
       </View>
@@ -426,39 +416,75 @@ const testBasicConnection = async () => {
                   style={styles.settingsTab}
                   resizeMode="stretch"
                 />
-      
+
                 <Text style={styles.libraryTitle}>REFERENCES</Text>
-      
+
                 <View style={styles.libraryContent}>
-                  <ScrollView 
+                  <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={true}
                   >
-                    <View style={styles.referenceContainer}>
-                      <Text style={styles.referenceText}>
-                        Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
-                        <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
-                          <Text style={[styles.referenceText, styles.linkText]}>
-                            https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
-                          </Text>
-                        </TouchableOpacity>
-                      </Text>
-                    </View>
-      
-                    <View style={styles.referenceContainer}>
-                      <Text style={styles.referenceText}>
-                        National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
-                        <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
-                          <Text style={[styles.referenceText, styles.linkText]}>
-                            https://www.nhtsa.gov/road-safety/pedestrian-safety
-                          </Text>
-                        </TouchableOpacity>
-                      </Text>
-                    </View>
-                  </ScrollView>
-                </View>
-      
+                  <View style={styles.referenceContainer}>
+                    <Text style={styles.sectionTitle}>Some Basic Signs and Markings to Remember</Text>
+                    
+                    <Text style={styles.subsectionTitle}>Traffic Signs</Text>
+                    <Text style={styles.referenceText}>
+                      • Red Signal - means bring your vehicle to a stop at a marked line.{'\n\n'}
+                      • Flashing Red - means bring your vehicle to a STOP and proceed only when it is safe.{'\n\n'}
+                      • Yellow Signal - means the red signal is about to appear. Prepare to stop.{'\n\n'}
+                      • Flashing Yellow - means slow down and proceed with caution.{'\n\n'}
+                      • Green Signal - means you can proceed, yield if needed.{'\n\n'}
+                      • Flashing Green - proceed with caution. yield for pedestrian.{'\n'}
+                    </Text>
+                    
+                    <Text style={styles.subsectionTitle}>Road Markings</Text>
+                    <Text style={styles.referenceText}>
+                      • Solid White line - Crossing is discouraged and requires special care when doing so.{'\n\n'}
+                      • Broken White line - Changing of lane is allowed provided with care.{'\n\n'}
+                      • Double Solid Yellow line - No overtaking and No crossing{'\n\n'}
+                      • Single Solid Yellow line - Crossing is allowed but no overtaking{'\n\n'}
+                      • Broken Yellow line - Crossing and overtaking is allowed with necessary care.{'\n\n'}
+                      • Edge Line - Used to separate the outside edge of the road from the shoulder.{'\n'}
+                    </Text>
+                  </View>
+                  <View style={styles.referenceContainer}>
+                    <Text style={styles.referenceText}>
+                      Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
+                      <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
+                        <Text style={[styles.referenceText, styles.linkText]}>
+                          https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
+                        </Text>
+                      </TouchableOpacity>
+                    </Text>
+                  </View>
+
+                  <View style={styles.referenceContainer}>
+                    <Text style={styles.sectionTitle}>Basic Pedestrian Safety Tips</Text>
+                    <Text style={styles.referenceText}>
+                      • Follow the rules of the road and obey signs and signals{'\n\n'}
+                      • Walk on sidewalks whenever possible. If there are no sidewalk, walk facing and as far from traffic as possible{'\n\n'}
+                      • Cross streets at crosswalks.{'\n\n'}
+                      • If a crosswalk is not available, walk at a well lit area where you have the best view of traffic. Wait for a gap in traffic that allows enough time to cross safely but continue to watch for traffic as you cross.{'\n\n'}
+                      • Watch for cars entering or exiting driveways or backing up.{'\n\n'}
+                      • When crossing the street, stay alert: <Text style={[styles.referenceText, { textDecorationLine: 'underline' }]}>check for signals, signs, and actions of drivers, cyclists, and pedestrians around you</Text>.{'\n\n'}
+                      • Do not rely on others to keep you safe.{'\n'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.referenceContainer}>
+                    <Text style={styles.referenceText}>
+                      National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
+                      <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
+                        <Text style={[styles.referenceText, styles.linkText]}>
+                          https://www.nhtsa.gov/road-safety/pedestrian-safety
+                        </Text>
+                      </TouchableOpacity>
+                    </Text>
+                  </View>
+                </ScrollView>
+              </View>
+
                 <TouchableOpacity
                   style={styles.libraryBackButton}
                   onPress={() => setLibraryVisible(false)}
@@ -491,21 +517,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    overflow: 'hidden',
   },
   backgroundWrapper: {
     position: 'absolute',
     width: width,
     height: height,
+    top: 0,
+    left: 0,
   },
   backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  backgroundImageStyle: {
-    width: '100%',
-    height: '100%',
-    transform: [{ scale: 1.3 }],
+    width: width,
+    height: height,
   },
   skyOverlay: {
     position: 'absolute',
@@ -689,7 +712,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   referenceText: {
-    fontSize: 10,
+    fontSize: 9,
     color: 'black',
     fontFamily: "Pixel3",
     lineHeight: 14,
@@ -700,8 +723,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 25,
   },
+  sectionTitle: {
+    fontSize: 12,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subsectionTitle: {
+    fontSize: 10,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginTop: 10,
+    marginBottom: 5,
+    textDecorationLine: 'underline',
+  },
 });
-
-function setIsLoading(arg0: boolean) {
-    throw new Error('Function not implemented.');
-}

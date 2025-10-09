@@ -1,3 +1,4 @@
+// frontend/src/app/result-page.tsx
 import { useFonts } from 'expo-font';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -15,6 +16,7 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Linking,
   FlatList
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -28,7 +30,6 @@ export default function ResultPage() {
     pixel: require('../../assets/fonts/pixel3.ttf'),
   });
 
-  // Get navigation parameters (now includes sessionId and detailed progress)
   const params = useLocalSearchParams();
   const {
     sessionId,
@@ -38,13 +39,14 @@ export default function ResultPage() {
     userAttempts,
     totalTime,
     scenarioCount = 10,
-    scenarioProgress // JSON string of detailed scenario progress
+    scenarioProgress
   } = params;
 
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showDetailedView, setShowDetailedView] = useState(false);
+  const [libraryVisible, setLibraryVisible] = useState(false);
 
   const [resultData, setResultData] = useState({
     status: 'CALCULATING...',
@@ -54,13 +56,14 @@ export default function ResultPage() {
     totalScore: '0%',
     accuracy: 0,
     averageTime: '00:00',
-    scenarioDetails: [] // New: detailed scenario results
+    scenarioDetails: []
   });
 
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
   const carBounce = useRef(new Animated.Value(0)).current;
   const modalScale = useRef(new Animated.Value(0)).current;
   const resultPanelScale = useRef(new Animated.Value(0)).current;
+  const libraryModalScale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -74,17 +77,19 @@ export default function ResultPage() {
       carBounce.stopAnimation();
       modalScale.stopAnimation();
       resultPanelScale.stopAnimation();
+      libraryModalScale.stopAnimation();
     };
   }, [fontsLoaded]);
 
   useEffect(() => {
-    Animated.spring(modalScale, {
-      toValue: settingsVisible ? 1 : 0,
-      tension: 100,
-      friction: 8,
-      useNativeDriver: true,
-    }).start();
-  }, [settingsVisible]);
+      Animated.spring(libraryModalScale, {
+        toValue: libraryVisible ? 1 : 0,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }).start();
+    }, [libraryVisible]);
+
 
   const calculateResults = async () => {
     try {
@@ -95,7 +100,6 @@ export default function ResultPage() {
       let attempts = [];
       let detailedProgress = [];
 
-      // Parse data from navigation params with better error handling
       try {
         if (userAttempts && typeof userAttempts === 'string') {
           attempts = JSON.parse(userAttempts);
@@ -120,18 +124,15 @@ export default function ResultPage() {
         detailedProgress = [];
       }
 
-      // If we have sessionId, fetch latest data from backend
       if (sessionId) {
         console.log('🔍 DEBUG: Fetching session details for sessionId:', sessionId);
         await fetchSessionDetails(sessionId);
-        return; // fetchSessionDetails will call showResultPanel
+        return;
       }
 
-      // Fallback to calculate from passed data
       console.log('🔍 DEBUG: Calculating from passed data, attempts count:', attempts.length);
 
       if (attempts.length === 0) {
-        // No attempts data - create mock data based on scenarioCount
         console.log('⚠️ No attempts data, creating default results');
         const scenarioDetails = Array.from({ length: parseInt(scenarioCount) || 10 }, (_, index) => ({
           scenarioNumber: index + 1,
@@ -165,7 +166,6 @@ export default function ResultPage() {
       const passingScore = 70;
       const status = accuracy >= passingScore ? 'PASS' : 'FAIL';
 
-      // Better time formatting
       const totalTimeNum = parseInt(totalTime) || 0;
       const formattedTime = formatTime(totalTimeNum);
       const averageTimePerScenario = attempts.length > 0 ?
@@ -173,7 +173,6 @@ export default function ResultPage() {
 
       console.log('🔍 DEBUG: Calculated results:', { correctAnswers, incorrectAnswers, accuracy, status, totalTimeNum });
 
-      // Create scenario details from attempts
       const scenarioDetails = attempts.map((attempt, index) => ({
         scenarioNumber: index + 1,
         scenarioId: attempt.scenario_id || index + 1,
@@ -222,7 +221,6 @@ export default function ResultPage() {
         const data = await response.json();
         const { session, scenarios, summary } = data.data;
 
-        // Create detailed results from session data
         const scenarioDetails = scenarios.map(scenario => ({
           scenarioNumber: scenario.scenario_number,
           scenarioId: scenario.scenario_id,
@@ -253,12 +251,11 @@ export default function ResultPage() {
         showResultPanel();
       } else {
         console.error('Failed to fetch session details');
-        // Fallback to calculate from params
         calculateResults();
       }
     } catch (error) {
       console.error('Error fetching session details:', error);
-      calculateResults(); // Fallback
+      calculateResults();
     }
   };
 
@@ -309,34 +306,25 @@ export default function ResultPage() {
     ).start();
   };
 
-  const handleSettingsOptionPress = async (action) => {
-    try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (error) {
-      // haptics not available
-    }
-    action();
-  };
+  const handleSettingsPress = () => {
+      router.push('/profile');
+    };
+  
+    const handleLibraryPress = async () => {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (error) {
+        // Haptics not available
+      }
+      setLibraryVisible(true);
+    };
+
+  const goBack = () => {
+      router.back();
+    };
 
   const handleFinishPress = () => {
-    Alert.alert(
-      'Session Complete!',
-      `You've completed ${categoryName} Phase ${phaseId} with ${resultData.accuracy}% accuracy.\n\nWhat would you like to do next?`,
-      [
-        {
-          text: 'View Profile',
-          onPress: () => router.push('/profile')
-        },
-        {
-          text: 'Continue Learning',
-          onPress: () => router.push('/categorySelectionScreen')
-        },
-        {
-          text: 'Back to Menu',
-          onPress: () => router.push('/optionPage')
-        }
-      ]
-    );
+    router.push('/optionPage');
   };
 
   const toggleDetailedView = () => {
@@ -388,7 +376,6 @@ export default function ResultPage() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Background */}
       <View style={styles.backgroundContainer}>
         <Animated.View
           style={[
@@ -422,7 +409,6 @@ export default function ResultPage() {
 
       <View style={styles.skyOverlay} />
 
-      {/* Car */}
       <Animated.View
         style={[styles.carContainer, { transform: [{ translateY: carVerticalBounce }] }]}
       >
@@ -433,32 +419,24 @@ export default function ResultPage() {
         />
       </Animated.View>
 
-      {/* Top-right Icons */}
       <View style={styles.topRightIcons}>
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => setSettingsVisible(true)}
-        >
-          <Image
-            source={require('../../assets/icon/Settings.png')}
-            style={styles.topIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
+              <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
+                <Image
+                  source={require('../../assets/icon/Settings.png')}
+                  style={styles.topIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+      
+              <TouchableOpacity style={styles.iconButton} onPress={handleLibraryPress}>
+                <Image
+                  source={require('../../assets/icon/Library.png')}
+                  style={styles.topIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </View>
 
-        <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => console.log('Library pressed')}
-        >
-          <Image
-            source={require('../../assets/icon/Library.png')}
-            style={styles.topIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Loading Indicator */}
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#4CAF50" />
@@ -466,7 +444,6 @@ export default function ResultPage() {
         </View>
       )}
 
-      {/* Result Panel */}
       <Animated.View
         style={[
           styles.resultPanel,
@@ -480,7 +457,6 @@ export default function ResultPage() {
         />
 
         {!showDetailedView ? (
-          // Summary View
           <>
             <View style={styles.resultHeader}>
               <Text style={styles.resultTitle}>RESULT</Text>
@@ -525,7 +501,6 @@ export default function ResultPage() {
               </View>
             </View>
 
-            {/* Toggle to detailed view */}
             <TouchableOpacity
               style={styles.detailToggleButton}
               onPress={toggleDetailedView}
@@ -534,7 +509,6 @@ export default function ResultPage() {
             </TouchableOpacity>
           </>
         ) : (
-          // Detailed View
           <>
             <View style={styles.detailedHeader}>
               <TouchableOpacity
@@ -556,7 +530,6 @@ export default function ResultPage() {
           </>
         )}
 
-        {/* Saving indicator */}
         {saving && (
           <View style={styles.savingIndicator}>
             <ActivityIndicator size="small" color="#666" />
@@ -564,7 +537,6 @@ export default function ResultPage() {
           </View>
         )}
 
-        {/* Finish Button */}
         {!showDetailedView && (
           <TouchableOpacity
             style={[
@@ -581,61 +553,98 @@ export default function ResultPage() {
         )}
       </Animated.View>
 
-      {/* Settings Panel */}
-      {settingsVisible && (
-        <Animated.View
-          style={[
-            styles.settingsPanel,
-            { transform: [{ scale: modalScale }] },
-          ]}
-        >
-          <Image
-            source={require('../../assets/background/settings-tab.png')}
-            style={styles.settingsTab}
-            resizeMode="stretch"
-          />
-
-          <Text style={styles.settingsTitle}>SETTINGS</Text>
-
-          <View style={styles.settingsOptionsColumn}>
-            <TouchableOpacity
-              style={styles.settingsOption}
-              onPress={() => handleSettingsOptionPress(() => {
-                setSettingsVisible(false);
-                router.push('/profile');
-              })}
-            >
-              <Image
-                source={require('../../assets/background/profile.png')}
-                style={styles.profileButton}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.settingsOption}
-              onPress={() => handleSettingsOptionPress(() => {
-                setSettingsVisible(false);
-                router.push('/audio');
-              })}
-            >
-              <Image
-                source={require('../../assets/background/audio.png')}
-                style={styles.audioButton}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.settingsOption}
-              onPress={() => setSettingsVisible(false)}
-            >
-              <Image
-                source={require('../../assets/background/back.png')}
-                style={styles.backButtonImage}
-              />
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      )}
+      {libraryVisible && (
+              <Animated.View
+                style={[
+                  styles.libraryPanel,
+                  { transform: [{ scale: libraryModalScale }] },
+                ]}
+              >
+                <Image
+                  source={require('../../assets/background/settings-tab.png')}
+                  style={styles.settingsTab}
+                  resizeMode="stretch"
+                />
+      
+                <Text style={styles.libraryTitle}>REFERENCES</Text>
+      
+                <View style={styles.libraryContent}>
+                  <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={true}
+                  >
+                  <View style={styles.referenceContainer}>
+                      <Text style={styles.sectionTitle}>Some Basic Signs and Markings to Remember</Text>
+                      
+                      <Text style={styles.subsectionTitle}>Traffic Signs</Text>
+                      <Text style={styles.referenceText}>
+                        • Red Signal - means bring your vehicle to a stop at a marked line.{'\n\n'}
+                        • Flashing Red - means bring your vehicle to a STOP and proceed only when it is safe.{'\n\n'}
+                        • Yellow Signal - means the red signal is about to appear. Prepare to stop.{'\n\n'}
+                        • Flashing Yellow - means slow down and proceed with caution.{'\n\n'}
+                        • Green Signal - means you can proceed, yield if needed.{'\n\n'}
+                        • Flashing Green - proceed with caution. yield for pedestrian.{'\n'}
+                      </Text>
+                      
+                      <Text style={styles.subsectionTitle}>Road Markings</Text>
+                      <Text style={styles.referenceText}>
+                        • Solid White line - Crossing is discouraged and requires special care when doing so.{'\n\n'}
+                        • Broken White line - Changing of lane is allowed provided with care.{'\n\n'}
+                        • Double Solid Yellow line - No overtaking and No crossing{'\n\n'}
+                        • Single Solid Yellow line - Crossing is allowed but no overtaking{'\n\n'}
+                        • Broken Yellow line - Crossing and overtaking is allowed with necessary care.{'\n\n'}
+                        • Edge Line - Used to separate the outside edge of the road from the shoulder.{'\n'}
+                      </Text>
+                    </View>
+                    <View style={styles.referenceContainer}>
+                      <Text style={styles.referenceText}>
+                        Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
+                        <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
+                          <Text style={[styles.referenceText, styles.linkText]}>
+                            https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
+                          </Text>
+                        </TouchableOpacity>
+                      </Text>
+                    </View>
+      
+                    <View style={styles.referenceContainer}>
+                      <Text style={styles.sectionTitle}>Basic Pedestrian Safety Tips</Text>
+                      <Text style={styles.referenceText}>
+                        • Follow the rules of the road and obey signs and signals{'\n\n'}
+                        • Walk on sidewalks whenever possible. If there are no sidewalk, walk facing and as far from traffic as possible{'\n'}
+                        • Cross streets at crosswalks.{'\n\n'}
+                        • If a crosswalk is not available, walk at a well lit area where you have the best view of traffic. Wait for a gap in traffic that allows enough time to cross safely but continue to watch for traffic as you cross.{'\n\n'}
+                        • Watch for cars entering or exiting driveways or backing up.{'\n\n'}
+                        • When crossing the street, stay alert: <Text style={[styles.referenceText, { textDecorationLine: 'underline' }]}>check for signals, signs, and actions of drivers, cyclists, and pedestrians around you</Text>.{'\n\n'}
+                        • Do not rely on others to keep you safe.{'\n'}
+                      </Text>
+                    </View>
+      
+                    <View style={styles.referenceContainer}>
+                      <Text style={styles.referenceText}>
+                        National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
+                        <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
+                          <Text style={[styles.referenceText, styles.linkText]}>
+                            https://www.nhtsa.gov/road-safety/pedestrian-safety
+                          </Text>
+                        </TouchableOpacity>
+                      </Text>
+                    </View>
+                  </ScrollView>
+                </View>
+      
+                <TouchableOpacity
+                  style={styles.libraryBackButton}
+                  onPress={() => setLibraryVisible(false)}
+                >
+                  <Image
+                    source={require('../../assets/background/back.png')}
+                    style={styles.backButtonImage}
+                  />
+                </TouchableOpacity>
+              </Animated.View>
+            )}
     </SafeAreaView>
   );
 }
@@ -656,8 +665,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginLeft: 10,
   },
   topIcon: { width: 24, height: 24 },
-
-  // Loading overlay
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -672,8 +679,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
   },
-
-  // Result panel styles
   resultPanel: {
     position: 'absolute',
     top: height * 0.1,
@@ -740,8 +745,6 @@ const styles = StyleSheet.create({
     minWidth: 60,
     fontWeight: 'bold',
   },
-
-  // Detailed view toggle
   detailToggleButton: {
     backgroundColor: '#2196F3',
     paddingHorizontal: 15,
@@ -756,8 +759,6 @@ const styles = StyleSheet.create({
     fontFamily: 'pixel',
     textAlign: 'center',
   },
-
-  // Detailed view styles
   detailedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -834,8 +835,6 @@ const styles = StyleSheet.create({
     fontFamily: 'pixel',
     fontStyle: 'italic',
   },
-
-  // Saving indicator
   savingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -847,7 +846,6 @@ const styles = StyleSheet.create({
     fontFamily: 'pixel',
     marginLeft: 8,
   },
-
   finishButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -866,37 +864,80 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
   },
-
-  // Settings panel styles
-  settingsPanel: {
-    position: 'absolute',
-    top: height * 0.15,
-    alignSelf: 'center',
-    width: Math.min(width * 0.9, 400),
-    height: Math.min(height * 0.6, 400),
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
+  backButtonImage: {
+    width: 100,
+    height: 30,
+    resizeMode: 'contain',
+    marginBottom: 5
   },
   settingsTab: {
     ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
   },
-  settingsTitle: {
+  linkText: {
+    color: '#0066CC',
+    textDecorationLine: 'underline',
+  },
+  libraryPanel: {
+    position: 'absolute',
+    top: height * 0.1,
+    alignSelf: 'center',
+    width: Math.min(width * 0.9, 450),
+    height: Math.min(height * 0.75, 500),
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  libraryTitle: {
     fontSize: 15,
     color: 'black',
-    fontFamily: 'pixel',
-    marginBottom: 20,
+    fontFamily: "Pixel3",
+    marginTop: 10,
+    marginBottom: 15,
     textAlign: 'center',
   },
-  settingsOptionsColumn: {
+  libraryContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 25,
+    width: '85%',
+    marginBottom: 20,
   },
-  profileButton: { width: 147, height: 50, resizeMode: 'contain', marginBottom: -10, marginTop: 10 },
-  audioButton: { width: 120, height: 50, resizeMode: 'contain', marginBottom: -10 },
-  backButtonImage: { width: 100, height: 50, resizeMode: 'contain', marginBottom: 30 },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  referenceContainer: {
+    marginBottom: 20,
+    paddingHorizontal: 5,
+  },
+  referenceText: {
+    fontSize: 9,
+    color: 'black',
+    fontFamily: "Pixel3",
+    lineHeight: 14,
+    textAlign: 'justify',
+  },
+  libraryBackButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 25,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subsectionTitle: {
+    fontSize: 10,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginTop: 10,
+    marginBottom: 5,
+    textDecorationLine: 'underline',
+  },
 });
