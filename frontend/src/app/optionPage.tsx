@@ -345,7 +345,7 @@ const testBasicConnection = async () => {
       <View style={styles.topRightIcons}>
         <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
           <Image
-            source={require('../../assets/icon/Settings.png')}
+            source={require('../../assets/icon/profile-icon.png')}
             style={styles.topIcon}
             resizeMode="contain"
           />
