@@ -51,8 +51,6 @@ export default function Register() {
   const [hasReadTerms, setHasReadTerms] = useState(false);
   const [hasReadPrivacy, setHasReadPrivacy] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [termsScrolledToBottom, setTermsScrolledToBottom] = useState(false);
-  const [privacyScrolledToBottom, setPrivacyScrolledToBottom] = useState(false);
 
   // Validation states
   const [usernameError, setUsernameError] = useState("");
@@ -135,14 +133,12 @@ export default function Register() {
   const checkUsernameAvailability = async (username: string) => {
     if (!username || username.length < 3) {
       setUsernameError("");
-      setUsernameChecking(false);
       return;
     }
 
     // Validate format first
     if (!USERNAME_REGEX.test(username)) {
       setUsernameError("Username: 3-20 chars, letters, numbers, _ or -");
-      setUsernameChecking(false);
       return;
     }
 
@@ -150,22 +146,16 @@ export default function Register() {
     setUsernameError("");
 
     try {
-      const response = await fetch(`${API_URL}/auth/check-username/${encodeURIComponent(username.toLowerCase())}`);
-
-      if (!response.ok) {
-        throw new Error('Network error');
-      }
-
+      const response = await fetch(`${API_URL}/auth/check-username/${username.toLowerCase()}`);
       const data = await response.json();
 
       if (!data.available) {
         setUsernameError("Username already taken");
       } else {
-        setUsernameError(""); // Valid and available
+        setUsernameError("");
       }
     } catch (error) {
       console.error("Error checking username:", error);
-      setUsernameError("Unable to check username");
     } finally {
       setUsernameChecking(false);
     }
@@ -173,43 +163,32 @@ export default function Register() {
 
   // Check email availability with debounce
   const checkEmailAvailability = async (email: string) => {
-    // Validate email format FIRST
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    if (!email) {
+    if (!email || email.length < 3) {
       setEmailError("");
-      setEmailChecking(false);
       return;
     }
 
-    // Don't check availability if format is invalid
+    // Validate format first
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       setEmailError("Invalid email format");
-      setEmailChecking(false);
       return;
     }
 
-    // Only check availability if format is valid
     setEmailChecking(true);
     setEmailError("");
 
     try {
-      const response = await fetch(`${API_URL}/auth/check-email/${encodeURIComponent(email.toLowerCase())}`);
-
-      if (!response.ok) {
-        throw new Error('Network error');
-      }
-
+      const response = await fetch(`${API_URL}/auth/check-email/${email.toLowerCase()}`);
       const data = await response.json();
 
       if (!data.available) {
         setEmailError("Email already registered");
       } else {
-        setEmailError(""); // Valid and available
+        setEmailError("");
       }
     } catch (error) {
       console.error("Error checking email:", error);
-      setEmailError("Unable to check email");
     } finally {
       setEmailChecking(false);
     }
@@ -224,59 +203,25 @@ export default function Register() {
       clearTimeout(usernameCheckTimeout.current);
     }
 
-    // Clear checking state and error if too short
-    if (text.length < 3) {
-      setUsernameError("");
-      setUsernameChecking(false);
-      return;
-    }
-
-    // Validate format immediately
-    if (!USERNAME_REGEX.test(text)) {
-      setUsernameError("Username: 3-20 chars, letters, numbers, _ or -");
-      setUsernameChecking(false);
-      return;
-    }
-
-    // Clear error if format is valid
-    setUsernameError("");
-
-    // Check availability with debounce
+    // Set new timeout for checking availability
     usernameCheckTimeout.current = setTimeout(() => {
       checkUsernameAvailability(text);
-    }, 800);
+    }, 500);
   };
 
   // Handle email change with debounce
   const handleEmailChange = (text: string) => {
     setEmail(text);
 
-    // Validate format immediately for user feedback
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
     // Clear previous timeout
     if (emailCheckTimeout.current) {
       clearTimeout(emailCheckTimeout.current);
     }
 
-    // Show format error immediately if invalid
-    if (text.length > 0 && !emailRegex.test(text)) {
-      setEmailError("Invalid email format");
-      setEmailChecking(false);
-      return;
-    }
-
-    // Clear error if format is correct
-    if (emailRegex.test(text)) {
-      setEmailError("");
-    }
-
-    // Only check availability if format is valid
-    if (emailRegex.test(text)) {
-      emailCheckTimeout.current = setTimeout(() => {
-        checkEmailAvailability(text);
-      }, 800);
-    }
+    // Set new timeout for checking availability
+    emailCheckTimeout.current = setTimeout(() => {
+      checkEmailAvailability(text);
+    }, 500);
   };
 
   // Handle password change
@@ -373,54 +318,15 @@ export default function Register() {
     }
   };
 
-  const handleTermsScroll = (event) => {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const paddingToBottom = 20; // How close to bottom before enabling button
-    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
-    
-    if (isCloseToBottom && !termsScrolledToBottom) {
-      setTermsScrolledToBottom(true);
-    }
-  };
-
-  const handlePrivacyScroll = (event) => {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const paddingToBottom = 20;
-    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
-    
-    if (isCloseToBottom && !privacyScrolledToBottom) {
-      setPrivacyScrolledToBottom(true);
-    }
-  };
-
   const handleTermsRead = () => {
-    if (termsScrolledToBottom) {
-      setHasReadTerms(true);
-      setShowTerms(false);
-      setTermsScrolledToBottom(false); // Reset for next time
-    }
+    setHasReadTerms(true);
+    setShowTerms(false);
   };
 
   const handlePrivacyRead = () => {
-    if (privacyScrolledToBottom) {
-      setHasReadPrivacy(true);
-      setShowPrivacy(false);
-      setPrivacyScrolledToBottom(false); // Reset for next time
-    }
+    setHasReadPrivacy(true);
+    setShowPrivacy(false);
   };
-
-  // Reset scroll states when modals open
-  const openTermsModal = () => {
-    setTermsScrolledToBottom(false);
-    setShowTerms(true);
-  };
-
-  const openPrivacyModal = () => {
-    setPrivacyScrolledToBottom(false);
-    setShowPrivacy(true);
-  };
-
-
 
   const handleLogin = () => router.push("/login");
 
@@ -459,12 +365,8 @@ export default function Register() {
         <ScrollView 
           style={styles.scrollContainer}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={true}
+          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          indicatorStyle="black" // Add this for better visibility
-          scrollIndicatorInsets={{right: 1}}
-          persistentScrollbar={true}
-
         >
 
           {/* Username */}
@@ -475,14 +377,15 @@ export default function Register() {
             placeholderTextColor="#ccc"
             style={[
               styles.input,
-              (usernameError || (username.length > 0 && !USERNAME_REGEX.test(username)))
-                ? styles.inputError
-                : username.length >= 3 && !usernameError && !usernameChecking && USERNAME_REGEX.test(username)
-                ? styles.inputSuccess
-                : null
+              usernameError ? styles.inputError : username.length > 0 && !usernameError && !usernameChecking ? styles.inputSuccess : null
             ]}
             autoCapitalize="none"
           />
+          {usernameChecking && <Text style={styles.checkingText}>Checking...</Text>}
+          {usernameError && <Text style={styles.errorText}>{usernameError}</Text>}
+          {username.length > 0 && !usernameError && !usernameChecking && (
+            <Text style={styles.successText}>✓ Username available</Text>
+          )}
 
           {/* Password */}
           <TextInput
@@ -540,32 +443,20 @@ export default function Register() {
             autoCapitalize="none"
             style={[
               styles.input,
-              emailError === "Invalid email format"
-                ? styles.inputError
-                : emailError === "Email already registered"
-                ? styles.inputError
-                : email.length > 0 && !emailError && !emailChecking && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-                ? styles.inputSuccess
-                : null
+              emailError ? styles.inputError : email.length > 0 && !emailError && !emailChecking ? styles.inputSuccess : null
             ]}
           />
-          {emailError && (
-                      <Text style={styles.errorText}>
-                        {emailError === "Invalid email format" ? "⚠️ " : "❌ "}{emailError}
-                      </Text>
-                    )}
-
-                    {usernameError && (
-                      <Text style={styles.errorText}>
-                        {usernameError.includes("chars") ? "⚠️ " : "❌ "}{usernameError}
-                      </Text>
-                    )}
+          {emailChecking && <Text style={styles.checkingText}>Checking...</Text>}
+          {emailError && <Text style={styles.errorText}>{emailError}</Text>}
+          {email.length > 0 && !emailError && !emailChecking && (
+            <Text style={styles.successText}>✓ Email available</Text>
+          )}
 
           {/* Terms and Privacy Policy Agreement */}
           <View>
             <View style={styles.legalLinksContainer}>
               <TouchableOpacity 
-                onPress={openTermsModal}
+                onPress={() => setShowTerms(true)}
                 style={[styles.legalButton, hasReadTerms && styles.legalButtonRead]}
               >
                 <Text style={[styles.legalButtonText, hasReadTerms && styles.legalButtonTextRead]}>
@@ -574,7 +465,7 @@ export default function Register() {
               </TouchableOpacity>
               
               <TouchableOpacity 
-                onPress={openPrivacyModal}
+                onPress={() => setShowPrivacy(true)}
                 style={[styles.legalButton, hasReadPrivacy && styles.legalButtonRead]}
               >
                 <Text style={[styles.legalButtonText, hasReadPrivacy && styles.legalButtonTextRead]}>
@@ -646,9 +537,7 @@ export default function Register() {
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalScrollView}
-              onScroll={handleTermsScroll} // Add scroll handler
-              scrollEventThrottle={16}>
+            <ScrollView style={styles.modalScrollView}>
               <Text style={styles.modalText}>
                 Welcome to RoadCheck! By using our application, you agree to the following terms:{'\n\n'}
                 
@@ -679,19 +568,10 @@ export default function Register() {
             </ScrollView>
             <View style={styles.modalFooter}>
               <TouchableOpacity 
-                style={[
-                  styles.modalButton,
-                  !termsScrolledToBottom && styles.modalButtonDisabled
-                ]}
+                style={styles.modalButton}
                 onPress={handleTermsRead}
-                disabled={!termsScrolledToBottom}
               >
-                <Text style={[
-                  styles.modalButtonText,
-                  !termsScrolledToBottom && styles.modalButtonTextDisabled
-                ]}>
-                  {termsScrolledToBottom ? "I Have Read This" : "Scroll to Continue"}
-                </Text>
+                <Text style={styles.modalButtonText}>I Have Read This</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -713,10 +593,7 @@ export default function Register() {
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalScrollView}
-              onScroll={handlePrivacyScroll} // Add scroll handler
-              scrollEventThrottle={16}
-            >
+            <ScrollView style={styles.modalScrollView}>
               <Text style={styles.modalText}>
                 Your privacy is important to us. This policy explains how we collect and use your information.{'\n\n'}
                 
@@ -759,19 +636,10 @@ export default function Register() {
             </ScrollView>
             <View style={styles.modalFooter}>
               <TouchableOpacity 
-                style={[
-                  styles.modalButton,
-                  !privacyScrolledToBottom && styles.modalButtonDisabled
-                ]}
+                style={styles.modalButton}
                 onPress={handlePrivacyRead}
-                disabled={!privacyScrolledToBottom}
               >
-                <Text style={[
-                  styles.modalButtonText,
-                  !privacyScrolledToBottom && styles.modalButtonTextDisabled
-                ]}>
-                  {privacyScrolledToBottom ? "I Have Read This" : "Scroll to Continue"}
-                </Text>
+                <Text style={styles.modalButtonText}>I Have Read This</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -811,7 +679,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: "60%",
     height: height * 0.85, // Fixed height for scrolling
-    overflow: 'hidden',
   },
   scrollContainer: {
     flex: 1,
@@ -827,7 +694,6 @@ const styles = StyleSheet.create({
     fontFamily: "pixel",
     textAlign: "center",
     marginBottom: 5,
-    paddingHorizontal: 15,
   },
   input: {
     borderWidth: 1,
@@ -1047,11 +913,5 @@ const styles = StyleSheet.create({
     color: 'black',
     fontFamily: 'pixel',
     fontSize: 12,
-  },
-  modalButtonDisabled: {
-    backgroundColor: '#cccccc',
-  },
-  modalButtonTextDisabled: {
-    color: '#666666',
   },
 });

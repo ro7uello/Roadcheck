@@ -17,6 +17,7 @@ import {
   Alert,
   ScrollView,
   Linking,
+  FlatList
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
@@ -281,7 +282,8 @@ export default function ResultPage() {
         toValue: 1,
         duration: BACKGROUND_SPEED,
         useNativeDriver: true,
-      })
+      }),
+      { iterations: -1 }
     ).start();
   };
 
@@ -307,7 +309,7 @@ export default function ResultPage() {
   const handleSettingsPress = () => {
       router.push('/profile');
     };
-
+  
     const handleLibraryPress = async () => {
       try {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -418,22 +420,22 @@ export default function ResultPage() {
       </Animated.View>
 
       <View style={styles.topRightIcons}>
-        <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
-          <Image
-            source={require('../../assets/icon/Settings.png')}
-            style={styles.topIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.iconButton} onPress={handleLibraryPress}>
-          <Image
-            source={require('../../assets/icon/Library.png')}
-            style={styles.topIcon}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-      </View>
+              <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
+                <Image
+                  source={require('../../assets/icon/Settings.png')}
+                  style={styles.topIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+      
+              <TouchableOpacity style={styles.iconButton} onPress={handleLibraryPress}>
+                <Image
+                  source={require('../../assets/icon/Library.png')}
+                  style={styles.topIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            </View>
 
       {loading && (
         <View style={styles.loadingOverlay}>
@@ -458,9 +460,7 @@ export default function ResultPage() {
           <>
             <View style={styles.resultHeader}>
               <Text style={styles.resultTitle}>RESULT</Text>
-            </View>
-
-            <View style={styles.statusContainer}>
+              <Text style={styles.categoryText}>{categoryName} - Phase {phaseId}</Text>
               <Text style={[
                 styles.resultStatus,
                 { color: resultData.status === 'PASS' ? '#4CAF50' : '#F44336' }
@@ -486,7 +486,7 @@ export default function ResultPage() {
               </View>
 
               <View style={styles.statRow}>
-                <Text style={styles.statLabel}>AVG TIME:</Text>
+                <Text style={styles.statLabel}>AVG TIME/QUESTION:</Text>
                 <Text style={styles.statValue}>{resultData.averageTime}</Text>
               </View>
 
@@ -501,27 +501,12 @@ export default function ResultPage() {
               </View>
             </View>
 
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.detailToggleButton}
-                onPress={toggleDetailedView}
-              >
-                <Text style={styles.detailToggleText}>VIEW SCENARIO DETAILS</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.finishButton,
-                  { backgroundColor: resultData.status === 'PASS' ? '#4CAF50' : '#FF9800' }
-                ]}
-                onPress={handleFinishPress}
-                disabled={loading || saving}
-              >
-                <Text style={styles.finishButtonText}>
-                  {loading ? 'CALCULATING...' : saving ? 'SAVING...' : 'FINISH'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.detailToggleButton}
+              onPress={toggleDetailedView}
+            >
+              <Text style={styles.detailToggleText}>View Scenario Details</Text>
+            </TouchableOpacity>
           </>
         ) : (
           <>
@@ -530,9 +515,9 @@ export default function ResultPage() {
                 style={styles.backButton}
                 onPress={toggleDetailedView}
               >
-                <Text style={styles.backButtonText}>← BACK</Text>
+                <Text style={styles.backButtonText}>← Back</Text>
               </TouchableOpacity>
-              <Text style={styles.detailedTitle}>SCENARIO DETAILS</Text>
+              <Text style={styles.detailedTitle}>Scenario Details</Text>
             </View>
 
             <ScrollView style={styles.detailedContent} showsVerticalScrollIndicator={false}>
@@ -551,100 +536,115 @@ export default function ResultPage() {
             <Text style={styles.savingText}>Saving progress...</Text>
           </View>
         )}
+
+        {!showDetailedView && (
+          <TouchableOpacity
+            style={[
+              styles.finishButton,
+              { backgroundColor: resultData.status === 'PASS' ? '#4CAF50' : '#FF9800' }
+            ]}
+            onPress={handleFinishPress}
+            disabled={loading || saving}
+          >
+            <Text style={styles.finishButtonText}>
+              {loading ? 'CALCULATING...' : saving ? 'SAVING...' : 'FINISH'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </Animated.View>
 
       {libraryVisible && (
-        <Animated.View
-          style={[
-            styles.libraryPanel,
-            { transform: [{ scale: libraryModalScale }] },
-          ]}
-        >
-          <Image
-            source={require('../../assets/background/settings-tab.png')}
-            style={styles.settingsTab}
-            resizeMode="stretch"
-          />
-
-          <Text style={styles.libraryTitle}>REFERENCES</Text>
-
-          <View style={styles.libraryContent}>
-            <ScrollView
-              style={styles.scrollView}
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator={true}
-            >
-            <View style={styles.referenceContainer}>
-                <Text style={styles.sectionTitle}>Some Basic Signs and Markings to Remember</Text>
-
-                <Text style={styles.subsectionTitle}>Traffic Signs</Text>
-                <Text style={styles.referenceText}>
-                  • Red Signal - means bring your vehicle to a stop at a marked line.{'\n\n'}
-                  • Flashing Red - means bring your vehicle to a STOP and proceed only when it is safe.{'\n\n'}
-                  • Yellow Signal - means the red signal is about to appear. Prepare to stop.{'\n\n'}
-                  • Flashing Yellow - means slow down and proceed with caution.{'\n\n'}
-                  • Green Signal - means you can proceed, yield if needed.{'\n\n'}
-                  • Flashing Green - proceed with caution. yield for pedestrian.{'\n'}
-                </Text>
-
-                <Text style={styles.subsectionTitle}>Road Markings</Text>
-                <Text style={styles.referenceText}>
-                  • Solid White line - Crossing is discouraged and requires special care when doing so.{'\n\n'}
-                  • Broken White line - Changing of lane is allowed provided with care.{'\n\n'}
-                  • Double Solid Yellow line - No overtaking and No crossing{'\n\n'}
-                  • Single Solid Yellow line - Crossing is allowed but no overtaking{'\n\n'}
-                  • Broken Yellow line - Crossing and overtaking is allowed with necessary care.{'\n\n'}
-                  • Edge Line - Used to separate the outside edge of the road from the shoulder.{'\n'}
-                </Text>
-              </View>
-              <View style={styles.referenceContainer}>
-                <Text style={styles.referenceText}>
-                  Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
-                  <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
-                    <Text style={[styles.referenceText, styles.linkText]}>
-                      https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
-                    </Text>
-                  </TouchableOpacity>
-                </Text>
-              </View>
-
-              <View style={styles.referenceContainer}>
-                <Text style={styles.sectionTitle}>Basic Pedestrian Safety Tips</Text>
-                <Text style={styles.referenceText}>
-                  • Follow the rules of the road and obey signs and signals{'\n\n'}
-                  • Walk on sidewalks whenever possible. If there are no sidewalk, walk facing and as far from traffic as possible{'\n'}
-                  • Cross streets at crosswalks.{'\n\n'}
-                  • If a crosswalk is not available, walk at a well lit area where you have the best view of traffic. Wait for a gap in traffic that allows enough time to cross safely but continue to watch for traffic as you cross.{'\n\n'}
-                  • Watch for cars entering or exiting driveways or backing up.{'\n\n'}
-                  • When crossing the street, stay alert: <Text style={[styles.referenceText, { textDecorationLine: 'underline' }]}>check for signals, signs, and actions of drivers, cyclists, and pedestrians around you</Text>.{'\n\n'}
-                  • Do not rely on others to keep you safe.{'\n'}
-                </Text>
-              </View>
-
-              <View style={styles.referenceContainer}>
-                <Text style={styles.referenceText}>
-                  National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
-                  <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
-                    <Text style={[styles.referenceText, styles.linkText]}>
-                      https://www.nhtsa.gov/road-safety/pedestrian-safety
-                    </Text>
-                  </TouchableOpacity>
-                </Text>
-              </View>
-            </ScrollView>
-          </View>
-
-          <TouchableOpacity
-            style={styles.libraryBackButton}
-            onPress={() => setLibraryVisible(false)}
-          >
-            <Image
-              source={require('../../assets/background/back.png')}
-              style={styles.backButtonImage}
-            />
-          </TouchableOpacity>
-        </Animated.View>
-      )}
+              <Animated.View
+                style={[
+                  styles.libraryPanel,
+                  { transform: [{ scale: libraryModalScale }] },
+                ]}
+              >
+                <Image
+                  source={require('../../assets/background/settings-tab.png')}
+                  style={styles.settingsTab}
+                  resizeMode="stretch"
+                />
+      
+                <Text style={styles.libraryTitle}>REFERENCES</Text>
+      
+                <View style={styles.libraryContent}>
+                  <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={true}
+                  >
+                  <View style={styles.referenceContainer}>
+                      <Text style={styles.sectionTitle}>Some Basic Signs and Markings to Remember</Text>
+                      
+                      <Text style={styles.subsectionTitle}>Traffic Signs</Text>
+                      <Text style={styles.referenceText}>
+                        • Red Signal - means bring your vehicle to a stop at a marked line.{'\n\n'}
+                        • Flashing Red - means bring your vehicle to a STOP and proceed only when it is safe.{'\n\n'}
+                        • Yellow Signal - means the red signal is about to appear. Prepare to stop.{'\n\n'}
+                        • Flashing Yellow - means slow down and proceed with caution.{'\n\n'}
+                        • Green Signal - means you can proceed, yield if needed.{'\n\n'}
+                        • Flashing Green - proceed with caution. yield for pedestrian.{'\n'}
+                      </Text>
+                      
+                      <Text style={styles.subsectionTitle}>Road Markings</Text>
+                      <Text style={styles.referenceText}>
+                        • Solid White line - Crossing is discouraged and requires special care when doing so.{'\n\n'}
+                        • Broken White line - Changing of lane is allowed provided with care.{'\n\n'}
+                        • Double Solid Yellow line - No overtaking and No crossing{'\n\n'}
+                        • Single Solid Yellow line - Crossing is allowed but no overtaking{'\n\n'}
+                        • Broken Yellow line - Crossing and overtaking is allowed with necessary care.{'\n\n'}
+                        • Edge Line - Used to separate the outside edge of the road from the shoulder.{'\n'}
+                      </Text>
+                    </View>
+                    <View style={styles.referenceContainer}>
+                      <Text style={styles.referenceText}>
+                        Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
+                        <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
+                          <Text style={[styles.referenceText, styles.linkText]}>
+                            https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
+                          </Text>
+                        </TouchableOpacity>
+                      </Text>
+                    </View>
+      
+                    <View style={styles.referenceContainer}>
+                      <Text style={styles.sectionTitle}>Basic Pedestrian Safety Tips</Text>
+                      <Text style={styles.referenceText}>
+                        • Follow the rules of the road and obey signs and signals{'\n\n'}
+                        • Walk on sidewalks whenever possible. If there are no sidewalk, walk facing and as far from traffic as possible{'\n'}
+                        • Cross streets at crosswalks.{'\n\n'}
+                        • If a crosswalk is not available, walk at a well lit area where you have the best view of traffic. Wait for a gap in traffic that allows enough time to cross safely but continue to watch for traffic as you cross.{'\n\n'}
+                        • Watch for cars entering or exiting driveways or backing up.{'\n\n'}
+                        • When crossing the street, stay alert: <Text style={[styles.referenceText, { textDecorationLine: 'underline' }]}>check for signals, signs, and actions of drivers, cyclists, and pedestrians around you</Text>.{'\n\n'}
+                        • Do not rely on others to keep you safe.{'\n'}
+                      </Text>
+                    </View>
+      
+                    <View style={styles.referenceContainer}>
+                      <Text style={styles.referenceText}>
+                        National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
+                        <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
+                          <Text style={[styles.referenceText, styles.linkText]}>
+                            https://www.nhtsa.gov/road-safety/pedestrian-safety
+                          </Text>
+                        </TouchableOpacity>
+                      </Text>
+                    </View>
+                  </ScrollView>
+                </View>
+      
+                <TouchableOpacity
+                  style={styles.libraryBackButton}
+                  onPress={() => setLibraryVisible(false)}
+                >
+                  <Image
+                    source={require('../../assets/background/back.png')}
+                    style={styles.backButtonImage}
+                  />
+                </TouchableOpacity>
+              </Animated.View>
+            )}
     </SafeAreaView>
   );
 }
@@ -680,14 +680,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   resultPanel: {
-      position: 'absolute',
-      top: height * 0.12,
-      alignSelf: 'center',
-      width: Math.min(width * 0.82, 400),
-      height: Math.min(height * 0.65, 460),
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      zIndex: 6,
+    position: 'absolute',
+    top: height * 0.1,
+    alignSelf: 'center',
+    width: Math.min(width * 0.9, 400),
+    height: Math.min(height * 0.75, 500),
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    zIndex: 6,
   },
   resultTab: {
     ...StyleSheet.absoluteFillObject,
@@ -695,62 +695,63 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   resultHeader: {
-      alignItems: 'center',
-      marginTop: 18,  // Reduced from 8
-      marginBottom: 2,
-    },
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
   resultTitle: {
-      fontSize: 24,  // Slightly smaller
-      color: 'black',
-      fontFamily: 'pixel',
-      textAlign: 'center',
-    },
-    statusContainer: {
-      alignItems: 'center',
-      marginBottom: 20,  // Reduced from 12
-    },
+    fontSize: 20,
+    color: 'black',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  categoryText: {
+    fontSize: 12,
+    color: '#666',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
   resultStatus: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'pixel',
     textAlign: 'center',
     fontWeight: 'bold',
   },
   resultStats: {
-      width: '80%',  // Increased from 75%
-      paddingVertical: 0,
-      gap: 10,  // Reduced from 14
-    },
-    statRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 12,  // Increased from 5
-    },
+    width: '85%',
+    flex: 1,
+    justifyContent: 'center',
+    gap: 12,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
   statLabel: {
+    fontSize: 11,
+    color: 'black',
+    fontFamily: 'pixel',
+    flex: 1,
+  },
+  statValue: {
     fontSize: 12,
     color: 'black',
     fontFamily: 'pixel',
-  },
-  statValue: {
-    fontSize: 13,
-    color: 'black',
-    fontFamily: 'pixel',
     textAlign: 'right',
+    minWidth: 60,
     fontWeight: 'bold',
   },
-  buttonContainer: {
-      flexDirection: 'row',
-      width: '88%',
-      marginTop: 20,  // Reduced from 15
-      marginBottom: 18,
-      gap: 10,
-    },
   detailToggleButton: {
     backgroundColor: '#2196F3',
     paddingHorizontal: 15,
-    paddingVertical: 11,
-    borderRadius: 8,
-    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 5,
+    marginTop: 10,
+    marginBottom: 15,
   },
   detailToggleText: {
     fontSize: 10,
@@ -758,44 +759,27 @@ const styles = StyleSheet.create({
     fontFamily: 'pixel',
     textAlign: 'center',
   },
-  finishButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 11,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#45a049',
-    flex: 1,
-  },
-  finishButtonText: {
-    fontSize: 12,
-    color: 'white',
-    fontFamily: 'pixel',
-    textAlign: 'center',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 1,
-  },
   detailedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '90%',
-    marginTop: 20,
-    marginBottom: 15,
+    marginTop: 15,
+    marginBottom: 10,
   },
   backButton: {
     backgroundColor: '#666',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 3,
     marginRight: 10,
   },
   backButtonText: {
-    fontSize: 10,
+    fontSize: 8,
     color: 'white',
     fontFamily: 'pixel',
   },
   detailedTitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'black',
     fontFamily: 'pixel',
     fontWeight: 'bold',
@@ -806,10 +790,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   scenarioDetailItem: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
+    padding: 8,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#ddd',
   },
@@ -817,21 +801,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   scenarioDetailNumber: {
-    fontSize: 11,
+    fontSize: 10,
     color: 'black',
     fontFamily: 'pixel',
     fontWeight: 'bold',
   },
   scenarioStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
   scenarioStatusText: {
-    fontSize: 9,
+    fontSize: 8,
     color: 'white',
     fontFamily: 'pixel',
     fontWeight: 'bold',
@@ -840,13 +824,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   scenarioDetailText: {
-    fontSize: 9,
+    fontSize: 8,
     color: '#333',
     fontFamily: 'pixel',
     marginBottom: 2,
   },
   scenarioDetailAnswer: {
-    fontSize: 9,
+    fontSize: 8,
     color: '#555',
     fontFamily: 'pixel',
     fontStyle: 'italic',
@@ -858,84 +842,102 @@ const styles = StyleSheet.create({
   },
   savingText: {
     fontSize: 10,
-        color: '#666',
-        fontFamily: 'pixel',
-        marginLeft: 8,
-      },
-      backButtonImage: {
-        width: 100,
-        height: 30,
-        resizeMode: 'contain',
-        marginBottom: 5
-      },
-      settingsTab: {
-        ...StyleSheet.absoluteFillObject,
-        width: '100%',
-        height: '100%',
-      },
-      linkText: {
-        color: '#0066CC',
-        textDecorationLine: 'underline',
-      },
-      libraryPanel: {
-        position: 'absolute',
-        top: height * 0.1,
-        alignSelf: 'center',
-        width: Math.min(width * 0.9, 450),
-        height: Math.min(height * 0.75, 500),
-        alignItems: 'center',
-        zIndex: 10,
-      },
-      libraryTitle: {
-        fontSize: 15,
-        color: 'black',
-        fontFamily: "pixel",
-        marginTop: 10,
-        marginBottom: 15,
-        textAlign: 'center',
-      },
-      libraryContent: {
-        flex: 1,
-        width: '85%',
-        marginBottom: 20,
-      },
-      scrollView: {
-        flex: 1,
-        width: '100%',
-      },
-      scrollContent: {
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-      },
-      referenceContainer: {
-        marginBottom: 20,
-        paddingHorizontal: 5,
-      },
-      referenceText: {
-        fontSize: 9,
-        color: 'black',
-        fontFamily: "pixel",
-        lineHeight: 14,
-        textAlign: 'justify',
-      },
-      libraryBackButton: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 25,
-      },
-      sectionTitle: {
-        fontSize: 12,
-        color: 'black',
-        fontFamily: "pixel",
-        marginBottom: 10,
-        textAlign: 'center',
-      },
-      subsectionTitle: {
-        fontSize: 10,
-        color: 'black',
-        fontFamily: "pixel",
-        marginTop: 10,
-        marginBottom: 5,
-        textDecorationLine: 'underline',
-      },
-    });
+    color: '#666',
+    fontFamily: 'pixel',
+    marginLeft: 8,
+  },
+  finishButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+    marginBottom: 25,
+    borderWidth: 2,
+    borderColor: '#45a049',
+    minWidth: 120,
+  },
+  finishButtonText: {
+    fontSize: 14,
+    color: 'white',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  backButtonImage: {
+    width: 100,
+    height: 30,
+    resizeMode: 'contain',
+    marginBottom: 5
+  },
+  settingsTab: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  linkText: {
+    color: '#0066CC',
+    textDecorationLine: 'underline',
+  },
+  libraryPanel: {
+    position: 'absolute',
+    top: height * 0.1,
+    alignSelf: 'center',
+    width: Math.min(width * 0.9, 450),
+    height: Math.min(height * 0.75, 500),
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  libraryTitle: {
+    fontSize: 15,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginTop: 10,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  libraryContent: {
+    flex: 1,
+    width: '85%',
+    marginBottom: 20,
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  referenceContainer: {
+    marginBottom: 20,
+    paddingHorizontal: 5,
+  },
+  referenceText: {
+    fontSize: 9,
+    color: 'black',
+    fontFamily: "Pixel3",
+    lineHeight: 14,
+    textAlign: 'justify',
+  },
+  libraryBackButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 25,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subsectionTitle: {
+    fontSize: 10,
+    color: 'black',
+    fontFamily: "Pixel3",
+    marginTop: 10,
+    marginBottom: 5,
+    textDecorationLine: 'underline',
+  },
+});
