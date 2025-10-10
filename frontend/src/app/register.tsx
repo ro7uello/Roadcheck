@@ -133,12 +133,14 @@ export default function Register() {
   const checkUsernameAvailability = async (username: string) => {
     if (!username || username.length < 3) {
       setUsernameError("");
+      setUsernameChecking(false);
       return;
     }
 
     // Validate format first
     if (!USERNAME_REGEX.test(username)) {
       setUsernameError("Username: 3-20 chars, letters, numbers, _ or -");
+      setUsernameChecking(false);
       return;
     }
 
@@ -146,16 +148,22 @@ export default function Register() {
     setUsernameError("");
 
     try {
-      const response = await fetch(`${API_URL}/auth/check-username/${username.toLowerCase()}`);
+      const response = await fetch(`${API_URL}/auth/check-username/${encodeURIComponent(username.toLowerCase())}`);
+
+      if (!response.ok) {
+        throw new Error('Network error');
+      }
+
       const data = await response.json();
 
       if (!data.available) {
         setUsernameError("Username already taken");
       } else {
-        setUsernameError("");
+        setUsernameError(""); // Valid and available
       }
     } catch (error) {
       console.error("Error checking username:", error);
+      setUsernameError("Unable to check username");
     } finally {
       setUsernameChecking(false);
     }
@@ -163,32 +171,43 @@ export default function Register() {
 
   // Check email availability with debounce
   const checkEmailAvailability = async (email: string) => {
-    if (!email || email.length < 3) {
+    // Validate email format FIRST
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!email) {
       setEmailError("");
+      setEmailChecking(false);
       return;
     }
 
-    // Validate format first
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Don't check availability if format is invalid
     if (!emailRegex.test(email)) {
       setEmailError("Invalid email format");
+      setEmailChecking(false);
       return;
     }
 
+    // Only check availability if format is valid
     setEmailChecking(true);
     setEmailError("");
 
     try {
-      const response = await fetch(`${API_URL}/auth/check-email/${email.toLowerCase()}`);
+      const response = await fetch(`${API_URL}/auth/check-email/${encodeURIComponent(email.toLowerCase())}`);
+
+      if (!response.ok) {
+        throw new Error('Network error');
+      }
+
       const data = await response.json();
 
       if (!data.available) {
         setEmailError("Email already registered");
       } else {
-        setEmailError("");
+        setEmailError(""); // Valid and available
       }
     } catch (error) {
       console.error("Error checking email:", error);
+      setEmailError("Unable to check email");
     } finally {
       setEmailChecking(false);
     }
@@ -203,25 +222,59 @@ export default function Register() {
       clearTimeout(usernameCheckTimeout.current);
     }
 
-    // Set new timeout for checking availability
+    // Clear checking state and error if too short
+    if (text.length < 3) {
+      setUsernameError("");
+      setUsernameChecking(false);
+      return;
+    }
+
+    // Validate format immediately
+    if (!USERNAME_REGEX.test(text)) {
+      setUsernameError("Username: 3-20 chars, letters, numbers, _ or -");
+      setUsernameChecking(false);
+      return;
+    }
+
+    // Clear error if format is valid
+    setUsernameError("");
+
+    // Check availability with debounce
     usernameCheckTimeout.current = setTimeout(() => {
       checkUsernameAvailability(text);
-    }, 500);
+    }, 800);
   };
 
   // Handle email change with debounce
   const handleEmailChange = (text: string) => {
     setEmail(text);
 
+    // Validate format immediately for user feedback
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     // Clear previous timeout
     if (emailCheckTimeout.current) {
       clearTimeout(emailCheckTimeout.current);
     }
 
-    // Set new timeout for checking availability
-    emailCheckTimeout.current = setTimeout(() => {
-      checkEmailAvailability(text);
-    }, 500);
+    // Show format error immediately if invalid
+    if (text.length > 0 && !emailRegex.test(text)) {
+      setEmailError("Invalid email format");
+      setEmailChecking(false);
+      return;
+    }
+
+    // Clear error if format is correct
+    if (emailRegex.test(text)) {
+      setEmailError("");
+    }
+
+    // Only check availability if format is valid
+    if (emailRegex.test(text)) {
+      emailCheckTimeout.current = setTimeout(() => {
+        checkEmailAvailability(text);
+      }, 800);
+    }
   };
 
   // Handle password change
@@ -377,15 +430,14 @@ export default function Register() {
             placeholderTextColor="#ccc"
             style={[
               styles.input,
-              usernameError ? styles.inputError : username.length > 0 && !usernameError && !usernameChecking ? styles.inputSuccess : null
+              usernameError
+                ? styles.inputError
+                : username.length >= 3 && !usernameError && !usernameChecking && USERNAME_REGEX.test(username)
+                ? styles.inputSuccess
+                : null
             ]}
             autoCapitalize="none"
           />
-          {usernameChecking && <Text style={styles.checkingText}>Checking...</Text>}
-          {usernameError && <Text style={styles.errorText}>{usernameError}</Text>}
-          {username.length > 0 && !usernameError && !usernameChecking && (
-            <Text style={styles.successText}>✓ Username available</Text>
-          )}
 
           {/* Password */}
           <TextInput
@@ -443,14 +495,26 @@ export default function Register() {
             autoCapitalize="none"
             style={[
               styles.input,
-              emailError ? styles.inputError : email.length > 0 && !emailError && !emailChecking ? styles.inputSuccess : null
+              emailError === "Invalid email format"
+                ? styles.inputError
+                : emailError === "Email already registered"
+                ? styles.inputError
+                : email.length > 0 && !emailError && !emailChecking && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+                ? styles.inputSuccess
+                : null
             ]}
           />
-          {emailChecking && <Text style={styles.checkingText}>Checking...</Text>}
-          {emailError && <Text style={styles.errorText}>{emailError}</Text>}
-          {email.length > 0 && !emailError && !emailChecking && (
-            <Text style={styles.successText}>✓ Email available</Text>
-          )}
+          {emailError && (
+                      <Text style={styles.errorText}>
+                        {emailError === "Invalid email format" ? "⚠️ " : "❌ "}{emailError}
+                      </Text>
+                    )}
+
+                    {usernameError && (
+                      <Text style={styles.errorText}>
+                        {usernameError.includes("chars") ? "⚠️ " : "❌ "}{usernameError}
+                      </Text>
+                    )}
 
           {/* Terms and Privacy Policy Agreement */}
           <View>
