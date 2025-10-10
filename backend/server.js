@@ -102,26 +102,38 @@ app.post('/auth/login', async (req, res) => {
 app.get('/auth/check-username/:username', async (req, res) => {
   try {
     const { username } = req.params;
+    const usernameLower = username.toLowerCase().trim();
+
+    console.log('Checking username availability for:', usernameLower);
 
     // Validate username format
-    if (!/^[a-zA-Z0-9_-]{3,20}$/.test(username)) {
+    if (!/^[a-zA-Z0-9_-]{3,20}$/.test(usernameLower)) {
       return res.json({
         available: false,
         message: 'Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens'
       });
     }
 
+    // Check in profiles table - FIXED: Removed problematic query
     const { data, error } = await supabase
       .from('profiles')
       .select('username')
-      .eq('username', username.toLowerCase())
-      .single();
+      .eq('username', usernameLower)
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
-      throw error;
+    // Handle errors properly
+    if (error) {
+      console.error('Username check database error:', error);
+      // Don't throw, return a safe response
+      return res.json({
+        available: false,
+        message: 'Unable to check username availability'
+      });
     }
 
     const available = !data;
+
+    console.log('Username check result:', { username: usernameLower, available });
 
     res.json({
       available,
@@ -130,7 +142,10 @@ app.get('/auth/check-username/:username', async (req, res) => {
 
   } catch (error) {
     console.error('Check username error:', error);
-    res.status(500).json({ error: 'Server error checking username' });
+    res.status(500).json({
+      error: 'Server error checking username',
+      available: false
+    });
   }
 });
 
@@ -138,27 +153,35 @@ app.get('/auth/check-username/:username', async (req, res) => {
 app.get('/auth/check-email/:email', async (req, res) => {
   try {
     const { email } = req.params;
+    const emailLower = email.toLowerCase().trim();
+
+    console.log('Checking email availability for:', emailLower);
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(emailLower)) {
       return res.json({
         available: false,
         message: 'Invalid email format'
       });
     }
 
-    // Check in Supabase Auth using admin API
+    // Check in Supabase Auth
     const { data: { users }, error } = await supabase.auth.admin.listUsers();
 
     if (error) {
       console.error('Error listing users:', error);
-      throw error;
+      return res.json({
+        available: false,
+        message: 'Unable to check email availability'
+      });
     }
 
     const emailExists = users.some(user =>
-      user.email?.toLowerCase() === email.toLowerCase()
+      user.email?.toLowerCase() === emailLower
     );
+
+    console.log('Email check result:', { email: emailLower, exists: emailExists });
 
     res.json({
       available: !emailExists,
@@ -167,7 +190,10 @@ app.get('/auth/check-email/:email', async (req, res) => {
 
   } catch (error) {
     console.error('Check email error:', error);
-    res.status(500).json({ error: 'Server error checking email' });
+    res.status(500).json({
+      error: 'Server error checking email',
+      available: false
+    });
   }
 });
 
@@ -196,74 +222,125 @@ app.post('/auth/signup', [
 
   const { email, password, username, firstName, lastName } = req.body;
   const usernameLower = username.toLowerCase().trim();
+  const emailLower = email.toLowerCase().trim();
+  const fullName = `${firstName.trim()} ${lastName.trim()}`;
 
   try {
-    console.log('Signup request received:', { email, username: usernameLower, firstName, lastName });
+    console.log('=== SIGNUP PROCESS START ===');
+    console.log('Email:', emailLower);
+    console.log('Username:', usernameLower);
+    console.log('Full Name:', fullName);
 
-    // Check if username already exists
-    const { data: existingUsername } = await supabase
+    // 1. Check if username already exists in profiles
+    const { data: existingUsername, error: usernameCheckError } = await supabase
       .from('profiles')
       .select('username')
       .eq('username', usernameLower)
-      .single();
+      .maybeSingle();
+
+    if (usernameCheckError && usernameCheckError.code !== 'PGRST116') {
+      console.error('Username check error:', usernameCheckError);
+      throw usernameCheckError;
+    }
 
     if (existingUsername) {
+      console.log('❌ Username already taken');
       return res.status(400).json({
         error: 'Username is already taken'
       });
     }
 
-    // Use Supabase Auth to create user
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
+    console.log('✅ Username available');
+
+    // 2. Create user in Supabase Auth
+    console.log('Creating auth user...');
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: emailLower,
       password: password,
       options: {
         data: {
           username: usernameLower,
           first_name: firstName.trim(),
           last_name: lastName.trim(),
-          full_name: `${firstName.trim()} ${lastName.trim()}`
-        }
+          full_name: fullName
+        },
+        emailRedirectTo: undefined // Disable email confirmation redirect
       }
     });
 
-    if (error) {
-      console.error('Supabase signup error:', error);
+    if (authError) {
+      console.error('❌ Supabase signup error:', authError);
       return res.status(400).json({
-        error: error.message || 'Registration failed'
+        error: authError.message || 'Registration failed'
       });
     }
 
-    console.log('✅ User created in auth:', data.user.id);
+    if (!authData.user) {
+      console.error('❌ No user returned from signup');
+      return res.status(400).json({
+        error: 'Registration failed - no user created'
+      });
+    }
 
-    // Create profile entry with username
-    const { error: profileError } = await supabase
+    console.log('✅ Auth user created:', authData.user.id);
+
+    // 3. Create profile entry with proper error handling
+    console.log('Creating profile entry...');
+
+    // Use service role client to bypass RLS if needed
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .insert({
-        id: data.user.id,
+        id: authData.user.id,
         username: usernameLower,
-        full_name: `${firstName.trim()} ${lastName.trim()}`,
-      });
+        full_name: fullName,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
 
     if (profileError) {
-      console.error('Profile creation error:', profileError);
-      // If profile creation fails due to duplicate username, delete the auth user
+      console.error('❌ Profile creation error:', profileError);
+      console.error('Error details:', JSON.stringify(profileError, null, 2));
+
+      // If profile creation fails, try to clean up the auth user
+      console.log('Attempting to clean up auth user...');
+      try {
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        console.log('✅ Auth user cleaned up');
+      } catch (cleanupError) {
+        console.error('❌ Failed to clean up auth user:', cleanupError);
+      }
+
+      // Check specific error codes
       if (profileError.code === '23505') { // Unique violation
-        await supabase.auth.admin.deleteUser(data.user.id);
         return res.status(400).json({
           error: 'Username is already taken'
         });
+      } else if (profileError.code === '42501') { // Insufficient privilege
+        return res.status(500).json({
+          error: 'Database permission error. Please contact support.'
+        });
+      } else if (profileError.code === '23503') { // Foreign key violation
+        return res.status(500).json({
+          error: 'Database constraint error. Please contact support.'
+        });
       }
-      throw profileError;
-    } else {
-      console.log('✅ Profile created');
+
+      return res.status(500).json({
+        error: 'Failed to create user profile. Please contact support.',
+        details: profileError.message
+      });
     }
 
-    // Initialize user progress
-    const { error: progressError } = await supabase
+    console.log('✅ Profile created successfully:', profileData);
+
+    // 4. Initialize user progress
+    console.log('Initializing user progress...');
+    const { data: progressData, error: progressError } = await supabase
       .from('user_progress')
       .insert({
-        user_id: data.user.id,
+        user_id: authData.user.id,
         current_phase: 1,
         current_category_id: 1,
         current_scenario_index: 0,
@@ -271,29 +348,178 @@ app.post('/auth/signup', [
         phase_scores: { "1": 0, "2": 0, "3": 0 },
         total_score: 0,
         last_scenario_id: null
-      });
+      })
+      .select()
+      .single();
 
     if (progressError) {
-      console.error('Progress initialization error:', progressError);
+      console.error('⚠️ Progress initialization error:', progressError);
+      // Don't fail the whole registration if progress fails
     } else {
       console.log('✅ User progress initialized');
     }
 
-    console.log('✅ User signup complete:', data.user.email);
+    console.log('=== SIGNUP PROCESS COMPLETE ===');
 
     res.status(201).json({
-      message: 'User created successfully! Please check your email to confirm.',
+      message: 'Account created successfully! Please check your email to confirm.',
       user: {
-        id: data.user.id,
-        email: data.user.email,
+        id: authData.user.id,
+        email: authData.user.email,
         username: usernameLower,
-        full_name: `${firstName.trim()} ${lastName.trim()}`
-      }
+        full_name: fullName
+      },
+      profile_created: !!profileData,
+      progress_created: !!progressData
     });
 
   } catch (err) {
-    console.error('Signup error:', err);
-    res.status(500).json({ error: 'Server error during registration' });
+    console.error('❌ Signup error:', err);
+    res.status(500).json({
+      error: 'Server error during registration',
+      details: err.message
+    });
+  }
+});
+
+// ADD THIS DIAGNOSTIC ENDPOINT TO CHECK EXISTING USERS
+app.get('/auth/diagnostic/users', async (req, res) => {
+  try {
+    // Get all auth users
+    const { data: { users }, error: authError } = await supabase.auth.admin.listUsers();
+
+    if (authError) throw authError;
+
+    // Get all profiles
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('*');
+
+    if (profileError) throw profileError;
+
+    // Compare and find orphaned users
+    const orphanedUsers = users.filter(user =>
+      !profiles.some(profile => profile.id === user.id)
+    );
+
+    res.json({
+      total_auth_users: users.length,
+      total_profiles: profiles.length,
+      orphaned_users: orphanedUsers.map(u => ({
+        id: u.id,
+        email: u.email,
+        created_at: u.created_at,
+        metadata: u.user_metadata
+      })),
+      all_users: users.map(u => ({
+        id: u.id,
+        email: u.email,
+        has_profile: profiles.some(p => p.id === u.id)
+      }))
+    });
+
+  } catch (error) {
+    console.error('Diagnostic error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ADD THIS ENDPOINT TO FIX ORPHANED USERS
+app.post('/auth/fix-orphaned-users', async (req, res) => {
+  try {
+    console.log('Starting orphaned users fix...');
+
+    // Get all auth users
+    const { data: { users }, error: authError } = await supabase.auth.admin.listUsers();
+    if (authError) throw authError;
+
+    // Get all profiles
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('id');
+    if (profileError) throw profileError;
+
+    const profileIds = profiles.map(p => p.id);
+    const orphanedUsers = users.filter(user => !profileIds.includes(user.id));
+
+    console.log(`Found ${orphanedUsers.length} orphaned users`);
+
+    const results = [];
+
+    for (const user of orphanedUsers) {
+      try {
+        const username = user.user_metadata?.username ||
+                        user.email?.split('@')[0] ||
+                        `user_${user.id.substring(0, 8)}`;
+
+        const fullName = user.user_metadata?.full_name ||
+                        `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim() ||
+                        'Unknown User';
+
+        console.log(`Creating profile for user ${user.id} with username: ${username}`);
+
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            username: username.toLowerCase(),
+            full_name: fullName,
+            created_at: user.created_at
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error(`Failed to create profile for ${user.email}:`, insertError);
+          results.push({
+            user_id: user.id,
+            email: user.email,
+            success: false,
+            error: insertError.message
+          });
+        } else {
+          console.log(`✅ Profile created for ${user.email}`);
+
+          // Also create user_progress
+          await supabase
+            .from('user_progress')
+            .insert({
+              user_id: user.id,
+              current_phase: 1,
+              current_category_id: 1,
+              current_scenario_index: 0,
+              completed_scenarios: [],
+              phase_scores: { "1": 0, "2": 0, "3": 0 },
+              total_score: 0
+            });
+
+          results.push({
+            user_id: user.id,
+            email: user.email,
+            username: username,
+            success: true
+          });
+        }
+      } catch (err) {
+        console.error(`Error processing user ${user.id}:`, err);
+        results.push({
+          user_id: user.id,
+          email: user.email,
+          success: false,
+          error: err.message
+        });
+      }
+    }
+
+    res.json({
+      message: 'Orphaned users processing complete',
+      total_orphaned: orphanedUsers.length,
+      results: results
+    });
+
+  } catch (error) {
+    console.error('Fix orphaned users error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -463,13 +689,17 @@ app.get('/profiles/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
 
+    console.log('Fetching profile for userId:', userId);
+
+    // First, check if profile exists
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, full_name, avatar_url, created_at')
+      .select('id, username, full_name, created_at')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
+      console.error('Profile fetch error:', error);
       return res.status(400).json({
         success: false,
         message: 'Error fetching profile',
@@ -477,9 +707,45 @@ app.get('/profiles/:userId', async (req, res) => {
       });
     }
 
+    if (!data) {
+      console.log('❌ No profile found for userId:', userId);
+
+      // Try to get email from auth.users
+      const { data: { user }, error: authError } = await supabase.auth.admin.getUserById(userId);
+
+      if (authError || !user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profile and user not found',
+          error: 'No profile or user exists'
+        });
+      }
+
+      // User exists in auth but no profile - return minimal info
+      console.log('⚠️ User exists in auth but no profile. Email:', user.email);
+      return res.json({
+        success: true,
+        data: {
+          id: userId,
+          username: user.email?.split('@')[0] || 'user',
+          email: user.email,
+          missing_profile: true
+        },
+        warning: 'Profile not found in database, using auth data'
+      });
+    }
+
+    console.log('✅ Profile found:', data);
+
+    // Get email from auth
+    const { data: { user }, error: authError } = await supabase.auth.admin.getUserById(userId);
+
     res.json({
       success: true,
-      data: data
+      data: {
+        ...data,
+        email: user?.email || null
+      }
     });
   } catch (error) {
     console.error('Error in /profiles/:userId:', error);
