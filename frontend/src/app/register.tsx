@@ -51,6 +51,8 @@ export default function Register() {
   const [hasReadTerms, setHasReadTerms] = useState(false);
   const [hasReadPrivacy, setHasReadPrivacy] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [termsScrolledToBottom, setTermsScrolledToBottom] = useState(false);
+  const [privacyScrolledToBottom, setPrivacyScrolledToBottom] = useState(false);
 
   // Validation states
   const [usernameError, setUsernameError] = useState("");
@@ -371,15 +373,54 @@ export default function Register() {
     }
   };
 
+  const handleTermsScroll = (event) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 20; // How close to bottom before enabling button
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    
+    if (isCloseToBottom && !termsScrolledToBottom) {
+      setTermsScrolledToBottom(true);
+    }
+  };
+
+  const handlePrivacyScroll = (event) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 20;
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    
+    if (isCloseToBottom && !privacyScrolledToBottom) {
+      setPrivacyScrolledToBottom(true);
+    }
+  };
+
   const handleTermsRead = () => {
-    setHasReadTerms(true);
-    setShowTerms(false);
+    if (termsScrolledToBottom) {
+      setHasReadTerms(true);
+      setShowTerms(false);
+      setTermsScrolledToBottom(false); // Reset for next time
+    }
   };
 
   const handlePrivacyRead = () => {
-    setHasReadPrivacy(true);
-    setShowPrivacy(false);
+    if (privacyScrolledToBottom) {
+      setHasReadPrivacy(true);
+      setShowPrivacy(false);
+      setPrivacyScrolledToBottom(false); // Reset for next time
+    }
   };
+
+  // Reset scroll states when modals open
+  const openTermsModal = () => {
+    setTermsScrolledToBottom(false);
+    setShowTerms(true);
+  };
+
+  const openPrivacyModal = () => {
+    setPrivacyScrolledToBottom(false);
+    setShowPrivacy(true);
+  };
+
+
 
   const handleLogin = () => router.push("/login");
 
@@ -418,8 +459,12 @@ export default function Register() {
         <ScrollView 
           style={styles.scrollContainer}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
           keyboardShouldPersistTaps="handled"
+          indicatorStyle="black" // Add this for better visibility
+          scrollIndicatorInsets={{right: 1}}
+          persistentScrollbar={true}
+
         >
 
           {/* Username */}
@@ -430,7 +475,7 @@ export default function Register() {
             placeholderTextColor="#ccc"
             style={[
               styles.input,
-              usernameError
+              (usernameError || (username.length > 0 && !USERNAME_REGEX.test(username)))
                 ? styles.inputError
                 : username.length >= 3 && !usernameError && !usernameChecking && USERNAME_REGEX.test(username)
                 ? styles.inputSuccess
@@ -520,7 +565,7 @@ export default function Register() {
           <View>
             <View style={styles.legalLinksContainer}>
               <TouchableOpacity 
-                onPress={() => setShowTerms(true)}
+                onPress={openTermsModal}
                 style={[styles.legalButton, hasReadTerms && styles.legalButtonRead]}
               >
                 <Text style={[styles.legalButtonText, hasReadTerms && styles.legalButtonTextRead]}>
@@ -529,7 +574,7 @@ export default function Register() {
               </TouchableOpacity>
               
               <TouchableOpacity 
-                onPress={() => setShowPrivacy(true)}
+                onPress={openPrivacyModal}
                 style={[styles.legalButton, hasReadPrivacy && styles.legalButtonRead]}
               >
                 <Text style={[styles.legalButtonText, hasReadPrivacy && styles.legalButtonTextRead]}>
@@ -601,7 +646,9 @@ export default function Register() {
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalScrollView}>
+            <ScrollView style={styles.modalScrollView}
+              onScroll={handleTermsScroll} // Add scroll handler
+              scrollEventThrottle={16}>
               <Text style={styles.modalText}>
                 Welcome to RoadCheck! By using our application, you agree to the following terms:{'\n\n'}
                 
@@ -632,10 +679,19 @@ export default function Register() {
             </ScrollView>
             <View style={styles.modalFooter}>
               <TouchableOpacity 
-                style={styles.modalButton}
+                style={[
+                  styles.modalButton,
+                  !termsScrolledToBottom && styles.modalButtonDisabled
+                ]}
                 onPress={handleTermsRead}
+                disabled={!termsScrolledToBottom}
               >
-                <Text style={styles.modalButtonText}>I Have Read This</Text>
+                <Text style={[
+                  styles.modalButtonText,
+                  !termsScrolledToBottom && styles.modalButtonTextDisabled
+                ]}>
+                  {termsScrolledToBottom ? "I Have Read This" : "Scroll to Continue"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -657,7 +713,10 @@ export default function Register() {
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalScrollView}>
+            <ScrollView style={styles.modalScrollView}
+              onScroll={handlePrivacyScroll} // Add scroll handler
+              scrollEventThrottle={16}
+            >
               <Text style={styles.modalText}>
                 Your privacy is important to us. This policy explains how we collect and use your information.{'\n\n'}
                 
@@ -700,10 +759,19 @@ export default function Register() {
             </ScrollView>
             <View style={styles.modalFooter}>
               <TouchableOpacity 
-                style={styles.modalButton}
+                style={[
+                  styles.modalButton,
+                  !privacyScrolledToBottom && styles.modalButtonDisabled
+                ]}
                 onPress={handlePrivacyRead}
+                disabled={!privacyScrolledToBottom}
               >
-                <Text style={styles.modalButtonText}>I Have Read This</Text>
+                <Text style={[
+                  styles.modalButtonText,
+                  !privacyScrolledToBottom && styles.modalButtonTextDisabled
+                ]}>
+                  {privacyScrolledToBottom ? "I Have Read This" : "Scroll to Continue"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -743,6 +811,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: "60%",
     height: height * 0.85, // Fixed height for scrolling
+    overflow: 'hidden',
   },
   scrollContainer: {
     flex: 1,
@@ -758,6 +827,7 @@ const styles = StyleSheet.create({
     fontFamily: "pixel",
     textAlign: "center",
     marginBottom: 5,
+    paddingHorizontal: 15,
   },
   input: {
     borderWidth: 1,
@@ -977,5 +1047,11 @@ const styles = StyleSheet.create({
     color: 'black',
     fontFamily: 'pixel',
     fontSize: 12,
+  },
+  modalButtonDisabled: {
+    backgroundColor: '#cccccc',
+  },
+  modalButtonTextDisabled: {
+    color: '#666666',
   },
 });
