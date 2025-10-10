@@ -71,7 +71,7 @@ export default function Home() {
   });
 
   const handleStartPress = () => {
-    router.push('/scenarios/pedestrian/phase-1/S1P1');
+    router.push('/scenarios/pedestrian/phase-1/S5P1');
     console.log('Starting RoadCheck app...');
     console.log('All env vars:', process.env);
     console.log('API_URL specifically:', process.env.API_URL);

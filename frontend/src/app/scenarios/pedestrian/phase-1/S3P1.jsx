@@ -23,7 +23,7 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 // Map setup
-const mapImage = require("../../../../../assets/map/map1.png");
+const mapImage = require("../../../../../assets/map/map3.png");
 const mapWidth = 320;
 const mapHeight = 768;
 const mapScale = width / mapWidth;
@@ -45,7 +45,7 @@ const maleSprites = {
   ],
 };
 
-// Multiple car colors
+// Multiple car colors - North facing
 const npcCarSprites = {
   blue: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
@@ -65,24 +65,43 @@ const npcCarSprites = {
   ],
 };
 
+// South facing cars
+const npcCarSpritesSouth = {
+  blue: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTH/SEPARATED/Blue_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTH/SEPARATED/Blue_CIVIC_CLEAN_SOUTH_001.png"),
+  ],
+  red: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/SOUTH/SEPARATED/Red_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/SOUTH/SEPARATED/Red_CIVIC_CLEAN_SOUTH_001.png"),
+  ],
+  green: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_CIVIC_CLEAN_SOUTH_001.png"),
+  ],
+  yellow: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/SOUTH/SEPARATED/Yellow_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/SOUTH/SEPARATED/Yellow_CIVIC_CLEAN_SOUTH_001.png"),
+  ],
+};
+
 const questions = [
   {
-    question: "You are nearing your destination and wanting to cross the other side of the road, however you spotted a no pedestrian crossing to reach your destination.",
+    question: "You're navigating a crowded non-signalized crosswalk when suddenly your phone keeps buzzing with messages.  ",
     options: [
-      "Wait for a gap in traffic and quickly run across the street",
-      "Take a detour where a crosswalk is available or where you can cross the street safely.",
-      "Cross between the slow-moving vehicles since they're barely moving"
+      "Check your messages while crossing the road.",
+      "Keep your phone in your pocket and focus on crossing the crowded crosswalk.",
+      "Check messages while occassionally checking the road."
     ],
-    correct: "Take a detour where a crosswalk is available or where you can cross the street safely.",
+    correct: "Keep your phone in your pocket and focus on crossing the crowded crosswalk.",
     wrongExplanation: {
-      "Wait for a gap in traffic and quickly run across the street": "Accident Prone! Running across the street might not give enough time for drivers to react and stop.",
-      "Cross between the slow-moving vehicles since they're barely moving": "Accident Prone! Slow traffic can suddenly speed up, and you have poor visibility of oncoming vehicles. This violates following traffic rules."
+      "Check your messages while crossing the road.": "Wrong! While on the road and especially while crossing, always stay attentive of your surroundings so you can react when something happens.",
+      "Check messages while occassionally checking the road.": "Wrong! In high-chaos environments, any distraction increases accident risk especially when crossing the road."
     }
   },
 ];
 
 export default function DrivingGame() {
-  const [showIntro, setShowIntro] = useState(true);
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
 
   const startOffset = -(scaledMapHeight - height);
@@ -112,14 +131,14 @@ export default function DrivingGame() {
 
   // NPC Cars - Initial state with refs
   const carsRef = useRef([
-    // Column 1 cars
-    { id: 1, color: 'blue', column: 1, yOffset: 0, frame: 0 },
-    { id: 2, color: 'red', column: 1, yOffset: -300, frame: 0 },
-    { id: 3, color: 'green', column: 1, yOffset: -600, frame: 0 },
-    // Column 2 cars
-    { id: 4, color: 'yellow', column: 2, yOffset: -150, frame: 0 },
-    { id: 5, color: 'blue', column: 2, yOffset: -450, frame: 0 },
-    { id: 6, color: 'red', column: 2, yOffset: -750, frame: 0 },
+    // Column 1 cars (SOUTH facing - moving down)
+    { id: 1, color: 'blue', column: 1, direction: 'SOUTH', yOffset: 100, frame: 0 },
+    { id: 2, color: 'red', column: 1, direction: 'SOUTH', yOffset: -200, frame: 0 },
+    { id: 3, color: 'green', column: 1, direction: 'SOUTH', yOffset: -500, frame: 0 },
+    // Column 2 cars (NORTH facing - moving up)
+    { id: 4, color: 'yellow', column: 2, direction: 'NORTH', yOffset: -150, frame: 0 },
+    { id: 5, color: 'blue', column: 2, direction: 'NORTH', yOffset: -450, frame: 0 },
+    { id: 6, color: 'red', column: 2, direction: 'NORTH', yOffset: -750, frame: 0 },
   ]);
 
   const [npcCars, setNpcCars] = useState(carsRef.current);
@@ -128,12 +147,22 @@ export default function DrivingGame() {
   useEffect(() => {
     const carUpdateInterval = setInterval(() => {
       carsRef.current = carsRef.current.map(car => {
-        // Move cars forward slowly (relative to screen, not map)
-        let newYOffset = car.yOffset - 2; // Slow forward movement
+        let newYOffset;
         
-        // Reset position when car goes off screen
-        if (newYOffset > height + 200) {
-          newYOffset = -200;
+        if (car.direction === 'NORTH') {
+          // North facing cars move up (negative Y)
+          newYOffset = car.yOffset - 2;
+          // Reset when off top of screen
+          if (newYOffset < -200) {
+            newYOffset = height + 200;
+          }
+        } else {
+          // South facing cars move down (positive Y)
+          newYOffset = car.yOffset + 2;
+          // Reset when off bottom of screen
+          if (newYOffset > height + 200) {
+            newYOffset = -200;
+          }
         }
         
         return {
@@ -151,7 +180,7 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopDistance = scaledMapHeight * 0.2;
+    const stopDistance = scaledMapHeight * 0.3;
     const stopOffset = startOffset + stopDistance;
 
     Animated.timing(scrollY, {
@@ -167,10 +196,8 @@ export default function DrivingGame() {
   }
   
   useEffect(() => {
-    if (!showIntro) {
-      startScrollAnimation();
-    }
-  }, [showIntro]);
+    startScrollAnimation();
+  }, []);
 
   // Player sprite frame loop
   useEffect(() => {
@@ -208,7 +235,7 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
-    if (answer === "Wait for a gap in traffic and quickly run across the street") {
+    if (answer === "Check your messages while crossing the road.") {
       // Face west and run to the left (west)
       setPlayerDirection("WEST");
       setPlayerFrame(0);
@@ -232,21 +259,31 @@ export default function DrivingGame() {
       });
       
       return;
-    } else if (answer === "Take a detour where a crosswalk is available or where you can cross the street safely.") {
+    } else if (answer === "Keep your phone in your pocket and focus on crossing the crowded crosswalk.") {
       // Walk straight north to pedestrian lane
-      setPlayerDirection("NORTH");
+      setPlayerDirection("WEST");
       setPlayerFrame(0);
       
-      Animated.timing(scrollY, {
-        toValue: currentScroll.current + scaledMapHeight * 0.25,
-        duration: 4500,
-        useNativeDriver: true,
-      }).start(() => {
+      const leftX = width * 0.1 - spriteWidth / 2;
+      
+      Animated.parallel([
+        Animated.timing(playerXAnim, {
+          toValue: leftX,
+          duration: 2000, // Walking speed
+          useNativeDriver: true,
+        }),
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + scaledMapHeight * 0.06,
+          duration: 2000,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
         setIsPlayerVisible(false);
         handleFeedback(answer);
       });
+      
       return;
-    } else if (answer === "Cross between the slow-moving vehicles since they're barely moving") {
+    } else if (answer === "Check messages while occassionally checking the road.") {
       // Face west and walk to the left (west)
       setPlayerDirection("WEST");
       setPlayerFrame(0);
@@ -295,13 +332,9 @@ export default function DrivingGame() {
     }
   };
 
-  const handleStartGame = () => {
-    setShowIntro(false);
-  };
-
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Always use designated crosswalks and pedestrian lanes for safety. It's the responsible way to cross the street."
+    ? "Correct! Stay completely alert, you'll never know when a vehicle doesn't respect road markings."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   const currentPlayerSprite = maleSprites[playerDirection] && maleSprites[playerDirection][playerFrame] 
@@ -316,27 +349,6 @@ export default function DrivingGame() {
       return width * 0.45; // Column 2 (middle-left lane)
     }
   };
-
-  if (showIntro) {
-    return (
-      <View style={styles.introContainer}>
-        <Image
-          source={require("../../../../../assets/dialog/LTO.png")}
-          style={styles.introLTOImage}
-        />
-        <View style={styles.introTextBox}>
-          <Text style={styles.introTitle}>Welcome to ROADCHECK!</Text>
-          <Text style={styles.introText}>
-            Test your knowledge of road rules and signs.
-            Choose the correct option to proceed safely.
-          </Text>
-          <TouchableOpacity style={styles.startButton} onPress={handleStartGame}>
-            <Text style={styles.startButtonText}>Start Game</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -362,28 +374,31 @@ export default function DrivingGame() {
       </Animated.View>
 
       {/* NPC Cars - Fixed positioning */}
-      {npcCars.map(car => (
-        <View
-          key={car.id}
-          style={{
-            position: "absolute",
-            left: getCarXPosition(car.column) - (carWidth / 1),
-            top: car.yOffset,
-            width: carWidth,
-            height: carHeight,
-            zIndex: 5,
-          }}
-        >
-          <Image
-            source={npcCarSprites[car.color][car.frame]}
+      {npcCars.map(car => {
+        const carSprites = car.direction === 'SOUTH' ? npcCarSpritesSouth : npcCarSprites;
+        return (
+          <View
+            key={car.id}
             style={{
+              position: "absolute",
+              left: getCarXPosition(car.column) - (carWidth / 1),
+              top: car.yOffset,
               width: carWidth,
               height: carHeight,
+              zIndex: 5,
             }}
-            resizeMode="contain"
-          />
-        </View>
-      ))}
+          >
+            <Image
+              source={carSprites[car.color][car.frame]}
+              style={{
+                width: carWidth,
+                height: carHeight,
+              }}
+              resizeMode="contain"
+            />
+          </View>
+        );
+      })}
 
       {/* Player sprite */}
       {isPlayerVisible && (
@@ -466,64 +481,6 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // Intro styles (responsive)
-  introContainer: {
-    flex: 1,
-    backgroundColor: "black",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: width * 0.05,
-  },
-  introLTOImage: {
-    width: width * 0.6,
-    height: height * 0.25,
-    resizeMode: "contain",
-    marginBottom: height * 0.03,
-  },
-  introTextBox: {
-    backgroundColor: "rgba(8, 8, 8, 0.7)",
-    padding: width * 0.06,
-    borderRadius: 15,
-    alignItems: "center",
-    maxWidth: width * 0.85,
-    minHeight: height * 0.3,
-    justifyContent: "center",
-  },
-  introTitle: {
-    color: "white",
-    fontSize: Math.min(width * 0.07, 32),
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: height * 0.02,
-  },
-  introText: {
-    color: "white",
-    fontSize: Math.min(width * 0.045, 20),
-    textAlign: "center",
-    marginBottom: height * 0.04,
-    lineHeight: Math.min(width * 0.06, 26),
-    paddingHorizontal: width * 0.02,
-  },
-  startButton: {
-    backgroundColor: "#007bff",
-    paddingVertical: height * 0.02,
-    paddingHorizontal: width * 0.08,
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
-    minWidth: width * 0.4,
-    alignItems: "center",
-  },
-  startButtonText: {
-    color: "white",
-    fontSize: Math.min(width * 0.055, 24),
-    fontWeight: "bold",
-  },
-
-  // In-game responsive styles
   questionOverlay: {
     position: "absolute",
     bottom: 0,
