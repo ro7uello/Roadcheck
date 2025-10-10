@@ -334,8 +334,8 @@ export default function DrivingGame() {
         }),
         // Player car continues in regular lane
         Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 4,
-          duration: 1000,
+          toValue: currentScroll.current + tileSize * .3,
+          duration: 1500,
           easing: Easing.linear,
           useNativeDriver: true,
         }),
@@ -362,7 +362,7 @@ export default function DrivingGame() {
               useNativeDriver: false,
             }),
             Animated.timing(scrollY, {
-              toValue: scrollY._value + (tileSize * .4), // Car moves very slowly
+              toValue: scrollY._value + (tileSize * .1), // Car moves very slowly
               duration: 4000,
               easing: Easing.linear,
               useNativeDriver: true,

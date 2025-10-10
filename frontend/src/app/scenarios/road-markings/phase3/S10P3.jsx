@@ -331,7 +331,7 @@ else if (answer === " Park there and display a makeshift disability sign") {
         Alert.alert('Error', 'Failed to save session results');
       }
     } else {
-      router.push(`/scenarios/road-markings/phase3/S10P3`);
+      router.push(`/result`);
     }
   };
 
