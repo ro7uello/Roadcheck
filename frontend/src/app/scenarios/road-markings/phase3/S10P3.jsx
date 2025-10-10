@@ -12,42 +12,67 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 const roadTiles = {
-
-road48: require("../../../../../assets/road/road48.png"),
- road76: require("../../../../../assets/road/road76.png"),
-road86: require("../../../../../assets/road/road86.png"),
-road85: require("../../../../../assets/road/road85.png"),
-road84: require("../../../../../assets/road/road84.png"),
-road97: require("../../../../../assets/road/road97.png"),
-
-
-
+  road48: require("../../../../../assets/road/road48.png"),
+  road76: require("../../../../../assets/road/road76.png"),
+  road86: require("../../../../../assets/road/road86.png"),
+  road85: require("../../../../../assets/road/road85.png"),
+  road84: require("../../../../../assets/road/road84.png"),
+  road97: require("../../../../../assets/road/road97.png"),
+  road98: require("../../../../../assets/road/road98.png"),
 };
-
-//FIX ANIMATION
 
 const mapLayout = [
   ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
   ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
   ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
   ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
-  ["road76", "road48", "road48", "road48", "road48", "road48", "road48", ],
-  ["road86", "road48", "road48", "road48", "road48", "road48", "road48",], 
-  ["road76", "road48", "road48", "road48", "road48", "road97", "road48",],
-  ["road86", "road48", "road48", "road48", "road48", "road48", "road48",],
-  ["road76", "road48", "road48", "road48", "road48", "road48", "road48", ],
-  ["road86", "road48", "road48", "road48", "road48", "road48", "road48",],
+  ["road48", "road48", "road48", "road48", "road48", "road48", "road48", ],
+  ["road48", "road48", "road48", "road48", "road48", "road48", "road48",], 
   ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
   ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
   ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
-
+  ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
+  ["road85", "road84", "road48", "road48", "road48", "road48", "road48",],
+  ["road85", "road84", "road48", "road48", "road85", "road84", "road48",],
+  ["road85", "road84", "road48", "road48", "road85", "road84", "road48",],
+  ["road85", "road84", "road48", "road48", "road85", "road84", "road48",],
+  ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
+  ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
+  ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
+  ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
+  ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
+  ["road48", "road48", "road48", "road48", "road48", "road48", "road48",],
 ];
-
 
 const carSprites = {
   NORTH: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  EAST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+  ],
+};
+
+const npcCarSprites = {
+  EAST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/EAST/SEPARATED/Black_CIVIC_CLEAN_EAST_000.png"),
+  ],
+  WEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/WEST/SEPARATED/Black_CIVIC_CLEAN_WEST_000.png"),
+  ],
+  BROWN_EAST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/EAST/SEPARATED/Brown_CIVIC_CLEAN_EAST_000.png"),
+  ],
+  BROWN_WEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/WEST/SEPARATED/Brown_CIVIC_CLEAN_WEST_000.png"),
+  ],
+  RED_EAST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/EAST/SEPARATED/Red_CIVIC_CLEAN_EAST_000.png"),
+  ],
+  RED_WEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/WEST/SEPARATED/Red_CIVIC_CLEAN_WEST_000.png"),
   ],
 };
 
@@ -61,11 +86,10 @@ const questions = [
       "Park there and display a makeshift disability sign": "Wrong! Using fake or makeshift disability signs is illegal and disrespectful to people with legitimate needs."
     }
   },
-  // Add more questions here as needed
 ];
 
-const trafficSign = {
-    sign: require("../../../../../assets/signs/no_parking.png"),
+const pwdSign = {
+    sign: require("../../../../../assets/signs/pwd_parking.png"),
 };
 
 export default function DrivingGame() {
@@ -80,10 +104,8 @@ export default function DrivingGame() {
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      // Traffic Signs Phase 1: scenarios 31-40
-      // Traffic Signs Phase 2: scenarios 41-50
       const phaseId = sessionData?.phase_id || 1;
-      const baseId = phaseId === 1 ? 40 : 50; // Adjust based on phase
+      const baseId = phaseId === 1 ? 40 : 50;
       const scenarioId = baseId + currentScenario;
 
       console.log('🔍 SCENARIO DEBUG:', {
@@ -107,9 +129,9 @@ export default function DrivingGame() {
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  const trafficSignRowIndex = 17;
-  const trafficSignColIndex = 2.8;
-  const trafficSignXOffset = 20;
+  const pwdSignRowIndex = 13.2;
+  const pwdSignColIndex = 3.7;
+  const pwdSignXOffset = 0;
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -118,21 +140,20 @@ export default function DrivingGame() {
     return () => scrollY.removeListener(id);
   }, [scrollY]);
 
-  // UI/game states
   const [questionIndex, setQuestionIndex] = useState(0);
   const [showQuestion, setShowQuestion] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(null);
 
-  // Car
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
+  const [carDirection, setCarDirection] = useState("NORTH");
   const carXAnim = useRef(new Animated.Value(width / 2 - (280 / 2))).current;
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 4.2; // Adjusted to match the visual stop point
+    const stopRow = 4.2;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -151,50 +172,47 @@ export default function DrivingGame() {
     startScrollAnimation();
   }, []);
 
-  // Car sprite frame loop (stops when carPaused=true)
   useEffect(() => {
     let iv;
     if (!carPaused) {
       iv = setInterval(() => {
-        setCarFrame((p) => (p + 1) % carSprites["NORTH"].length);
+        setCarFrame((p) => (p + 1) % carSprites[carDirection].length);
       }, 200);
     }
     return () => clearInterval(iv);
-  }, [carPaused]);
+  }, [carPaused, carDirection]);
 
-  // feedback anims
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
   const [animationType, setAnimationType] = useState(null);
   const [showNext, setShowNext] = useState(false);
 
   const handleFeedback = (answerGiven) => {
-      const currentQuestion = questions[questionIndex];
-      if (answerGiven === currentQuestion.correct) {
-        setIsCorrectAnswer(true); // Set to true for correct feedback
-        setAnimationType("correct");
-        Animated.timing(correctAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }).start(() => {
-          correctAnim.setValue(0);
-          setShowNext(true);
-        });
-      } else {
-        setIsCorrectAnswer(false); // Set to false for wrong feedback
-        setAnimationType("wrong");
-        Animated.timing(wrongAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }).start(() => {
-          wrongAnim.setValue(0);
-          setShowNext(true);
-        });
-      }
-    };
-  
+    const currentQuestion = questions[questionIndex];
+    if (answerGiven === currentQuestion.correct) {
+      setIsCorrectAnswer(true);
+      setAnimationType("correct");
+      Animated.timing(correctAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        correctAnim.setValue(0);
+        setShowNext(true);
+      });
+    } else {
+      setIsCorrectAnswer(false);
+      setAnimationType("wrong");
+      Animated.timing(wrongAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        wrongAnim.setValue(0);
+        setShowNext(true);
+      });
+    }
+  };
 
   const handleAnswer = async (answer) => {
     setSelectedAnswer(answer);
@@ -207,16 +225,40 @@ export default function DrivingGame() {
 
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
-    if (answer === "Use the bay only for quick passenger drop-off, not parking") {
+    // Option 1: Park there temporarily (WRONG - parks in PWD spot)
+    if (answer === "Park there temporarily since you'll only be shopping for 30 minutes") {
+       // Face EAST immediately
+  setCarDirection("EAST");
+  setCarFrame(0);
+  
+  // Then move forward
+  const targetRow = 4.5;
+  const rowsToMove = targetRow - currentRow;
+  const forwardTarget = currentScroll.current + rowsToMove * tileSize;
 
-      // CORRECT: Stop at the loading/unloading bay (current position ~row 4)
-      // Car stays at current position to drop off passenger
+  Animated.timing(scrollY, {
+    toValue: forwardTarget,
+    duration: 1000,
+    useNativeDriver: true,
+  }).start(() => {
+    // Move car to the right (PWD parking spot)
+    const parkingSpotX = 4.2 * tileSize;
+    
+    Animated.timing(carXAnim, {
+      toValue: parkingSpotX,
+      duration: 1500,
+      useNativeDriver: true,
+    }).start(() => {
+      setCarPaused(true);
       setTimeout(() => {
         handleFeedback(answer);
-      }, 1000);
-    } else if (answer === "Avoid the area completely since there's a \"No Parking sign\" ") {
-      // WRONG: Car continues forward past the bay
-      const targetRow = 6;
+      }, 500);
+    });
+  });
+    } 
+    // Option 2: Continue looking for regular parking (CORRECT - goes straight)
+    else if (answer === "Continue looking for regular parking spaces") {
+      const targetRow = 8;
       const rowsToMove = targetRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
@@ -227,66 +269,80 @@ export default function DrivingGame() {
       }).start(() => {
         handleFeedback(answer);
       });
-    } else if (answer === "Park there briefly to accompany passengers into the mall") {
-      // WRONG: Car parks at the No Parking sign (row 14.5 area)
-      const targetRow = 4;
-      const rowsToMove = targetRow - currentRow;
-      const nextTarget = currentScroll.current + rowsToMove * tileSize;
+    } 
+    // Option 3: Park with makeshift sign (WRONG - parks in PWD spot)
+else if (answer === " Park there and display a makeshift disability sign") {
+  // Face EAST immediately
+  setCarDirection("EAST");
+  setCarFrame(0);
+  
+  // Then move forward
+  const targetRow = 4.5;
+  const rowsToMove = targetRow - currentRow;
+  const forwardTarget = currentScroll.current + rowsToMove * tileSize;
 
-      Animated.timing(scrollY, {
-        toValue: nextTarget,
-        duration: 2500,
-        useNativeDriver: true,
-      }).start(() => {
+  Animated.timing(scrollY, {
+    toValue: forwardTarget,
+    duration: 1000,
+    useNativeDriver: true,
+  }).start(() => {
+    // Move car to the right (PWD parking spot)
+    const parkingSpotX = 4.2 * tileSize;
+    
+    Animated.timing(carXAnim, {
+      toValue: parkingSpotX,
+      duration: 1500,
+      useNativeDriver: true,
+    }).start(() => {
+      setCarPaused(true);
+      setTimeout(() => {
         handleFeedback(answer);
-      });
-    }
-  };
+      }, 500);
+    });
+  });
+}
+  }
 
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setCarFrame(0);
+    setCarDirection("NORTH");
+    setCarPaused(false);
     carXAnim.setValue(width / 2 - (280 / 2));
     
     if (questionIndex < questions.length - 1) {
-        setQuestionIndex(questionIndex + 1);
-        startScrollAnimation();
-      } else if (currentScenario >= 10) {
-        // Last scenario - complete session
-        try {
-          const sessionResults = await completeSession();
-          router.push({
-            pathname: '/result',
-            params: {
-              ...sessionResults,
-              userAttempts: JSON.stringify(sessionResults.attempts)
-            }
-          });
-        } catch (error) {
-          console.error('Error completing session:', error);
-          Alert.alert('Error', 'Failed to save session results');
-        }
-      } else {
-        // Move to next scenario
-       // moveToNextScenario();
-        //const phaseNumber = sessionData?.phase_id || 1;
-        //const nextScreen = `S${currentScenario + 1}P${phaseNumber}`;
-       // router.push(`/scenarios/traffic-signs/phase${phaseNumber}/${nextScreen}`);
-           router.push(`/scenarios/road-markings/phase3/S10P3`);
-
+      setQuestionIndex(questionIndex + 1);
+      startScrollAnimation();
+    } else if (currentScenario >= 10) {
+      try {
+        const sessionResults = await completeSession();
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
       }
+    } else {
+      router.push(`/scenarios/road-markings/phase3/S10P3`);
+    }
   };
 
-  const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;  
-  const trafficSignTop = trafficSignRowIndex * tileSize;
+  const pwdSignLeft = pwdSignColIndex * tileSize + pwdSignXOffset;  
+  const pwdSignTop = pwdSignRowIndex * tileSize;
 
   const currentQuestionData = questions[questionIndex];
+  // --- FIX: normalize selectedAnswer before using it as a key to lookup wrongExplanation ---
+  const normalizedSelected = (selectedAnswer || "").trim();
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Loading and unloading bays are specifically for brief stops to load/unload passengers or goods, not for parking"
-    : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
-
+    ? "Correct! PWD parking bays are strictly reserved for persons with disabilities. Always continue looking for regular parking spaces."
+    : currentQuestionData.wrongExplanation[normalizedSelected] || "Wrong!";
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -318,55 +374,104 @@ export default function DrivingGame() {
           ))
         )}
 
-        
-
-        {/*Traffic Sign */}
+        {/*PWD Parking Sign */}
         <Image
-        source={trafficSign.sign}
-        style={{
+          source={pwdSign.sign}
+          style={{
             width: tileSize * .8,
             height: tileSize *.8,
             position: "absolute",
-            top: trafficSignTop,
-            left: trafficSignLeft,
+            top: pwdSignTop,
+            left: pwdSignLeft,
             zIndex: 11,
-        }}
-        resizeMode="contain"
+          }}
+          resizeMode="contain"
         />
 
-        {/* Pedestrian (REMOVED) */}
-        {/*
-        {pedestrianVisible && (
-          <Animated.Image
-            source={isCrossing ? maleWalkSprites[maleFrame] : maleStandingSprite}
-            style={{
-              width: FRAME_WIDTH,
-              height: FRAME_HEIGHT,
-              position: "absolute",
-              top: pedestrianRowIndex * tileSize + maleVerticalOffset,
-              left: isCrossing ? maleCrossingXAnim : maleFixedLeft,
-              zIndex: 6,
-            }}
-            resizeMode="contain"
-          />
-        )}
-        */}
+        {/* Parked Cars - 7th row from bottom (row 13) - Left side only */}
+        <Image
+          source={npcCarSprites.EAST[0]}
+          style={{
+            width: tileSize * 2.5,
+            height: tileSize * 2.5,
+            position: "absolute",
+            top: 12 * tileSize,
+            left: -0.2 * tileSize,
+            zIndex: 7,
+          }}
+          resizeMode="contain"
+        />
+
+        {/* Parked Cars - 8th row from bottom (row 12) - Both sides */} 
+        <Image
+          source={npcCarSprites.BROWN_EAST[0]}
+          style={{
+            width: tileSize * 2.5,
+            height: tileSize * 2.5,
+            position: "absolute",
+            top: 11 * tileSize,
+            left: -0.2 * tileSize,
+            zIndex: 7,
+          }}
+          resizeMode="contain"
+        />
+
+
+        <Image
+          source={npcCarSprites.BROWN_WEST[0]}
+          style={{
+            width: tileSize * 2.5,
+            height: tileSize * 2.5,
+            position: "absolute",
+            top: 11 * tileSize,
+            left: 3.8 * tileSize,
+            zIndex: 7,
+          }}
+          resizeMode="contain"
+        />
+
+        {/* Parked Cars - 9th row from bottom (row 11) - Both sides */}
+        <Image
+          source={npcCarSprites.RED_EAST[0]}
+          style={{
+            width: tileSize * 2.5,
+            height: tileSize * 2.5,
+            position: "absolute",
+            top: 10 * tileSize,
+            left: -0.2 * tileSize,
+            zIndex: 7,
+          }}
+          resizeMode="contain"
+        />
+        <Image
+          source={npcCarSprites.RED_WEST[0]}
+          style={{
+            width: tileSize * 2.5,
+            height: tileSize * 2.5,
+            position: "absolute",
+            top: 10 * tileSize,
+            left: 3.8 * tileSize,
+            zIndex: 7,
+          }}
+          resizeMode="contain"
+        />
+
       </Animated.View>
 
       {/* Car - fixed */}
       <Animated.Image
-        source={carSprites["NORTH"][carFrame]}
+        source={carSprites[carDirection][carFrame]}
         style={{
           width: 280,
           height: 350,
           position: "absolute",
           bottom: 80,
-          left: carXAnim,
+          transform: [{ translateX: carXAnim }],
           zIndex: 8,
         }}
       />
 
-      {/* Question overlay - moved to bottom */}
+      {/* Question overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -383,7 +488,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Answers - moved above bottom overlay */}
+      {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -398,7 +503,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Feedback - moved to bottom */}
+      {/* Feedback */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -413,13 +518,13 @@ export default function DrivingGame() {
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>
-                {feedbackMessage}
+              {feedbackMessage}
             </Text>
           </View>
         </View>
       )}
 
-      {/* Next button - positioned above bottom overlay */}
+      {/* Next button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
@@ -432,7 +537,6 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -444,8 +548,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 20,
   },
-
-  // ADDED: Intro styles (responsive)
   introContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -501,13 +603,12 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
-
- questionOverlay: {
+  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -564,7 +665,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",

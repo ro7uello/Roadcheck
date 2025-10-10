@@ -85,9 +85,9 @@ const mapLayout = [
   ["int10", "int10", "int10", "int1", "road47"],
   ["road15", "road15", "road15", "road56", "road16"],
   ["road61", "road9", "road13", "road11", "road17"],
-  ["road62", "road1", "road1", "road1", "road17"],
-  ["road62", "road1", "road1", "road1", "road17"],
-  ["road62", "road1", "road1", "road1", "road17"],
+  ["road62", "road4", "road2", "road3", "road17"],
+  ["road62", "road4", "road2", "road3", "road17"],
+  ["road62", "road4", "road2", "road3", "road17"],
   ["road62", "road4", "road2", "road3", "road17"],
   ["road62", "road4", "road2", "road3", "road17"],
   ["road62", "road4", "road2", "road3", "road17"],
@@ -380,180 +380,107 @@ export default function DrivingGame() {
       
     // Option B: Turn left anyway since you need to reach your destination (WRONG)
   } else if (answer === "Turn left anyway since you need to reach your destination") {
-          // FIXED lane change animation
-              const currentCarX = carXCurrent.current;
-        
-              // Calculate proper lane positions based on road layout
-              const centerLane = width / 2 - carWidth / 2;  // Current center position
-              const leftLane = width * 0.29 - carWidth / 2;  // Left lane position
-              const rightLane = width * 0.75 - carWidth / 2; // Right lane position
-        
-              console.log('Lane change - Current X:', currentCarX, 'Left lane:', leftLane, 'Right lane:', rightLane);
-        
-              const performLaneChange = async () => {
-                // Stop any ongoing animations
-                setCarFrame(0);
-        
-                // 1. Quick lane change to left lane (dangerous move)
-                await new Promise(resolve => {
-                  setCarDirection("NORTHWEST");
-                  Animated.parallel([
-                    Animated.timing(carXAnim, {
-                      toValue: leftLane,
-                      duration: 300, // Quick but not too fast to be visible
-                      easing: Easing.out(Easing.cubic), // Sharp easing for sudden movement
-                      useNativeDriver: false,
-                    }),
-                    Animated.timing(scrollY, {
-                      toValue: currentScroll.current + (tileSize * 0.5), // Move forward during lane change
-                      duration: 1000,
-                      easing: Easing.out(Easing.cubic),
-                      useNativeDriver: true,
-                    })
-                  ]).start(resolve);
-                });
-        
-                // 2. Straighten car in new lane briefly
-                await new Promise(resolve => {
-                  setCarDirection("NORTH");
-                  setCarFrame(0);
-        
-                  Animated.timing(scrollY, {
-                    toValue: currentScroll.current + (tileSize * 1.2),
-                    duration: 800,
-                    easing: Easing.linear,
-                    useNativeDriver: true,
-                  }).start(resolve);
-                });
-        
-        
-        
-                // Show feedback after animation completes
-                handleFeedback(answer);
-              };
-        
-              performLaneChange();
-              return;
-    // Option C: Change lanes to follow a left-turn arrow if available (CORRECT)
-} else if (answer === "Turn left anyway since you need to reach your destination") {
   // FIXED lane change animation with proper intersection turn
-  const currentCarX = carXCurrent.current;
+    const currentCarX = carXCurrent.current;
 
+    // Calculate proper lane positions based on road layout
+    const centerLane = width / 2 - carWidth / 2;  // Current center position
+    const leftLane = width * 0.29 - carWidth / 2;  // Left lane position
+    const rightLane = width * 0.75 - carWidth / 2; // Right lane position
+
+    console.log('Intersection turn - Current X:', currentCarX, 'Target left lane:', leftLane);
+
+    const performIntersectionTurn = async () => {
+      // Stop any ongoing animations
+      setCarFrame(0);
+
+      // 1. Go straight NORTH to reach the intersection
+      await new Promise(resolve => {
+        setCarDirection("NORTH");
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + (tileSize * 3), // Move forward to intersection
+          duration: 2000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }).start(resolve);
+      });
+
+      // 2. Turn LEFT (WEST) at the intersection
+      await new Promise(resolve => {
+        setCarDirection("WEST");
+        Animated.parallel([
+          Animated.timing(carXAnim, {
+            toValue: leftLane, // Move to left lane position
+            duration: 1000,
+            easing: Easing.inOut(Easing.cubic),
+            useNativeDriver: false,
+          }),
+          Animated.timing(scrollY, {
+            toValue: currentScroll.current + (tileSize * 1.3), // Continue moving during turn
+            duration: 1000,
+            easing: Easing.inOut(Easing.cubic),
+            useNativeDriver: true,
+          })
+        ]).start(resolve);
+      });
+
+
+      // Show feedback after animation completes
+      handleFeedback(answer);
+    };
+
+    performIntersectionTurn();
+    return;
+
+
+// Option C: Change lanes to follow a left-turn arrow if available (CORRECT)
+} else if (answer === "Change lanes to follow a left-turn arrow if available") {
   // Calculate proper lane positions based on road layout
   const centerLane = width / 2 - carWidth / 2;  // Current center position
   const leftLane = width * 0.29 - carWidth / 2;  // Left lane position
   const rightLane = width * 0.75 - carWidth / 2; // Right lane position
 
-  console.log('Lane change - Current X:', currentCarX, 'Left lane:', leftLane, 'Right lane:', rightLane);
+  console.log('Lane change - Current X:', carXCurrent.current, 'Target left lane:', leftLane);
 
-  const performLaneChange = async () => {
-    // Stop any ongoing animations
+  // Stop any ongoing animations
+  setCarFrame(0);
+
+  // 1. Change lanes to the left lane
+  setCarDirection("NORTHWEST");
+  Animated.parallel([
+    Animated.timing(carXAnim, {
+      toValue: leftLane,
+      duration: 800,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }),
+    Animated.timing(scrollY, {
+      toValue: scrollY._value + (tileSize * 0.5), // Move forward during lane change
+      duration: 800,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    })
+  ]).start(async () => {
+    // 2. Straighten car in new lane briefly and move north
+    setCarDirection("NORTH");
     setCarFrame(0);
-
-    // 1. Go straight NORTH to the intersection first
+    
     await new Promise(resolve => {
-      setCarDirection("NORTH");
       Animated.timing(scrollY, {
-        toValue: currentScroll.current + (tileSize * 2), // Move forward to intersection
-        duration: 1500,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }).start(resolve);
-    });
-
-    // 2. Turn left at intersection - move WEST
-    await new Promise(resolve => {
-      setCarDirection("WEST");
-      Animated.parallel([
-        Animated.timing(carXAnim, {
-          toValue: leftLane,
-          duration: 800,
-          easing: Easing.inOut(Easing.cubic),
-          useNativeDriver: false,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + (tileSize * 0.5),
-          duration: 800,
-          easing: Easing.inOut(Easing.cubic),
-          useNativeDriver: true,
-        })
-      ]).start(resolve);
-    });
-
-    // 3. Continue straight in new lane after turn
-    await new Promise(resolve => {
-      setCarDirection("NORTH");
-      setCarFrame(0);
-
-      Animated.timing(scrollY, {
-        toValue: currentScroll.current + (tileSize * 1),
+        toValue: scrollY._value + (tileSize * 3.5),
         duration: 800,
         easing: Easing.linear,
         useNativeDriver: true,
       }).start(resolve);
     });
 
-    // Show feedback after animation completes
-    handleFeedback(answer);
-  };
-
-  performLaneChange();
-  return;
-
-// Option C: Change lanes to follow a left-turn arrow if available (CORRECT)
-} else if (answer === "Change lanes to follow a left-turn arrow if available") {
-  // FIXED lane change animation with proper intersection turn
-  const currentCarX = carXCurrent.current;
-
-  // Calculate proper lane positions based on road layout
-  const centerLane = width / 2 - carWidth / 2;  // Current center position
-  const leftLane = width * 0.29 - carWidth / 2;  // Left lane position
-  const rightLane = width * 0.75 - carWidth / 2; // Right lane position
-
-  console.log('Intersection turn - Current X:', currentCarX, 'Target left lane:', leftLane);
-
-  const performIntersectionTurn = async () => {
-    // Stop any ongoing animations
+    // 3. Turn west
+    setCarDirection("WEST");
     setCarFrame(0);
-
-    // 1. Go straight NORTH to reach the intersection
-    await new Promise(resolve => {
-      setCarDirection("NORTH");
-      Animated.timing(scrollY, {
-        toValue: currentScroll.current + (tileSize * 3), // Move forward to intersection
-        duration: 2000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }).start(resolve);
-    });
-
-    // 2. Turn LEFT (WEST) at the intersection
-    await new Promise(resolve => {
-      setCarDirection("WEST");
-      Animated.parallel([
-        Animated.timing(carXAnim, {
-          toValue: leftLane, // Move to left lane position
-          duration: 1000,
-          easing: Easing.inOut(Easing.cubic),
-          useNativeDriver: false,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + (tileSize * 1.3), // Continue moving during turn
-          duration: 1000,
-          easing: Easing.inOut(Easing.cubic),
-          useNativeDriver: true,
-        })
-      ]).start(resolve);
-    });
-
-
-    // Show feedback after animation completes
+    
     handleFeedback(answer);
-  };
-
-  performIntersectionTurn();
-  return;
-};
+  });
+}
   }
 
   const handleNext = async () => {
@@ -598,12 +525,12 @@ export default function DrivingGame() {
     }
 
     setShowQuestion(false);
-  };
+  }; 
 
   // Determine feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! You made the right choice."
+    ? "Correct! You should change lanes (when safe) to follow the appropriate directional arrow for your intended turn."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
 
   // Main game rendering
@@ -705,8 +632,7 @@ export default function DrivingGame() {
       )}
     </View>
   );
-}
-
+  }
 const styles = StyleSheet.create({
   // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {

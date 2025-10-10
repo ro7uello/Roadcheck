@@ -273,7 +273,7 @@ export default function DrivingGame() {
         Alert.alert('Error', 'Failed to save session results');
       }
     } else {
-      router.push(`/scenarios/road-markings/phase3/S10P3`);
+      router.push(`/scenarios/road-markings/phase3/S8P3`);
     }
   };
 

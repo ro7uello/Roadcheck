@@ -79,13 +79,14 @@ const carSprites = {
   ],
 };
 
+
 const questions = [
   {
     question: "You need to drop off passengers in front of a mall and see a loading and unloading bay marked with solid white lines. There's also a \"No Parking\" sign nearby.",
     options: ["Use the bay only for quick passenger drop-off, not parking", "Avoid the area completely since there's a \"No Parking sign\" ", "Park there briefly to accompany passengers into the mall"],
     correct: "Use the bay only for quick passenger drop-off, not parking",
     wrongExplanation: {
-      "Avoid the area completely since there's a \"No Parking\" sign": "Wrong! \"No Parking\" doesn't prohibit loading/unloading activities in designated zones.",
+      "Avoid the area completely since there's a \"No Parking sign\" ": "Wrong! \"No Parking\" doesn't prohibit loading/unloading activities in designated zones.",
       "Park there briefly to accompany passengers into the mall": "Wrong! These bays are for active loading/unloading only, not for leaving your vehicle unattended."
     }
   },

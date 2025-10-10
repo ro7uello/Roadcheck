@@ -67,6 +67,19 @@ const busSprites = {
   ],
 };
 
+// Traffic jam cars
+const trafficCarSprites = {
+  BROWN_NORTH: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
+  ],
+  RED_NORTH: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
+  ],
+  BLACK_NORTH: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_000.png"),
+  ],
+};
+
 // Updated question structure for S2P3
 const questions = [
   {
@@ -152,6 +165,18 @@ export default function DrivingGame() {
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carFrame, setCarFrame] = useState(0);
 
+  // Traffic jam cars state - increased number and tighter spacing
+  const [trafficCars, setTrafficCars] = useState([
+    { id: 1, type: 'BROWN_NORTH', yOffset: carHeight * 1.2 },
+    { id: 2, type: 'RED_NORTH', yOffset: carHeight * 2.2 },
+    { id: 3, type: 'BLACK_NORTH', yOffset: carHeight * 3.2 },
+    { id: 4, type: 'BROWN_NORTH', yOffset: carHeight * 4.2 },
+    { id: 5, type: 'RED_NORTH', yOffset: carHeight * 5.2 },
+    { id: 6, type: 'BLACK_NORTH', yOffset: carHeight * 6.2 },
+    { id: 7, type: 'BROWN_NORTH', yOffset: carHeight * 7.2 },
+    { id: 8, type: 'RED_NORTH', yOffset: carHeight * 8.2 },
+  ]);
+
   // Responsive car positioning
   const regularLaneX = width / 2 - carWidth / 2 + tileSize; // Regular lane (right side)
   const busLaneX = width / 2 - carWidth / 2; // Bus lane (middle/left)
@@ -178,12 +203,14 @@ export default function DrivingGame() {
     setCarDirection("NORTH");
     setIsCarVisible(true);
 
-    const stopRow = 6.5;
+    const stopRow = 2.5;
     const stopOffset = startOffset + stopRow * tileSize;
 
+    // Very slow animation to emphasize traffic jam (12 seconds)
     Animated.timing(scrollY, {
       toValue: stopOffset,
-      duration: 4000,
+      duration: 5000, // Much slower to show traffic jam clearly
+      easing: Easing.inOut(Easing.ease), // Smoother easing to show struggle
       useNativeDriver: true,
     }).start(() => {
       setShowQuestion(true);
@@ -262,25 +289,25 @@ export default function DrivingGame() {
           Animated.parallel([
             Animated.timing(carXAnim, {
               toValue: busLaneX, // Move to bus lane
-              duration: 300,
+              duration: 600, // Slower lane change
               easing: Easing.easeOut,
               useNativeDriver: false,
             }),
             Animated.timing(scrollY, {
               toValue: scrollY._value + (tileSize * 0.5), // Move forward slightly
-              duration: 300,
+              duration: 600,
               easing: Easing.easeOut,
               useNativeDriver: true,
             })
           ]).start(resolve);
         });
 
-        // 2. Car faces North and moves further forward in bus lane
+        // 2. Car faces North and moves faster in empty bus lane
         await new Promise(resolve => {
           setCarDirection("NORTH"); // Face North
           Animated.timing(scrollY, {
             toValue: scrollY._value + (tileSize * 5), // Continue forward significantly
-            duration: 1000,
+            duration: 1500, // Faster in bus lane (empty)
             easing: Easing.easeOut,
             useNativeDriver: true,
           }).start(resolve);
@@ -335,8 +362,8 @@ export default function DrivingGame() {
               useNativeDriver: false,
             }),
             Animated.timing(scrollY, {
-              toValue: scrollY._value + (tileSize * 3), // Car moves very slowly
-              duration: 2500,
+              toValue: scrollY._value + (tileSize * .4), // Car moves very slowly
+              duration: 4000,
               easing: Easing.linear,
               useNativeDriver: true,
             }),
@@ -355,7 +382,7 @@ export default function DrivingGame() {
             }),
             Animated.timing(scrollY, {
               toValue: scrollY._value + (tileSize * 0.5), // Move forward slightly
-              duration: 800,
+              duration: 600,
               easing: Easing.easeOut,
               useNativeDriver: true,
             })
@@ -475,6 +502,43 @@ export default function DrivingGame() {
             />
           ))
         )}
+      </Animated.View>
+
+      {/* Traffic Jam Cars in Regular Lane - positioned relative to map scroll */}
+      <Animated.View
+        style={{
+          position: "absolute",
+          width: width,
+          height: mapHeight,
+          left: 0,
+          transform: [{ translateY: scrollY }],
+          zIndex: 3,
+        }}
+      >
+        {trafficCars.map((car, index) => {
+          // Position cars ahead of the player in the map
+          // Start from row 2 onwards with spacing
+          const carRow = 2 + (index * 1.5);
+          const carYPosition = carRow * tileSize;
+          
+          return (
+            <Image
+              key={car.id}
+              source={trafficCarSprites[car.type][0]}
+              style={{
+                width: carWidth,
+                height: carHeight,
+                position: "absolute",
+                left: regularLaneX,
+                top: carYPosition,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.5,
+                shadowRadius: 3,
+              }}
+            />
+          );
+        })}
       </Animated.View>
 
       {/* Responsive Car */}
@@ -639,7 +703,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -696,7 +760,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",

@@ -341,85 +341,93 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
-    if (answer === "Follow the turn lines from your current position even if it's not optimal") {
-      // Animation: Car follows proper turn lines smoothly and safely
-      setCarPaused(true);
-           
-            // First move straight north
-            Animated.timing(scrollY, {
-                toValue: currentScroll.current + tileSize * 3,
-                duration: 700,
-                useNativeDriver: true,
-            }).start(() => {
-                // Then turn east
-                setCarDirection("EAST");
-                
-                Animated.timing(carXAnim, {
-                toValue: (width / 2 - carWidth / 2) + carWidth * 1,
-                duration: 900,
-                useNativeDriver: false,
-                }).start(() => {
-                handleFeedback(answer);
-                });
-            });
+if (answer === "Follow the turn lines from your current position even if it's not optimal") {
+  // Animation: Car moves straight north smoothly and safely
+  setCarPaused(true);
+
+  Animated.timing(scrollY, {
+    toValue: currentScroll.current + tileSize * 2,
+    duration: 900,
+    useNativeDriver: true,
+  }).start(() => {
+    handleFeedback(answer);
+  });
     
 
-    } else if (answer === "Cut across the turn lines to get to your desired path") {
-                // Move northeast diagonally (change lane while moving forward)
-                setCarDirection("NORTHEAST"); // Set direction first
+} else if (answer === "Cut across the turn lines to get to your desired path") {
+  // Move northwest diagonally (change lane while moving forward)
+  setCarDirection("NORTHEAST"); // Set direction first
 
-                Animated.parallel([
-                // Move north
-                Animated.timing(scrollY, {
-                    toValue: currentScroll.current + tileSize * 3,
-                    duration: 1000,
-                    useNativeDriver: true,
-                }),
-                // Move east simultaneously (changing lane)
-                Animated.timing(carXAnim, {
-                    toValue: (width / 2 - carWidth / 2) + carWidth * 1,
-                    duration: 1000,
-                    useNativeDriver: false,
-                })
-                ]).start(() => {
-                // After diagonal movement completes
-                setCarDirection("NORTH"); // or keep "EAST" depending on final direction
-                handleFeedback(answer);
-                });
-    } else if (answer === "Stop and reverse to get in the correct position") {
-            setCarPaused(true);
+  Animated.parallel([
+    // Move north — smooth and steady
+    Animated.timing(scrollY, {
+      toValue: currentScroll.current + tileSize * 1.5, // slightly longer north distance
+      duration: 900, // slower for smoother motion
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }),
+    // Move west simultaneously — smaller shift for smoother diagonal
+    Animated.timing(carXAnim, {
+      toValue: (width / 2 - carWidth / 2) + carWidth * .7, // move slightly left
+      duration: 900, // same duration for consistent diagonal speed
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: false,
+    }),
+  ]).start(() => {  
+    // After diagonal movement completes
+    setCarDirection("NORTH"); // maintain NW direction after moving
+    handleFeedback(answer);
+  });
 
-            setTimeout(() => {
-                setCarDirection("NORTH");
-                setCarPaused(false);
-                
-                Animated.sequence([
-                    // First move backward (up) while facing NORTH
-                    Animated.parallel([
-                        Animated.timing(carXAnim, {
-                            toValue: width / 2 - carWidth / 2, // Stay centered
-                            duration: 1500,
-                            useNativeDriver: false,
-                        }),
-                        Animated.timing(scrollY, {
-                            toValue: currentScroll.current - tileSize * 0.5, // Move backward (positive = up)
-                            duration: 1500,
-                            useNativeDriver: true,
-                        })
-                    ]),
-                    // Then move right while still facing NORTH
-                    Animated.timing(carXAnim, {
-                        toValue: (width / 2 - carWidth / 2) + carWidth * 0.5,
-                        duration: 500,
-                        useNativeDriver: false,
-                    })
-                ]).start(() => {
-                    setCarDirection("NORTH");
-                    handleFeedback(answer);
-                });
-            }, 1000);
-        }
-    }
+
+} else if (answer === "Stop and reverse to get in the correct position") {
+  setCarPaused(true);
+
+  // Define the target X position for the right lane for clarity
+  const rightLaneX = (width / 2 - carWidth / 2) + carWidth * 0.8;
+
+  setTimeout(() => {
+    setCarDirection("NORTH");
+    setCarPaused(false);
+
+    Animated.sequence([
+      // First: move backward (up) while facing NORTH (Unchanged)
+      Animated.parallel([
+        Animated.timing(carXAnim, {
+          toValue: width / 2 - carWidth / 2, // Stay centered
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: false,
+        }),
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current - tileSize * 0.35, // Move backward (up)
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+
+      // 💥 Second: Player car moves ONLY to the right lane (scrollY removed)
+      // Note: Animated.parallel still works with one item, but is redundant here.
+      // We keep it to fix the syntax error of the extra comma.
+      Animated.parallel([
+        Animated.timing(carXAnim, {
+          toValue: rightLaneX, // Move to the right lane X position
+          duration: 500,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: false,
+        }) // The comma and missing scrollY animation have been removed
+      ]),
+      
+    ]).start(() => {
+      setCarDirection("NORTH");
+      handleFeedback(answer);
+    });
+  }, 1000);
+} 
+// }
+// }
+  }
 
   const handleNext = async () => {
     console.log('=== S8P3 HANDLE NEXT DEBUG ===');

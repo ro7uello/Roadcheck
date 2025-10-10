@@ -94,6 +94,13 @@ const playerCarSprites = {
   ],
 };
 
+// Traffic car sprites
+const trafficCarSprites = {
+  BROWN_NORTH: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
+  ],
+};
+
 // Fallback question for speed limit scenario
 const fallbackQuestions = [
   {
@@ -129,6 +136,9 @@ export default function DrivingGame() {
   const mapHeight = mapLayout.length * tileSize;
 
   const [isPlayerCarVisible, setIsPlayerCarVisible] = useState(true);
+
+  // Traffic cars state
+  const [trafficCars, setTrafficCars] = useState([]);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const currentScroll = useRef(0);
@@ -248,9 +258,7 @@ export default function DrivingGame() {
   function startScrollAnimation() {
     scrollY.setValue(0);
 
-    // Adjust speed by changing the multiplier (lower = faster, higher = slower)
-    // Default is 12, try values between 5-20
-    const speedMultiplier = 3; // Make this smaller for faster animation
+    const speedMultiplier = 3;
 
     scrollAnimationRef.current = Animated.loop(
       Animated.timing(scrollY, {
@@ -262,8 +270,7 @@ export default function DrivingGame() {
     );
     scrollAnimationRef.current.start();
 
-    // Adjust how long before the question appears (in milliseconds)
-    const questionDelay = 2500; // Make this smaller to show question sooner
+    const questionDelay = 2500;
 
     setTimeout(() => {
       if (scrollAnimationRef.current) {
@@ -326,17 +333,40 @@ export default function DrivingGame() {
 
       setPlayerCarFrame(0);
 
+      // Spawn traffic cars ahead in same lane
+      const trafficDistance = height * 0.5;
+      setTrafficCars([
+        {
+          id: 1,
+          x: playerCarInitialX,
+          y: height * 0.1 + trafficDistance,
+        },
+        {
+          id: 2,
+          x: playerCarInitialX,
+          y: height * 0.1 + trafficDistance + (tileSize * 3),
+        },
+        {
+          id: 3,
+          x: playerCarInitialX,
+          y: height * 0.1 + trafficDistance + (tileSize * 6),
+        },
+      ]);
+
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Continue at normal speed (70 KPH) - moderate speed
+      // Continue at normal speed (70 KPH) with traffic visible
       await new Promise(resolve => {
         Animated.timing(scrollY, {
           toValue: scrollY._value - (tileSize * 2),
-          duration: 2500,
+          duration: 3500, // Slightly slower to show traffic flow
           easing: Easing.linear,
           useNativeDriver: true,
         }).start(resolve);
       });
+
+      // Clear traffic cars after animation
+      setTrafficCars([]);
 
     } catch (error) {
       console.error('Error in animateContinue70KPH:', error);
@@ -421,6 +451,7 @@ export default function DrivingGame() {
     setSelectedAnswer(null);
     setIsCorrectAnswer(null);
     setPlayerCarFrame(0);
+    setTrafficCars([]); // Clear traffic cars
 
     playerCarXAnim.setValue(playerCarInitialX);
     setPlayerCarDirection("NORTH");
@@ -497,6 +528,22 @@ export default function DrivingGame() {
         ))}
       </Animated.View>
 
+      {/* Traffic Cars */}
+      {trafficCars.map((car) => (
+        <Animated.Image
+          key={car.id}
+          source={trafficCarSprites.BROWN_NORTH[0]}
+          style={{
+            width: playerCarWidth,
+            height: playerCarHeight,
+            position: "absolute",
+            bottom: car.y,
+            left: car.x,
+            zIndex: 4,
+          }}
+        />
+      ))}
+
       {isPlayerCarVisible && (
         <Animated.Image
           source={playerCarSprites[playerCarDirection][playerCarFrame]}
@@ -562,7 +609,6 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -574,8 +620,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 20,
   },
-
-  // ADDED: Intro styles (responsive)
   introContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -631,13 +675,12 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
-
  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -694,7 +737,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",

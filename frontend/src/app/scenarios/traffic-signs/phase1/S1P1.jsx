@@ -407,6 +407,7 @@ export default function DrivingGame() {
         let phaseNumber;
         const categoryId = sessionData?.category_id;
         const phaseId = sessionData?.phase_id;
+       
 
         if (categoryId === 1) {
           // Road Markings: phase IDs 1,2,3 → phase numbers 1,2,3
