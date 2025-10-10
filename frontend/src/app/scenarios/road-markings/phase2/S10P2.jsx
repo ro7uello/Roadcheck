@@ -266,9 +266,11 @@ export default function DrivingGame() {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
+
     const currentQuestion = questions[questionIndex];
-      const isCorrect = answer === currentQuestion.correct;
-      await updateProgress(answer, isCorrect);
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
+
 if (answer === "Proceed with your turn since vehicles have right of way over pedestrians") {
       // Animation: Car proceeds north into intersection, turns east, then goes east
       // Step 1: Move north into intersection
