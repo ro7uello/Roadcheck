@@ -61,6 +61,9 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
+  BROWN_NORTH: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
+  ],
 };
 
 const questions = [
@@ -156,6 +159,8 @@ export default function DrivingGame() {
   const carXAnim = useRef(new Animated.Value(width / 2 - (280 / 2))).current;
   
   const [trafficLightState, setTrafficLightState] = useState('green');
+  const [showTrafficCar, setShowTrafficCar] = useState(false);
+  const trafficCarY = useRef(new Animated.Value(-350)).current;
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -234,7 +239,7 @@ export default function DrivingGame() {
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
     if (answer === "Enter the yellow box since you have a green light") {
-      const targetRow = 8.5;
+        const targetRow = 8.5;
       const rowsToMove = targetRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
       
@@ -246,6 +251,12 @@ export default function DrivingGame() {
         setCarPaused(true);
         handleFeedback(answer);
       });
+        // Delay showing traffic car by 500ms (adjust this number)
+        setTimeout(() => {
+          setShowTrafficCar(true);
+          trafficCarY.setValue(-170);
+        }, 500);  // Change 500 to your desired delay in milliseconds
+        
       
     } else if (answer === "Wait outside the yellow box until you can completely clear it") {
       setCarPaused(true);
@@ -301,13 +312,15 @@ export default function DrivingGame() {
     setCarPaused(false);
     carXAnim.setValue(width / 2 - (280 / 2));
     setTrafficLightState('green');
+    setShowTrafficCar(false);
+    trafficCarY.setValue(-350);
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
       // Navigate directly to S2P3
-      router.push(`/scenarios/road-markings/phase3/S2P3`);
+      router.push(`/scenarios/road-markings/phase3/S10P3`);
     }
   };
 
@@ -397,6 +410,21 @@ export default function DrivingGame() {
           zIndex: 8,
         }}
       />
+
+      {/* Traffic car in front (brown) */}
+      {showTrafficCar && (
+        <Animated.Image
+          source={carSprites["BROWN_NORTH"][0]}
+          style={{
+            width: 280,
+            height: 350,
+            position: "absolute",
+            top: trafficCarY,
+            left: width / 2 - (280 / 2),
+            zIndex: 9,
+          }}
+        />
+      )}
 
       {showQuestion && (
         <View style={styles.questionOverlay}>
@@ -524,7 +552,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -581,7 +609,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -627,3 +655,5 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
+//s1
