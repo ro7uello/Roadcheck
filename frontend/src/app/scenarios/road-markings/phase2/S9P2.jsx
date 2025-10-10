@@ -370,9 +370,11 @@ export default function DrivingGame() {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
+
     const currentQuestion = questions[questionIndex];
-      const isCorrect = answer === currentQuestion.correct;
-      await updateProgress(answer, isCorrect);
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
+
     if (answer === "Also cross the stop line to keep traffic moving") {
       // Animation: Blue car moves to road4 (2nd column, row 11) then to road57 (column 2, row 10) beside red car
       setCarDirection("WEST");

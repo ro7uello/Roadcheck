@@ -443,14 +443,15 @@ export default function DrivingGame() {
     }
   };
 
-  // Updated handleAnswer function
   const handleAnswer = async (answer) => {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
+
     const currentQuestion = questions[questionIndex];
-      const isCorrect = answer === currentQuestion.correct;
-      await updateProgress(answer, isCorrect);
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
+
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
     setIsOncomingJeepneyVisible(true);

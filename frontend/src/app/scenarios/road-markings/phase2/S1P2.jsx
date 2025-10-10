@@ -121,7 +121,7 @@ export default function DrivingGame() {
     updateScenarioProgress,
     moveToNextScenario,
     completeSession,
-    currentScenario: sessionCurrentScenario,
+    currentScenario:
     sessionData
   } = useSession();
 
@@ -515,7 +515,6 @@ export default function DrivingGame() {
   };
 
   const handleAnswer = async (answer) => {
-    console.log('Answer selected:', answer);
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
@@ -549,10 +548,11 @@ export default function DrivingGame() {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setIsCorrectAnswer(null);
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
+    setIsCorrectAnswer(null);
 
+    // Reset car position and visibility
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
     setPlayerCarDirection("NORTH");
@@ -560,44 +560,41 @@ export default function DrivingGame() {
     setIsJeepneyVisible(true);
 
     if (questionIndex < questions.length - 1) {
+      // Next question in current scenario
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-    } else {
-      // Get current scenario number from file name
-      const currentFileScenario = getCurrentScenarioNumber();
+    } else if (currentScenario === 10) {
+      // Last scenario - complete session
+      try {
+        console.log('🔍 Completing session for scenario 10...');
+        const sessionResults = await completeSession();
 
-      if (currentFileScenario >= 10) {
-        // Last scenario - complete session and go to results
-        try {
-          const sessionResults = await completeSession();
-          if (sessionResults) {
-            router.push({
-              pathname: '/result',
-              params: {
-                ...sessionResults,
-                userAttempts: JSON.stringify(sessionResults.attempts),
-                scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
-              }
-            });
-          }
-        } catch (error) {
-          console.error('Error completing session:', error);
-          Alert.alert('Error', 'Failed to save session results');
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session.');
+          return;
         }
-      } else {
-        // Move to next scenario
-        moveToNextScenario();
 
-        // Navigate to next scenario using file-based numbering
-        const nextScenarioNumber = currentFileScenario + 1;
-        const nextScreen = `S${nextScenarioNumber}P2`;
-        router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
       }
-
-      setShowQuestion(false);
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-      if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
+    } else {
+      // Move to next scenario (S1P2 → S2P2 → ... → S10P2)
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P2`;
+      router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
     }
+
+    // Cleanup
+    if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
   };
 
   const handleStartGame = () => {
