@@ -1,18 +1,8 @@
-import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing,
-} from "react-native";
-import { useNavigation } from '@react-navigation/native';
 import { useSession } from '../../../../contexts/SessionManager';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@env';
+import React, { useRef, useEffect, useState } from "react";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
+import { useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
@@ -88,13 +78,13 @@ const playerCarSprites = {
 
 const jeepneySprites = {
   NORTH: [
-    require("../../../../../assets/car/JEEP TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/JEEP TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
   ],
 };
 
-// Updated question structure following S2P1 format - FALLBACK QUESTIONS
-const fallbackQuestions = [
+// Updated question structure following S2P1 format
+const questions = [
   {
     question: "You're on an expressway with broken white lane lines between lanes going in the same direction. You want to move to the faster left lane.",
     options: ["Change lanes without signaling since the lines are broken", "Stay in your current lane to avoid any violations", "Signal, check mirrors and blind spots, then change lanes when safe"],
@@ -110,23 +100,27 @@ export default function DrivingGame() {
   const navigation = useNavigation();
 
   const {
-      updateScenarioProgress,
-      moveToNextScenario,
-      completeSession,
-      currentScenario,
-      getScenarioProgress,
-      sessionData
-    } = useSession();
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario: sessionCurrentScenario,
+    sessionData
+  } = useSession();
 
+  const currentScenario = 4; 
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      const scenarioId = currentScenario; // For Phase 1: S1P1 = scenario 1, S2P1 = scenario 2, etc.
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
-
-  // Database integration state
-  const [loading, setLoading] = useState(true);
-  const [questions, setQuestions] = useState(fallbackQuestions);
-  const [error, setError] = useState(null);
 
   const [isPlayerCarVisible, setIsPlayerCarVisible] = useState(true); // Renamed for clarity
   const [isJeepneyVisible, setIsJeepneyVisible] = useState(true); // State for jeep visibility
@@ -161,90 +155,9 @@ export default function DrivingGame() {
   // Starts off-screen TOP
   const jeepneyYAnim = useRef(new Animated.Value(-jeepHeight)).current;
 
+
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
-
-  // Database integration: Fetch scenario data
-  useEffect(() => {
-      const fetchScenarioData = async () => {
-        try {
-          console.log('S4P1: Fetching scenario data...');
-          console.log('S4P1: API_URL value:', API_URL);
-
-          const token = await AsyncStorage.getItem('access_token');
-          console.log('S4P1: Token retrieved:', token ? 'Yes' : 'No');
-
-          const url = `${API_URL}/scenarios/4`;
-          console.log('S4P1: Fetching from URL:', url);
-
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          console.log('S4P1: Response status:', response.status);
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-
-          const data = await response.json();
-          console.log('S4P1: Data received:', data);
-
-          if (data && data.scenario) {
-            // Transform database response to match your frontend format
-            const transformedQuestion = {
-              question: data.scenario.question_text,
-              options: data.choices.map(choice => choice.choice_text),
-              correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
-              wrongExplanation: {}
-            };
-
-            // Build wrong explanations
-            data.choices.forEach(choice => {
-              if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
-                transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
-              }
-            });
-
-            setQuestions([transformedQuestion]);
-            console.log('S4P1: ✅ Database questions loaded successfully');
-          } else {
-            console.log('S4P1: ⚠️ Invalid data structure, using fallback');
-            setQuestions(fallbackQuestions);
-          }
-        } catch (error) {
-          console.log('S4P1: ❌ Database error, using fallback questions:', error.message);
-          setQuestions(fallbackQuestions);
-          setError(error.message);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchScenarioData();
-    }, []);
-
-  // Function to update user progress
-  const updateProgress = async (selectedOption, isCorrect) => {
-    try {
-      if (!sessionData) {
-        console.log('No session data available');
-        return;
-      }
-
-      // Calculate the correct scenario ID for this phase and scenario number
-      const scenarioId = ((sessionData.phase_id - 1) * 10) + currentScenario;
-
-      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
-      console.log(`Scenario ${currentScenario} progress updated successfully`);
-    } catch (error) {
-      console.log('Error updating progress:', error.message);
-    }
-  };
 
   // Animation for player's car sprite
   useEffect(() => {
@@ -270,7 +183,6 @@ export default function DrivingGame() {
   const jeepneyAnimationRef = useRef(null); // Ref to hold the jeepney's entry animation
 
   function startScrollAnimation() {
-      console.log('🎬 Starting scroll animation');
     scrollY.setValue(0);
     jeepneyYAnim.setValue(-jeepHeight); // Reset jeepney to off-screen top
 
@@ -284,7 +196,7 @@ export default function DrivingGame() {
     scrollAnimationRef.current = Animated.loop(
       Animated.timing(scrollY, {
         toValue: -mapHeight,
-        duration: mapHeight * 10,
+        duration: mapHeight * 10, // Significantly reduced duration for faster scroll
         easing: Easing.linear,
         useNativeDriver: true,
       })
@@ -301,23 +213,19 @@ export default function DrivingGame() {
     });
 
     jeepneyAnimationRef.current.start(() => {
-        console.log('🚛 Jeepney animation completed');
       // After jeepney is in position, set a timeout to stop scrolling and show question
       setTimeout(() => {
-          console.log('⏰ Timeout triggered - stopping animations');
         if (scrollAnimationRef.current) {
           scrollAnimationRef.current.stop(); // Stop the continuous scroll
-          console.log('🛑 Scroll animation stopped');
         }
         // Freeze car and jeepney sprite animations
         setIsPlayerCarVisible(true);
         setIsJeepneyVisible(true);
         setPlayerCarFrame(0);
         setJeepneyFrame(0);
-        console.log('❓ Showing question');
+
         setShowQuestion(true);
         setTimeout(() => {
-            console.log('📝 Showing answers');
           setShowAnswers(true);
         }, 1000);
       }, 2000); // Time to drive before the question appears after jeepney is in view
@@ -325,10 +233,7 @@ export default function DrivingGame() {
   }
 
   useEffect(() => {
-    if (!loading) {
-      console.log('Loading complete, starting scroll animation');
-      startScrollAnimation();
-    }
+    startScrollAnimation();
     return () => {
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
@@ -337,40 +242,35 @@ export default function DrivingGame() {
           jeepneyAnimationRef.current.stop();
       }
     };
-  }, [loading]);
+  }, []);
 
   // Updated handleFeedback function from S2P1
   const handleFeedback = (answerGiven) => {
-      const currentQuestion = questions[questionIndex];
-      const isCorrect = answerGiven === currentQuestion.correct;
-
-      // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
-      updateProgress(answerGiven, isCorrect); // scenario_id = 3 for S3P1
-
-      if (isCorrect) {
-        setIsCorrectAnswer(true); // Set to true for correct feedback
-        setAnimationType("correct");
-        Animated.timing(correctAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }).start(() => {
-          correctAnim.setValue(0);
-          setShowNext(true);
-        });
-      } else {
-        setIsCorrectAnswer(false); // Set to false for wrong feedback
-        setAnimationType("wrong");
-        Animated.timing(wrongAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }).start(() => {
-          wrongAnim.setValue(0);
-          setShowNext(true);
-        });
-      }
-    };
+    const currentQuestion = questions[questionIndex];
+    if (answerGiven === currentQuestion.correct) {
+      setIsCorrectAnswer(true); // Set to true for correct feedback
+      setAnimationType("correct");
+      Animated.timing(correctAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        correctAnim.setValue(0);
+        setShowNext(true);
+      });
+    } else {
+      setIsCorrectAnswer(false); // Set to false for wrong feedback
+      setAnimationType("wrong");
+      Animated.timing(wrongAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        wrongAnim.setValue(0);
+        setShowNext(true);
+      });
+    }
+  };
 
   // NEW ANIMATION: Player stays in lane, jeepney remains in front
   const animateStayInLane = async () => {
@@ -531,14 +431,15 @@ export default function DrivingGame() {
     handleFeedback(selectedAnswer); // Pass the selected correct answer to feedback
   };
 
+
   const handleAnswer = async (option) => {
     setSelectedAnswer(option);
     setShowQuestion(false);
     setShowAnswers(false);
 
-    // Update progress in database
-    const isCorrect = option === questions[questionIndex].correct;
-    await updateProgress(option, isCorrect);
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = option === currentQuestion.correct;
+    updateProgress(option, isCorrect);
 
     // Stop continuous scroll and sprite animations immediately
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
@@ -569,12 +470,11 @@ export default function DrivingGame() {
     }
   };
 
-  // Update handleNext in ALL scenario files
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setIsCorrectAnswer(null);
+    setIsCorrectAnswer(null); // Reset feedback state from S2P1
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
 
@@ -585,53 +485,49 @@ export default function DrivingGame() {
     setIsJeepneyVisible(true);
 
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else {
-      // FIXED: Use the next scenario number based on current file, not session context
-
-      // Get current scenario number from file name (S1P1 = 1, S2P1 = 2, etc.)
-      const currentFileScenario = getCurrentScenarioNumber(); // Helper function
-
-      if (currentFileScenario >= 10) {
-        // Last scenario - complete session and go to results
+    setQuestionIndex(questionIndex + 1);
+    startScrollAnimation();
+  } else {
+    // Get current scenario number from file name
+    const currentFileScenario = 4; // For S1P1, this is 1; for S2P1 it would be 2, etc.
+    
+    if (currentFileScenario >= 10) {
+      // Last scenario of phase 1 - complete session and go to results
+      try {
         const sessionResults = await completeSession();
         if (sessionResults) {
-          navigation.navigate('ResultPage', {
-            ...sessionResults,
-            userAttempts: JSON.stringify(sessionResults.attempts),
-            scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+          router.push({
+            pathname: '/result',
+            params: {
+              ...sessionResults,
+              userAttempts: JSON.stringify(sessionResults.attempts),
+              scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+            }
           });
         }
-      } else {
-        // Move to next scenario
-        moveToNextScenario();
-
-        // Navigate to next scenario using file-based numbering
-        const nextScenarioNumber = currentFileScenario + 1;
-        const phaseId = sessionData?.phase_id || 1;
-        const nextScreen = `S${nextScenarioNumber}P${phaseId}`;
-
-        navigation.navigate(nextScreen);
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
       }
-
-      setShowQuestion(false);
-      // ... cleanup code
+    } else {
+      // Move to next scenario in phase 1
+      moveToNextScenario();
+      
+      const nextScenarioNumber = currentFileScenario + 1;
+      const nextScreen = `S${nextScenarioNumber}P1`;
+      router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
     }
-  };
 
-  // Add this helper function to each scenario file
-  const getCurrentScenarioNumber = () => {
-    // Return the scenario number based on the current file
-    // For S1P1, return 1
-    // For S2P1, return 2
-    // For S3P1, return 3
-    // etc.
-
-    // You can hardcode this in each file:
-     return 4; // For S4P1.jsx
-    // etc.
-  };
+    setShowQuestion(false);
+    if (scrollAnimationRef.current) {
+      scrollAnimationRef.current.stop();
+    }
+    if (jeepneyAnimationRef.current) {
+      jeepneyAnimationRef.current.stop();
+    }
+    npcCarAnimationsRef.current.forEach(anim => anim.stop());
+  }
+};
 
   // Determine the feedback message based on whether the answer was correct or wrong (from S2P1)
   const currentQuestionData = questions[questionIndex];
@@ -639,15 +535,6 @@ export default function DrivingGame() {
     ? "Correct! Broken white lines allow lane changes. Always signal and check your surroundings before changing lanes."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
 
-  // Show loading screen while fetching data
-  if (loading) {
-    console.log('Showing loading screen. Loading:', loading, 'Questions length:', questions.length);
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading scenario...</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "black", overflow: 'hidden' }}>
@@ -775,30 +662,18 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // Loading screen styles
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: "black",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    color: "white",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
   // No intro styles (responsive)
   // In-game responsive styles
- questionOverlay: {
+  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: 0,
+    paddingBottom: height * 0.01,
     zIndex: 10,
   },
   ltoImage: {
@@ -806,7 +681,7 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.12,
+    marginBottom: -height * 0.09,
   },
   questionBox: {
     flex: 1,
@@ -816,21 +691,20 @@ const styles = StyleSheet.create({
   },
   questionTextContainer: {
     padding: -height * 0.04,
-    maxWidth: width * 0.7,
+    maxWidth: width * 0.6,
   },
   questionText: {
-    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 24),
+    fontSize: Math.min(width * 0.045, 28),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.15,
+    top: height * 0.4,
     right: sideMargin,
     width: width * 0.35,
-    height: height * 0.23,
+    height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
@@ -851,7 +725,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -866,7 +740,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 24),
+    fontSize: Math.min(width * 0.06, 28),
     fontWeight: "bold",
     textAlign: "center",
   },

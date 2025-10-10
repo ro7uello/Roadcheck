@@ -1,13 +1,8 @@
-import React, { useRef, useEffect, useState } from "react";
-import { router } from 'expo-router';
-import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert, Easing } from "react-native";
-import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@env';
 import { useSession } from '../../../../contexts/SessionManager';
-
-// Debug API_URL at module level
-console.log('S10P1 Module loaded. API_URL from env:', API_URL);
+import React, { useRef, useEffect, useState } from "react";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
+import { useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
@@ -20,47 +15,46 @@ const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
-// --- assets and tiles (same as yours) ---
+// --- ../../../assets and tiles (same as yours) ---
 const roadTiles = {
-  // ... (keep as you had it) ...
-  road1: require("../../../../../assets/road/road1.png"),
-  road2: require("../../../../../assets/road/road2.png"),
-  road3: require("../../../../../assets/road/road3.png"),
-  road4: require("../../../../../assets/road/road4.png"),
-  road9: require("../../../../../assets/road/road9.png"),
-  road10: require("../../../../../assets/road/road10.png"),
-  road11: require("../../../../../assets/road/road11.png"),
-  road13: require("../../../../../assets/road/road13.png"),
-  road15: require("../../../../../assets/road/road15.png"),
-  road16: require("../../../../../assets/road/road16.png"),
-  road17: require("../../../../../assets/road/road17.png"),
-  road20: require("../../../../../assets/road/road20.png"),
-  road22: require("../../../../../assets/road/road22.png"),
-  road23: require("../../../../../assets/road/road23.png"),
-  road24: require("../../../../../assets/road/road24.png"),
-  road31: require("../../../../../assets/road/road31.png"),
-  road37: require("../../../../../assets/road/road37.png"),
-  road43: require("../../../../../assets/road/road43.png"),
-  road47: require("../../../../../assets/road/road47.png"),
-  road48: require("../../../../../assets/road/road48.png"),
-  road50: require("../../../../../assets/road/road50.png"),
-  road51: require("../../../../../assets/road/road51.png"),
-  road52: require("../../../../../assets/road/road52.png"),
-  road53: require("../../../../../assets/road/road52.png"),
-  road54: require("../../../../../assets/road/road54.png"),
-  road55: require("../../../../../assets/road/road54.png"),
-  road56: require("../../../../../assets/road/road56.png"),
-  road61: require("../../../../../assets/road/road61.png"),
-  road62: require("../../../../../assets/road/road62.png"),
-  road63: require("../../../../../assets/road/road63.png"),
-  int1: require("../../../../../assets/road/int1.png"),
-  int4: require("../../../../../assets/road/int4.png"),
-  int9: require("../../../../../assets/road/int9.png"),
-  int10: require("../../../../../assets/road/int10.png"),
-  int12: require("../../../../../assets/road/int12.png"),
-  int13: require("../../../../../assets/road/int13.png"),
-  int14: require("../../../../../assets/road/int14.png"),
-  int15: require("../../../../../assets/road/int15.png"),
+    road1: require("../../../../../assets/road/road1.png"),
+    road2: require("../../../../../assets/road/road2.png"),
+    road3: require("../../../../../assets/road/road3.png"),
+    road4: require("../../../../../assets/road/road4.png"),
+    road9: require("../../../../../assets/road/road9.png"),
+    road10: require("../../../../../assets/road/road10.png"),
+    road11: require("../../../../../assets/road/road11.png"),
+    road13: require("../../../../../assets/road/road13.png"),
+    road15: require("../../../../../assets/road/road15.png"),
+    road16: require("../../../../../assets/road/road16.png"),
+    road17: require("../../../../../assets/road/road17.png"),
+    road20: require("../../../../../assets/road/road20.png"),
+    road22: require("../../../../../assets/road/road22.png"),
+    road23: require("../../../../../assets/road/road23.png"),
+    road24: require("../../../../../assets/road/road24.png"),
+    road31: require("../../../../../assets/road/road31.png"),
+    road37: require("../../../../../assets/road/road37.png"),
+    road43: require("../../../../../assets/road/road43.png"),
+    road47: require("../../../../../assets/road/road47.png"),
+    road48: require("../../../../../assets/road/road48.png"),
+    road50: require("../../../../../assets/road/road50.png"),
+    road51: require("../../../../../assets/road/road51.png"),
+    road52: require("../../../../../assets/road/road52.png"),
+    road53: require("../../../../../assets/road/road52.png"),
+    road54: require("../../../../../assets/road/road54.png"),
+    road55: require("../../../../../assets/road/road54.png"),
+    road56: require("../../../../../assets/road/road56.png"),
+    road61: require("../../../../../assets/road/road61.png"),
+    road62: require("../../../../../assets/road/road62.png"),
+    road63: require("../../../../../assets/road/road63.png"),
+    int1: require("../../../../../assets/road/int1.png"),
+    int4: require("../../../../../assets/road/int4.png"),
+    int9: require("../../../../../assets/road/int9.png"),
+    int10: require("../../../../../assets/road/int10.png"),
+    int12: require("../../../../../assets/road/int12.png"),
+    int13: require("../../../../../assets/road/int13.png"),
+    int14: require("../../../../../assets/road/int14.png"),
+    int15: require("../../../../../assets/road/int15.png"),
 };
 
 const mapLayout = [
@@ -112,8 +106,8 @@ const carSprites = {
   ],
 };
 
-// Fallback questions - keep your original questions as backup
-const fallbackQuestions = [
+// Updated question structure following S9P1 format
+const questions = [
   {
     question: "You're approaching an intersection with solid white lines leading to the junction. You realize you're in the wrong lane for your intended direction.",
     options: ["Quickly change lanes before the intersection despite the solid lines", "Stop and reverse to get in the correct lane", "Continue straight and find another route to your destination"],
@@ -129,18 +123,23 @@ export default function DrivingGame() {
   const navigation = useNavigation();
 
   const {
-      updateScenarioProgress,
-      moveToNextScenario,
-      completeSession,
-      currentScenario,
-      getScenarioProgress,
-      sessionData
-    } = useSession();
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario: sessionCurrentScenario,
+    sessionData
+  } = useSession();
 
-  // ✅ DATABASE INTEGRATION - Added these 3 state variables
-  const [questions, setQuestions] = useState(fallbackQuestions);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+    const currentScenario = 10; 
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      const scenarioId = currentScenario; 
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
@@ -171,103 +170,10 @@ export default function DrivingGame() {
   const [carFrame, setCarFrame] = useState(0);
 
   // Responsive car positioning
-  const centerX = width / 2 - carWidth / 2;
-  const carXAnim = useRef(new Animated.Value(centerX)).current;
-
-  // keep a reliable ref of current car X without touching private fields
-  const carXCurrent = useRef(centerX);
-
-  useEffect(() => {
-    const id = carXAnim.addListener(({ value }) => {
-      carXCurrent.current = value;
-    });
-    return () => carXAnim.removeListener(id);
-  }, [carXAnim]);
+  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
-
-  // ✅ DATABASE INTEGRATION - Added this useEffect to fetch data
-  useEffect(() => {
-    const fetchScenarioData = async () => {
-      try {
-        console.log('S10P1: Fetching scenario data...');
-        console.log('S10P1: API_URL value:', API_URL);
-
-        const token = await AsyncStorage.getItem('access_token');
-        console.log('S10P1: Token retrieved:', token ? 'Yes' : 'No');
-
-        const url = `${API_URL}/scenarios/10`;
-        console.log('S10P1: Fetching from URL:', url);
-
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        console.log('S10P1: Response status:', response.status);
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('S10P1: Data received:', data);
-
-        if (data && data.scenario) {
-          // Transform database response to match your frontend format
-          const transformedQuestion = {
-            question: data.scenario.question_text,
-            options: data.choices.map(choice => choice.choice_text),
-            correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
-            wrongExplanation: {}
-          };
-
-          // Build wrong explanations
-          data.choices.forEach(choice => {
-            if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
-              transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
-            }
-          });
-
-          setQuestions([transformedQuestion]);
-          console.log('S10P1: ✅ Database questions loaded successfully');
-        } else {
-          console.log('S10P1: ⚠️ Invalid data structure, using fallback');
-          setQuestions(fallbackQuestions);
-        }
-      } catch (error) {
-        console.log('S10P1: ❌ Database error, using fallback questions:', error.message);
-        setQuestions(fallbackQuestions);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchScenarioData();
-  }, []);
-
-  // ✅ DATABASE INTEGRATION - Added updateProgress function
-  const updateProgress = async (selectedOption, isCorrect) => {
-    try {
-      if (!sessionData) {
-        console.log('No session data available');
-        return;
-      }
-
-      // Calculate the correct scenario ID for this phase and scenario number
-      const scenarioId = ((sessionData.phase_id - 1) * 10) + currentScenario;
-
-      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
-      console.log(`Scenario ${currentScenario} progress updated successfully`);
-    } catch (error) {
-      console.log('Error updating progress:', error.message);
-    }
-  };
 
   // Car animation frame cycling
   function animateTurnLeft(onComplete) {
@@ -316,22 +222,14 @@ export default function DrivingGame() {
     });
   }
 
-  // ✅ DATABASE INTEGRATION - Modified useEffect to wait for data
   useEffect(() => {
-    if (!loading) {
-      startScrollAnimation();
-    }
-  }, [loading]); // Added loading dependency
+    startScrollAnimation();
+  }, []);
 
   // Updated handleFeedback function from S9P1
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
-    const isCorrect = answerGiven === currentQuestion.correct;
-
-    // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
-    updateProgress(answerGiven, isCorrect); // scenario_id = 10 for S10P1
-
-    if (isCorrect) {
+    if (answerGiven === currentQuestion.correct) {
       setIsCorrectAnswer(true); // Set to true for correct feedback
       setAnimationType("correct");
       Animated.timing(correctAnim, {
@@ -361,6 +259,10 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    updateProgress(answer, isCorrect);
+    
     const currentRow = Math.abs(currentScroll.current - startOffset) / tileSize;
 
     if (answer === "Continue straight and find another route to your destination") {
@@ -373,59 +275,64 @@ export default function DrivingGame() {
         useNativeDriver: true,
       }).start(() => handleFeedback(answer));
     } else if (answer === "Quickly change lanes before the intersection despite the solid lines") {
-      // FIXED lane change animation
-      const currentCarX = carXCurrent.current;
+      const turnStartRow = 7;
+      const turnEndRow = 9;
 
-      // Calculate proper lane positions based on road layout
-      const centerLane = width / 2 - carWidth / 2;  // Current center position
-      const leftLane = width * 0.29 - carWidth / 2;  // Left lane position
-      const rightLane = width * 0.75 - carWidth / 2; // Right lane position
+      const initialScrollTarget =
+        currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
-      console.log('Lane change - Current X:', currentCarX, 'Left lane:', leftLane, 'Right lane:', rightLane);
+      Animated.timing(scrollY, {
+        toValue: initialScrollTarget,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start(() => {
+        const turnSequence = ["NORTHWEST", "NORTH"];
+        let currentTurnStep = 0;
 
-      const performLaneChange = async () => {
-        // Stop any ongoing animations
-        setCarFrame(0);
+        const animateTurnAndMove = () => {
+          if (currentTurnStep < turnSequence.length) {
+            setCarDirection(turnSequence[currentTurnStep]);
+            setCarFrame(0);
 
-        // 1. Quick lane change to left lane (dangerous move)
-        await new Promise(resolve => {
-          setCarDirection("NORTHWEST");
-          Animated.parallel([
+            let deltaX = 0;
+            let deltaYScroll = 0;
+
+            if (turnSequence[currentTurnStep] === "NORTHWEST") {
+              deltaX = -tileSize * 0.5;
+              deltaYScroll = tileSize * 0.5;
+            } else if (turnSequence[currentTurnStep] === "NORTH") {
+              deltaX = 0;
+              deltaYScroll = tileSize;
+            }
+
+            Animated.parallel([
+              Animated.timing(carXAnim, {
+                toValue: carXAnim._value + deltaX,
+                duration: 500,
+                useNativeDriver: false,
+              }),
+              Animated.timing(scrollY, {
+                toValue: scrollY._value + deltaYScroll,
+                duration: 500,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              currentTurnStep++;
+              animateTurnAndMove();
+            });
+          } else {
             Animated.timing(carXAnim, {
-              toValue: leftLane,
-              duration: 600, // Quick but not too fast to be visible
-              easing: Easing.out(Easing.cubic), // Sharp easing for sudden movement
+              toValue: -width,
+              duration: 2500,
               useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-              toValue: currentScroll.current + (tileSize * 0.8), // Move forward during lane change
-              duration: 1000,
-              easing: Easing.out(Easing.cubic),
-              useNativeDriver: true,
-            })
-          ]).start(resolve);
-        });
-
-        // 2. Straighten car in new lane briefly
-        await new Promise(resolve => {
-          setCarDirection("NORTH");
-          setCarFrame(0);
-
-          Animated.timing(scrollY, {
-            toValue: currentScroll.current + (tileSize * 1.2),
-            duration: 800,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          }).start(resolve);
-        });
-
-
-
-        // Show feedback after animation completes
-        handleFeedback(answer);
-      };
-
-      performLaneChange();
+            }).start(() => {
+              setIsCarVisible(false);
+              handleFeedback(answer);
+            });
+          }
+        };
+        animateTurnAndMove();
+      });
       return;
     } else if (answer === "Stop and reverse to get in the correct lane") {
       const turnStartRow = 6.5;
@@ -443,79 +350,70 @@ export default function DrivingGame() {
         setCarFrame(0);
 
         Animated.timing(scrollY, {
-          toValue: currentScroll.current - reverseAmount, // Scroll down to simulate car moving back
+          toValue: scrollY._value - reverseAmount, // Scroll down to simulate car moving back
           duration: 1500, // Duration for reversing
           useNativeDriver: true,
         }).start(() => {handleFeedback(answer);});
-      });
+            });
     }
   };
 
   const handleNext = async () => {
-    console.log('=== S10P1 HANDLE NEXT DEBUG ===');
-    console.log('Current scenario from session:', currentScenario);
-    console.log('Question index:', questionIndex);
-    console.log('Questions length:', questions.length);
-    console.log('Session data:', sessionData);
-    console.log('================================');
-
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setIsCorrectAnswer(null);
+    setIsCorrectAnswer(null); // Reset feedback state from S9P1
     setCarFrame(0);
 
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
     setCarDirection("NORTH");
+    setIsCarVisible(true);
 
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else if (currentScenario >= 10) {
-      console.log('🎯 Scenario 10 complete! Finishing session...');
+    setQuestionIndex(questionIndex + 1);
+    startScrollAnimation();
+  } else {
+    // Get current scenario number from file name
+    const currentFileScenario = 10; // For S1P1, this is 1; for S2P1 it would be 2, etc.
+    
+    if (currentFileScenario >= 10) {
+      // Last scenario of phase 1 - complete session and go to results
       try {
         const sessionResults = await completeSession();
-
-        console.log('📊 Session results:', sessionResults);
-
-        if (!sessionResults) {
-          Alert.alert('Error', 'Failed to complete session. Please try again.');
-          return;
+        if (sessionResults) {
+          router.push({
+            pathname: '/result-page',
+            params: {
+              ...sessionResults,
+              userAttempts: JSON.stringify(sessionResults.attempts),
+              scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+            }
+          });
         }
-
-        console.log('✅ Navigating to result-page');
-        router.push({
-          pathname: '/result-page',
-          params: {
-            ...sessionResults,
-            userAttempts: JSON.stringify(sessionResults.attempts)
-          }
-        });
       } catch (error) {
-        console.error('❌ Error completing session:', error);
-        Alert.alert('Error', `Failed to save session results: ${error.message}`);
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
       }
     } else {
-      // Move to next scenario
+      // Move to next scenario in phase 1
       moveToNextScenario();
-
-      let phaseNumber;
-      const categoryId = sessionData?.category_id;
-      const phaseId = sessionData?.phase_id;
-
-      if (categoryId === 1) {
-        phaseNumber = phaseId;
-      } else if (categoryId === 2) {
-        phaseNumber = phaseId - 3;
-      } else if (categoryId === 3) {
-        phaseNumber = phaseId - 6;
-      }
-
-      const nextScreen = `S${currentScenario + 1}P${phaseNumber}`;
-      router.push(`/scenarios/road-markings/phase${phaseNumber}/${nextScreen}`);
+      
+      const nextScenarioNumber = currentFileScenario + 1;
+      const nextScreen = `S${nextScenarioNumber}P1`;
+      router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
     }
-  };
+
+    setShowQuestion(false);
+    if (scrollAnimationRef.current) {
+      scrollAnimationRef.current.stop();
+    }
+    if (jeepneyAnimationRef.current) {
+      jeepneyAnimationRef.current.stop();
+    }
+    npcCarAnimationsRef.current.forEach(anim => anim.stop());
+  }
+};
 
   // Determine the feedback message based on whether the answer was correct or wrong (from S9P1)
   const currentQuestionData = questions[questionIndex];
@@ -590,13 +488,13 @@ export default function DrivingGame() {
       {/* Responsive Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
-          {questions[questionIndex].options.map((option) => (
+          {questions[questionIndex].options.map((answer) => (
             <TouchableOpacity
-              key={option}
+              key={answer}
               style={styles.answerButton}
-              onPress={() => handleAnswer(option)}
+              onPress={() => handleAnswer(answer)}
             >
-              <Text style={styles.answerText}>{option}</Text>
+              <Text style={styles.answerText}>{answer}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -625,17 +523,6 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
   // Responsive styles for in-game elements
   questionOverlay: {
     position: "absolute",
@@ -674,7 +561,7 @@ const styles = StyleSheet.create({
   },
   answersContainer: {
     position: "absolute",
-    top: height * .10,
+    top: height * 0.25,
     right: sideMargin,
     width: width * 0.35,
     zIndex: 11,

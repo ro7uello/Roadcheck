@@ -1,5 +1,4 @@
-// frontend/src/app/scenarios/road-markings/phase2/S6P2.jsx - CORRECTED & FIXED
-import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
+import { useSession } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
 import { router } from 'expo-router';
@@ -24,7 +23,6 @@ const roadTiles = {
   road19: require("../../../../../assets/road/road19.png"),
   road59: require("../../../../../assets/road/road59.png"),
   road20: require("../../../../../assets/road/road20.png"),
-  road22: require("../../../../../assets/road/road22.png"),
   road23: require("../../../../../assets/road/road23.png"),
   road24: require("../../../../../assets/road/road24.png"),
   road49: require("../../../../../assets/road/road49.png"),
@@ -33,8 +31,10 @@ const roadTiles = {
   road52: require("../../../../../assets/road/road52.png"),
   road57: require("../../../../../assets/road/road57.png"),
   road58: require("../../../../../assets/road/road58.png"),
+  road59: require("../../../../../assets/road/road59.png"),
   road60: require("../../../../../assets/road/road60.png"),
   road15: require("../../../../../assets/road/road15.png"),
+  road22: require("../../../../../assets/road/road22.png"),
   int1: require("../../../../../assets/road/int1.png"),
   int2: require("../../../../../assets/road/int2.png"),
   int3: require("../../../../../assets/road/int3.png"),
@@ -86,13 +86,18 @@ const carSprites = {
   ],
 };
 
+// Rain drop component
+const RainDrop = ({ style }) => (
+  <View style={[styles.rainDrop, style]} />
+);
+
 // Updated question structure
 const questions = [
   {
     question: "You're driving on Coastal Road during heavy rain. The edge lines are clearly visible, but the road surface appears flooded near the shoulder area.",
     options: [
-      "Drive closer to the center line to avoid the flooded shoulder", 
-      "Use the edge lines as a guide to maintain proper lane position", 
+      "Drive closer to the center line to avoid the flooded shoulder",
+      "Use the edge lines as a guide to maintain proper lane position",
       "Drive on the shoulder since it's marked by edge lines"
     ],
     correct: "Use the edge lines as a guide to maintain proper lane position",
@@ -105,24 +110,18 @@ const questions = [
 ];
 
 export default function DrivingGame() {
+
   const {
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-    currentScenario,
-    sessionData
-  } = useSession();
+  updateScenarioProgress,
+  moveToNextScenario,
+  completeSession,
+  currentScenario,
+  sessionData
+} = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
       const scenarioId = 10 + currentScenario;
-      console.log('🔍 SCENARIO DEBUG:', {
-        currentScenario,
-        calculatedScenarioId: scenarioId,
-        selectedOption,
-        isCorrect
-      });
-
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -162,11 +161,10 @@ export default function DrivingGame() {
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
 
-  // FIXED: Brown car state (oncoming traffic) - visible from start
-  const [showBrownCar, setShowBrownCar] = useState(true);
+  // Brown car state (oncoming traffic)
   const [brownCarFrame, setBrownCarFrame] = useState(0);
-  const brownCarY = useRef(new Animated.Value(-carHeight)).current;
-  const brownCarX = 1 * tileSize + tileSize/2 - carWidth/2;
+  const brownCarY = useRef(new Animated.Value(-carHeight)).current; // Start above screen
+  const brownCarX = 1 * tileSize + tileSize/2 - carWidth/2; // Position in 1st column (road4)
 
   // Animation speed control
   const [animationSpeed, setAnimationSpeed] = useState(4000);
@@ -209,7 +207,7 @@ export default function DrivingGame() {
             animateDropLoop();
           });
         };
-        
+
         setTimeout(() => {
           animateDropLoop();
         }, drop.delay);
@@ -234,35 +232,31 @@ export default function DrivingGame() {
 
   // Brown car animation frame cycling
   useEffect(() => {
-    if (showBrownCar) {
-      const iv = setInterval(() => {
-        setBrownCarFrame((p) => (p + 1) % carSprites.SOUTH.length);
-      }, 200);
-      return () => clearInterval(iv);
-    }
-  }, [showBrownCar]);
+    const iv = setInterval(() => {
+      setBrownCarFrame((p) => (p + 1) % carSprites.SOUTH.length);
+    }, 200);
+    return () => clearInterval(iv);
+  }, []);
 
-  // FIXED: Brown car continuous movement - starts immediately
+  // Brown car continuous movement
   useEffect(() => {
-    if (showBrownCar) {
-      const animateBrownCar = () => {
-        brownCarY.setValue(-carHeight);
-        Animated.timing(brownCarY, {
-          toValue: height + carHeight,
-          duration: 6000,
-          useNativeDriver: true,
-        }).start(() => {
-          animateBrownCar();
-        });
-      };
+    const animateBrownCar = () => {
+      brownCarY.setValue(-carHeight);
+      Animated.timing(brownCarY, {
+        toValue: height + carHeight,
+        duration: 6000,
+        useNativeDriver: true,
+      }).start(() => {
+        animateBrownCar(); // Loop the animation
+      });
+    };
 
-      animateBrownCar();
-    }
-  }, [showBrownCar]);
+    animateBrownCar();
+  }, []);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    
+
     const stopRow = 6.5;
     const stopOffset = startOffset + stopRow * tileSize;
 
@@ -310,89 +304,76 @@ export default function DrivingGame() {
   };
 
   const handleAnswer = async (answer) => {
-    console.log('🎯 handleAnswer START:', answer);
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
-
     const currentQuestion = questions[questionIndex];
-    const isCorrect = answer === currentQuestion.correct;
-    await updateProgress(answer, isCorrect);
-    console.log('✅ Progress updated');
-
+      const isCorrect = answer === currentQuestion.correct;
+      await updateProgress(answer, isCorrect);
     const currentRow = Math.abs(currentScroll.current - startOffset) / tileSize;
 
-    try {
-      if (answer === "Drive closer to the center line to avoid the flooded shoulder") {
-        console.log('⬅️ Choice 1: Moving to center - brown car should be visible');
-        setCarDirection("NORTHWEST");
-        
-        await new Promise(resolve => {
-          Animated.parallel([
-            Animated.timing(carXAnim, {
-              toValue: 1.7 * tileSize + tileSize/2 - carWidth/2,
-              duration: 900,
-              easing: Easing.easeOut,
-              useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-              toValue: currentScroll.current + 4 * tileSize,
-              duration: 1000,
-              easing: Easing.linear,
-              useNativeDriver: true,
-            })
-          ]).start(resolve);
-        });
+    if (answer === "Drive closer to the center line to avoid the flooded shoulder") {
+      // Animation: Car moves toward center (left) to avoid flood
+      setCarDirection("NORTH");
 
-        await new Promise(resolve => setTimeout(resolve, 500));
-        handleFeedback(answer);
-        
-      } else if (answer === "Use the edge lines as a guide to maintain proper lane position") {
-        console.log('✅ Choice 2: Maintaining lane');
-        setCarDirection("NORTH");
-        
-        await new Promise(resolve => {
-          Animated.timing(scrollY, {
-            toValue: currentScroll.current + 4 * tileSize,
-            duration: 2000,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          }).start(resolve);
-        });
+      // Move car to column 1 (road3 - center line area)
+      Animated.parallel([
+        Animated.timing(carXAnim, {
+          toValue: 1.7 * tileSize + tileSize/2 - carWidth/2,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + 4 * tileSize,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        setTimeout(() => {
+          handleFeedback(answer);
+        }, 500);
+      });
 
-        await new Promise(resolve => setTimeout(resolve, 500));
-        handleFeedback(answer);
-        
-      } else if (answer === "Drive on the shoulder since it's marked by edge lines") {
-        console.log('➡️ Choice 3: Moving to shoulder');
-        setCarDirection("NORTHEAST");
-        
-        await new Promise(resolve => {
-          Animated.parallel([
-            Animated.timing(carXAnim, {
-              toValue: 3 * tileSize + tileSize/2 - carWidth/2,
-              duration: 700,
-              easing: Easing.easeOut,
-              useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-              toValue: currentScroll.current + 4 * tileSize,
-              duration: 2000,
-              easing: Easing.linear,
-              useNativeDriver: true,
-            })
-          ]).start(resolve);
-        });
+    } else if (answer === "Use the edge lines as a guide to maintain proper lane position") {
+      // Animation: Car continues straight in the same lane
+      setCarDirection("NORTH");
 
-        setCarDirection("NORTH");
-        await new Promise(resolve => setTimeout(resolve, 500));
-        handleFeedback(answer);
-      }
-    } catch (error) {
-      console.error('❌ Error in animation:', error);
+      Animated.timing(scrollY, {
+        toValue: currentScroll.current + 4 * tileSize,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start(() => {
+        setTimeout(() => {
+          handleFeedback(answer);
+        }, 500);
+      });
+
+  } else if (answer === "Drive on the shoulder since it's marked by edge lines") {
+  // Animation: Car moves right to shoulder (column 3)
+  setCarDirection("NORTHEAST");
+
+  // Move car to column 3 (shoulder area)
+  Animated.parallel([
+    Animated.timing(carXAnim, {
+      toValue: 3 * tileSize + tileSize/2 - carWidth/2,
+      duration: 700,
+      useNativeDriver: true,
+    }),
+    Animated.timing(scrollY, {
+      toValue: currentScroll.current + 4 * tileSize,
+      duration: 2000,
+      useNativeDriver: true,
+    })
+  ]).start(() => {
+    // Once on the shoulder, car faces north again
+    setCarDirection("NORTH");
+
+    setTimeout(() => {
       handleFeedback(answer);
-    }
-  };
+    }, 500);
+  });
+  }
+};
 
   const handleNext = async () => {
     setAnimationType(null);
@@ -413,25 +394,26 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else if (currentScenario >= 10) {
-      try {
-        const sessionResults = await completeSession();
-        router.push({
-          pathname: '/result',
-          params: {
-            ...sessionResults,
-            userAttempts: JSON.stringify(sessionResults.attempts)
-          }
-        });
-      } catch (error) {
-        console.error('Error completing session:', error);
-        Alert.alert('Error', 'Failed to save session results');
-      }
-    } else {
-      moveToNextScenario();
-      const nextScreen = `S${currentScenario + 1}P2`;
-      router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-    }
-  };
+              // Last scenario in phase - complete session
+              try {
+                const sessionResults = await completeSession();
+                router.push({
+                  pathname: '/result',
+                  params: {
+                    ...sessionResults,
+                    userAttempts: JSON.stringify(sessionResults.attempts)
+                  }
+                });
+              } catch (error) {
+                console.error('Error completing session:', error);
+                Alert.alert('Error', 'Failed to save session results');
+              }
+            } else {
+              moveToNextScenario();
+              const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
+              router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+            }
+      };
 
   // Determine the feedback message
   const currentQuestionData = questions[questionIndex];
@@ -442,7 +424,7 @@ export default function DrivingGame() {
   // Flood areas - positioned on the right shoulder areas and 1st column
   const renderFloodAreas = () => {
     const floodAreas = [];
-    
+
     // Right shoulder flood areas (column 3)
     for (let row = 3; row < 12; row++) {
       floodAreas.push(
@@ -452,7 +434,7 @@ export default function DrivingGame() {
             styles.floodArea,
             {
               position: 'absolute',
-              left: 3 * tileSize + tileSize * 0.7,
+              left: 3 * tileSize + tileSize * 0.7, // Right edge of road
               top: row * tileSize + tileSize * 0.3,
               width: tileSize * 0.3,
               height: tileSize * 0.4,
@@ -461,9 +443,10 @@ export default function DrivingGame() {
         />
       );
     }
-    
+
     // Left side flood areas (column 0 - 1st column)
     for (let row = 2; row < 13; row++) {
+      // Multiple water sprouts/puddles in 1st column
       floodAreas.push(
         <View
           key={`flood-left-main-${row}`}
@@ -471,7 +454,7 @@ export default function DrivingGame() {
             styles.floodArea,
             {
               position: 'absolute',
-              left: 0 * tileSize + tileSize * 0.1,
+              left: 0 * tileSize + tileSize * 0.1, // Left side of 1st column
               top: row * tileSize + tileSize * 0.2,
               width: tileSize * 0.4,
               height: tileSize * 0.6,
@@ -479,7 +462,8 @@ export default function DrivingGame() {
           ]}
         />
       );
-      
+
+      // Additional smaller water sprouts
       floodAreas.push(
         <View
           key={`flood-left-small-${row}`}
@@ -487,7 +471,7 @@ export default function DrivingGame() {
             styles.floodArea,
             {
               position: 'absolute',
-              left: 0 * tileSize + tileSize * 0.6,
+              left: 0 * tileSize + tileSize * 0.6, // Center-left of 1st column
               top: row * tileSize + tileSize * 0.1,
               width: tileSize * 0.3,
               height: tileSize * 0.3,
@@ -495,8 +479,9 @@ export default function DrivingGame() {
           ]}
         />
       );
-      
-      if (row % 2 === 0) {
+
+      // Edge water accumulation near center line
+      if (row % 2 === 0) { // Every other row for variation
         floodAreas.push(
           <View
             key={`flood-left-edge-${row}`}
@@ -504,7 +489,7 @@ export default function DrivingGame() {
               styles.waterSpout,
               {
                 position: 'absolute',
-                left: 0 * tileSize + tileSize * 0.8,
+                left: 0 * tileSize + tileSize * 0.8, // Near center line
                 top: row * tileSize + tileSize * 0.4,
                 width: tileSize * 0.2,
                 height: tileSize * 0.5,
@@ -514,7 +499,7 @@ export default function DrivingGame() {
         );
       }
     }
-    
+
     return floodAreas;
   };
 
@@ -563,7 +548,7 @@ export default function DrivingGame() {
             />
           ))
         )}
-        
+
         {/* Flood Areas */}
         {renderFloodAreas()}
       </Animated.View>
@@ -577,33 +562,30 @@ export default function DrivingGame() {
             height: carHeight,
             position: "absolute",
             bottom: height * 0.1,
-            left: 0,
             transform: [{ translateX: carXAnim }],
             zIndex: 5,
           }}
         />
       )}
 
-      {/* FIXED: Brown Car (Oncoming Traffic) - Always visible */}
-      {showBrownCar && (
-        <Animated.Image
-          source={carSprites.SOUTH[brownCarFrame]}
-          style={{
-            width: carWidth,
-            height: carHeight,
-            position: "absolute",
-            left: brownCarX,
-            transform: [{ translateY: brownCarY }],
-            zIndex: 5,
-          }}
-        />
-      )}
+      {/* Brown Car (Oncoming Traffic) */}
+      <Animated.Image
+        source={carSprites.SOUTH[brownCarFrame]}
+        style={{
+          width: carWidth,
+          height: carHeight,
+          position: "absolute",
+          left: brownCarX,
+          transform: [{ translateY: brownCarY }],
+          zIndex: 5,
+        }}
+      />
 
-      {/* FIXED: Question Overlay - better positioning and sizing */}
+      {/* Question Overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../../assets/dialog/Dialog.png")}
+            source={require("../../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -616,7 +598,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* FIXED: Answers - proper sizing */}
+      {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -634,7 +616,7 @@ export default function DrivingGame() {
       {/* Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -654,6 +636,20 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
+  // Loading screen styles
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  // No intro styles (responsive)
+  // In-game responsive styles
   questionOverlay: {
     position: "absolute",
     bottom: 0,
@@ -666,13 +662,12 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     zIndex: 10,
   },
-  // FIXED: Better LTO positioning to stay in container
   ltoImage: {
     width: ltoWidth,
     height: ltoHeight,
     resizeMode: "contain",
-    marginLeft: -width * 0.02,
-    marginBottom: -height * 0.10,
+    marginLeft: -width * 0.03,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
@@ -682,35 +677,31 @@ const styles = StyleSheet.create({
   },
   questionTextContainer: {
     padding: -height * 0.04,
-    maxWidth: width * 0.55, // FIXED: Reduced from 0.6-0.7
+    maxWidth: width * 0.7,
   },
-  // FIXED: Increased font size to 22
   questionText: {
     flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 22),
+    fontSize: Math.min(width * 0.045, 21),
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: Math.min(width * 0.055, 26),
   },
-  // FIXED: Proper sizing - not too large
   answersContainer: {
     position: "absolute",
-    top: height * 0.18,
+    top: height * 0.076,
     right: sideMargin,
-    width: width * 0.35, // Kept at reasonable size
-    height: height * 0.21, // FIXED: Reduced from 0.23
+    width: width * 0.35,
+    height: height * 0.23,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
     padding: height * 0.015,
     borderRadius: 8,
-    marginBottom: height * 0.012,
+    marginBottom: height * 0.015,
     borderWidth: 1,
     borderColor: "#555",
   },
-  // FIXED: Increased font size to 18
   answerText: {
     color: "white",
     fontSize: Math.min(width * 0.04, 18),
@@ -733,15 +724,12 @@ const styles = StyleSheet.create({
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: width * 0.05,
   },
-  // FIXED: Reduced font size to prevent overflow
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.05, 24),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: Math.min(width * 0.06, 28),
   },
   nextButtonContainer: {
     position: "absolute",

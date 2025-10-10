@@ -1,5 +1,4 @@
-// frontend/src/app/scenarios/road-markings/phase2/S10P2.jsx
-import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
+import { useSession } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
 import { router } from 'expo-router';
@@ -33,7 +32,6 @@ const roadTiles = {
   road52: require("../../../../../assets/road/road52.png"),
   road57: require("../../../../../assets/road/road57.png"),
   road58: require("../../../../../assets/road/road58.png"),
-  road59: require("../../../../../assets/road/road59.png"),
   road60: require("../../../../../assets/road/road60.png"),
   int1: require("../../../../../assets/road/int1.png"),
   int2: require("../../../../../assets/road/int2.png"),
@@ -49,7 +47,7 @@ const mapLayout = [
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
-  ["road49", "road59", "road57", "road50", "road52"],
+  ["road49", "road57", "road57", "road50", "road52"],
   ["road60", "int3", "int4", "road60", "road24"],
   ["road58", "int2", "int1", "road58", "road23"],
   ["road19", "road57", "road57", "road16", "road51"],
@@ -77,7 +75,8 @@ const carSprites = {
   ],
 };
 
-// Pedestrian colors
+// Pedestrian sprites - using simple colored circles as placeholders
+// In a real implementation, you'd have actual pedestrian sprites
 const pedestrianColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'];
 
 const questions = [
@@ -85,7 +84,7 @@ const questions = [
     question: "You encounter a complex intersection with stop lines, give way lines, and pedestrian crossings all present. You're turning right, and pedestrians are crossing your intended path.",
     options: [
       "Proceed with your turn since vehicles have right of way over pedestrians",
-      "Stop at the stop line, yield to pedestrians, then complete your turn when safe", 
+      "Stop at the stop line, yield to pedestrians, then complete your turn when safe",
       "Turn quickly before more pedestrians enter the crosswalk"
     ],
     correct: "Stop at the stop line, yield to pedestrians, then complete your turn when safe",
@@ -99,23 +98,16 @@ const questions = [
 export default function DrivingGame() {
 
   const {
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-    currentScenario,
-    sessionData
-  } = useSession();
+  updateScenarioProgress,
+  moveToNextScenario,
+  completeSession,
+  currentScenario,
+  sessionData
+} = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
       const scenarioId = 10 + currentScenario;
-      console.log('🔍 SCENARIO DEBUG:', {
-        currentScenario,
-        calculatedScenarioId: scenarioId,
-        selectedOption,
-        isCorrect
-      });
-
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -151,12 +143,12 @@ export default function DrivingGame() {
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
 
-  // Pedestrians state - positioned higher for better visibility
+  // Pedestrians state
   const [pedestrians, setPedestrians] = useState([
     {
       id: 1,
       xAnim: useRef(new Animated.Value(-pedestrianWidth)).current,
-      yPos: height * 0.32, // Higher position - more visible
+      yPos: height * 0.32, // Crosswalk level
       color: pedestrianColors[0],
       moving: false,
     },
@@ -196,14 +188,14 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    
+
     // Reset car position
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
 
-    // Start continuous map scrolling - stop BEFORE crossing
+    // Start continuous map scrolling
     scrollAnimationRef.current = Animated.timing(scrollY, {
-      toValue: startOffset + 5 * tileSize, // Stop before intersection (not 6.5)
+      toValue: startOffset + 5 * tileSize, // Stop before intersection
       duration: 4000,
       useNativeDriver: true,
     });
@@ -212,7 +204,7 @@ export default function DrivingGame() {
       // Show pedestrians starting to cross
       setShowPedestrians(true);
       startPedestrianCrossing();
-      
+
       // Show question after pedestrians start crossing
       setTimeout(() => {
         setShowQuestion(true);
@@ -275,10 +267,9 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
     const currentQuestion = questions[questionIndex];
-    const isCorrect = answer === currentQuestion.correct;
-    await updateProgress(answer, isCorrect);
-
-    if (answer === "Proceed with your turn since vehicles have right of way over pedestrians") {
+      const isCorrect = answer === currentQuestion.correct;
+      await updateProgress(answer, isCorrect);
+if (answer === "Proceed with your turn since vehicles have right of way over pedestrians") {
       // Animation: Car proceeds north into intersection, turns east, then goes east
       // Step 1: Move north into intersection
       Animated.timing(scrollY, {
@@ -306,12 +297,12 @@ export default function DrivingGame() {
     } else if (answer === "Stop at the stop line, yield to pedestrians, then complete your turn when safe") {
       // Animation: Car stops, waits for pedestrians to clear, then turns properly
       setCarPaused(true);
-      
+
       // Wait for pedestrians to cross (simulate waiting)
       setTimeout(() => {
         // After pedestrians clear, proceed with turn
         setCarPaused(false);
-        
+
         // Step 1: Move north into intersection
         Animated.timing(scrollY, {
           toValue: currentScroll.current + tileSize * 1.5,
@@ -356,7 +347,7 @@ export default function DrivingGame() {
         }, 200);
       });
     }
-  };
+  }
 
   const handleNext = async () => {
     setAnimationType(null);
@@ -381,31 +372,31 @@ export default function DrivingGame() {
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-    } else if (currentScenario === 10) {
-      // Last scenario in phase - complete session
-      try {
-        const sessionResults = await completeSession();
-        router.push({
-          pathname: '/result-page',
-          params: {
-            ...sessionResults,
-            userAttempts: JSON.stringify(sessionResults.attempts)
-          }
-        });
-      } catch (error) {
-        console.error('Error completing session:', error);
-        Alert.alert('Error', 'Failed to save session results');
-      }
-    } else {
-      moveToNextScenario();
-      const nextScreen = `S${currentScenario + 1}P2`;
-      router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-    }
-  };
+    } else if (currentScenario >= 10) {
+             // Last scenario in phase - complete session
+             try {
+               const sessionResults = await completeSession();
+               router.push({
+                 pathname: '/result-page',
+                 params: {
+                   ...sessionResults,
+                   userAttempts: JSON.stringify(sessionResults.attempts)
+                 }
+               });
+             } catch (error) {
+               console.error('Error completing session:', error);
+               Alert.alert('Error', 'Failed to save session results');
+             }
+           } else {
+             moveToNextScenario();
+             const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
+             router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+           }
+     };
 
   // Feedback message
   let feedbackMessage = "Wrong answer!";
-  
+
   if (isCorrectAnswer) {
     feedbackMessage = "Correct! You must observe stop lines, yield to pedestrians at crossings, and proceed only when safe.";
   } else if (selectedAnswer === "Proceed with your turn since vehicles have right of way over pedestrians") {
@@ -458,10 +449,12 @@ export default function DrivingGame() {
             top: ped.yPos,
             transform: [{ translateX: ped.xAnim }],
             zIndex: 6,
+            // Simple pedestrian representation
             borderWidth: 2,
             borderColor: 'white',
           }}
         >
+          {/* Simple pedestrian icon */}
           <View style={{
             flex: 1,
             justifyContent: 'center',
@@ -497,7 +490,7 @@ export default function DrivingGame() {
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../../assets/dialog/Dialog.png")}
+            source={require("../../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -528,7 +521,7 @@ export default function DrivingGame() {
       {/* Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -548,6 +541,78 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 18,
+    marginTop: 20,
+  },
+  introContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: width * 0.05,
+  },
+  introLTOImage: {
+    width: width * 0.6,
+    height: height * 0.25,
+    resizeMode: "contain",
+    marginBottom: height * 0.03,
+  },
+  introTextBox: {
+    backgroundColor: "rgba(8, 8, 8, 0.7)",
+    padding: width * 0.06,
+    borderRadius: 15,
+    alignItems: "center",
+    maxWidth: width * 0.85,
+    minHeight: height * 0.3,
+    justifyContent: "center",
+  },
+  introTitle: {
+    color: "white",
+    fontSize: Math.min(width * 0.07, 32),
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: height * 0.02,
+  },
+  introSubtitle: {
+    color: "#aaa",
+    fontSize: Math.min(width * 0.05, 22),
+    textAlign: "center",
+    marginBottom: height * 0.02,
+  },
+  introText: {
+    color: "white",
+    fontSize: Math.min(width * 0.045, 20),
+    textAlign: "center",
+    marginBottom: height * 0.04,
+    lineHeight: Math.min(width * 0.06, 26),
+    paddingHorizontal: width * 0.02,
+  },
+  startButton: {
+    backgroundColor: "#007bff",
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.08,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+    minWidth: width * 0.4,
+    alignItems: "center",
+  },
+  startButtonText: {
+    color: "white",
+    fontSize: Math.min(width * 0.055, 24),
+    fontWeight: "bold",
+  },
   questionOverlay: {
     position: "absolute",
     bottom: 0,
@@ -560,35 +625,36 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     zIndex: 10,
   },
-  ltoImage: {
+ltoImage: {
     width: ltoWidth,
     height: ltoHeight,
     resizeMode: "contain",
-    marginLeft: -width * 0.02,
-    marginBottom: -height * 0.10,
+    marginLeft: -width * 0.03,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: height * 0.05,
   },
   questionTextContainer: {
-    maxWidth: width * 0.55,
+    padding: -height * 0.04,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
     fontSize: Math.min(width * 0.045, 22),
     fontWeight: "bold",
     textAlign: "center",
-    lineHeight: Math.min(width * 0.06, 28),
   },
   answersContainer: {
     position: "absolute",
     top: height * 0.175,
     right: sideMargin,
     width: width * 0.35,
+    height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
