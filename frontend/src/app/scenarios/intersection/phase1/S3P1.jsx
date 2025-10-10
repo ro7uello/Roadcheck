@@ -62,12 +62,30 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
   ],
 };
+
 const treeSprites = {
   tree1: require("../../../../../assets/tree/Tree3_idle_s.png"),
-  // Add more tree variations if you have them
-  // tree2: require("../assets/tree/Tree2_idle_s"),
-  // tree3: require("../assets/tree/Tree1_idle_s"),
 };
+
+const npcCarSprites = {
+  blue: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+  ],
+  red: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/EAST/SEPARATED/Red_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/EAST/SEPARATED/Red_CIVIC_CLEAN_EAST_001.png"),
+  ],
+  green: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/EAST/SEPARATED/Green_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/EAST/SEPARATED/Green_CIVIC_CLEAN_EAST_001.png"),
+  ],
+  yellow: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/EAST/SEPARATED/Yellow_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/EAST/SEPARATED/Yellow_CIVIC_CLEAN_EAST_001.png"),
+  ],
+};
+
 const treePositions = [
   // Left side trees (column -1, outside the road)
     { row: 5, col: 0, type: 'tree1' },
@@ -125,8 +143,20 @@ const questions = [
       "Stop and wait for the roundabout to be completely empty": "Wrong! Waiting for complete emptiness is unnecessary and creates traffic backup. Enter when there's a reasonable safe gap."
     }
   },
-  // Add more questions here as needed
 ];
+
+const trafficSign = {
+  sign: require("../../../../../assets/signs/intersection ahead.png"),
+};
+
+// NPC car configuration
+const initialNpcCars = [
+  { id: 1, row: 2.5, color: 'red', startDelay: 0, speed: 5500 },
+  { id: 2, row: 2.5, color: 'green', startDelay: 1500, speed: 6500 },
+  { id: 3, row: 3.5, color: 'yellow', startDelay: 800, speed: 7500 },
+  { id: 4, row: 3.5, color: 'blue', startDelay: 2200, speed: 7000 },
+];
+
 export default function DrivingGame() {
   
   const {
@@ -146,6 +176,15 @@ export default function DrivingGame() {
   const startOffset = -(mapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
+
+  const trafficSignRowIndex = 6;
+  const trafficSignColIndex = 3;
+  const trafficSignXOffset = -30;
+
+  // NPC Cars State
+  const [npcCars, setNpcCars] = useState(initialNpcCars);
+  const npcCarAnims = useRef({});
+  const [npcCarFrames, setNpcCarFrames] = useState({});
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -167,9 +206,63 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
 
+  // Initialize NPC car animations
+  useEffect(() => {
+    npcCars.forEach(car => {
+      if (!npcCarAnims.current[car.id]) {
+        npcCarAnims.current[car.id] = new Animated.Value(-carWidth);
+      }
+    });
+  }, [npcCars]);
+
+  // Animate NPC cars
+  useEffect(() => {
+    const animations = npcCars.map(car => {
+      const anim = npcCarAnims.current[car.id];
+      
+      return new Promise(resolve => {
+        setTimeout(() => {
+          const loopAnimation = () => {
+            anim.setValue(-carWidth);
+            Animated.timing(anim, {
+              toValue: width + carWidth,
+              duration: car.speed,
+              useNativeDriver: false,
+            }).start(() => {
+              loopAnimation();
+            });
+          };
+          loopAnimation();
+          resolve();
+        }, car.startDelay);
+      });
+    });
+
+    return () => {
+      npcCars.forEach(car => {
+        npcCarAnims.current[car.id]?.stopAnimation();
+      });
+    };
+  }, [npcCars]);
+
+  // Animate NPC car sprite frames
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNpcCarFrames(prev => {
+        const newFrames = { ...prev };
+        npcCars.forEach(car => {
+          const currentFrame = newFrames[car.id] || 0;
+          newFrames[car.id] = (currentFrame + 1) % npcCarSprites[car.color].length;
+        });
+        return newFrames;
+      });
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [npcCars]);
+
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      // Intersection Phase 1: scenarios 61-70
       const scenarioId = 60 + currentScenario;
       
       console.log('🔍 SCENARIO DEBUG:', {
@@ -187,7 +280,7 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 8; // Adjusted to match the visual stop point
+    const stopRow = 8;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -206,7 +299,6 @@ export default function DrivingGame() {
     startScrollAnimation();
   }, []);
 
-  // Car sprite frame loop (stops when carPaused=true)
   useEffect(() => {
     let iv;
     if (!carPaused && carSprites[carDirection]) {
@@ -217,7 +309,6 @@ export default function DrivingGame() {
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
 
-  // feedback anims
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
   const [animationType, setAnimationType] = useState(null);
@@ -226,7 +317,7 @@ export default function DrivingGame() {
   const handleFeedback = (answerGiven) => {
       const currentQuestion = questions[questionIndex];
       if (answerGiven === currentQuestion.correct) {
-        setIsCorrectAnswer(true); // Set to true for correct feedback
+        setIsCorrectAnswer(true);
         setAnimationType("correct");
         Animated.timing(correctAnim, {
           toValue: 1,
@@ -237,7 +328,7 @@ export default function DrivingGame() {
           setShowNext(true);
         });
       } else {
-        setIsCorrectAnswer(false); // Set to false for wrong feedback
+        setIsCorrectAnswer(false);
         setAnimationType("wrong");
         Animated.timing(wrongAnim, {
           toValue: 1,
@@ -264,7 +355,6 @@ export default function DrivingGame() {
 
     if (answer === "Enter the roundabout immediately since you have the right of way") {
       const turnStartRow = 10;
-      const turnEndRow = 11;
 
       const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
@@ -292,7 +382,6 @@ export default function DrivingGame() {
               deltaYScroll = tileSize / 2;
             }
 
-            // Get current values properly
             const currentCarX = carXAnim._value;
             const currentScrollY = scrollY._value;
 
@@ -330,9 +419,9 @@ export default function DrivingGame() {
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-        setCarPaused(true); // Car pauses as if yielding
+        setCarPaused(true);
         setTimeout(() => {
-            setCarPaused(false); // Car resumes after a short pause
+            setCarPaused(false);
             Animated.timing(scrollY, {
                 toValue: nextTarget,
                 duration: 2000,
@@ -340,10 +429,9 @@ export default function DrivingGame() {
             }).start(() => {
                 handleFeedback(answer);
             });
-        }); // Added delay duration
+        }, 1500);
     } else if(answer === "Yield to traffic already in the roundabout, then enter when safe"){
         const turnStartRow = 10;
-        const turnEndRow = 11;
 
         const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
@@ -353,7 +441,6 @@ export default function DrivingGame() {
           useNativeDriver: true,
         }).start(() => {
           setTimeout(() => {
-            // Fixed the typo: "NORTHEAST" -> "NORTHEAST"
             const turnSequence = ["NORTH", "NORTHEAST", "EAST"];
             let currentTurnStep = 0;
 
@@ -373,7 +460,6 @@ export default function DrivingGame() {
                   deltaYScroll = tileSize / 2;
                 }
 
-                // Get current values properly
                 const currentCarX = carXAnim._value;
                 const currentScrollY = scrollY._value;
 
@@ -404,7 +490,7 @@ export default function DrivingGame() {
               }
             };
             animateTurnAndMove();
-          });
+          }, 800);
         });
       return;
     }
@@ -416,7 +502,6 @@ export default function DrivingGame() {
     setSelectedAnswer(null);
     setCarFrame(0);
     
-    // Reset car position and visibility
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
     setCarDirection("NORTH");
@@ -424,11 +509,9 @@ export default function DrivingGame() {
     setCarPaused(false);
     
   if (questionIndex < questions.length - 1) {
-    // Next question in current scenario
     setQuestionIndex(questionIndex + 1);
     startScrollAnimation();
   } else if (currentScenario === 10) {
-    // Last scenario - complete session
     try {
       console.log('🔍 Completing session for scenario 10...');
       const sessionResults = await completeSession();
@@ -450,20 +533,20 @@ export default function DrivingGame() {
       Alert.alert('Error', 'Failed to save session results');
     }
   } else {
-    // Move to next scenario
     moveToNextScenario();
     const nextScreen = `S${currentScenario + 1}P1`;
     router.push(`/scenarios/intersection/phase1/${nextScreen}`);
   }
 };
 
-  // Calculate traffic Sign position
+  const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;
+  const trafficSignTop = trafficSignRowIndex * tileSize;
+
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
     ? "Correct! This is the fundamental roundabout rule - yield to traffic already circulating, then enter when there's a safe gap."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
-  // Ensure car sprite exists for current direction
   const currentCarSprite = carSprites[carDirection] && carSprites[carDirection][carFrame] 
     ? carSprites[carDirection][carFrame] 
     : carSprites["NORTH"][0];
@@ -497,25 +580,55 @@ export default function DrivingGame() {
             />
           ))
         )}
+        
+        <Image
+          source={trafficSign.sign}
+          style={{
+            width: tileSize * .8,
+            height: tileSize *.8,
+            position: "absolute",
+            top: trafficSignTop,
+            left: trafficSignLeft,
+            zIndex: 11,
+          }}
+          resizeMode="contain"
+        />
 
         {treePositions.map((tree, index) => (
-                          <Image
-                            key={`tree-${index}`}
-                            source={treeSprites[tree.type]}
-                            style={{
-                              position: "absolute",
-                              width: tileSize * 0.8,
-                              height: tileSize * 1.2,
-                              left: tree.col * tileSize,
-                              top: tree.row * tileSize,
-                              zIndex: 2,
-                            }}
-                            resizeMode="contain"
-                          />
-                        ))}
+          <Image
+            key={`tree-${index}`}
+            source={treeSprites[tree.type]}
+            style={{
+              position: "absolute",
+              width: tileSize * 0.8,
+              height: tileSize * 1.2,
+              left: tree.col * tileSize,
+              top: tree.row * tileSize,
+              zIndex: 2,
+            }}
+            resizeMode="contain"
+          />
+        ))}
+
+        {/* NPC Cars */}
+        {npcCars.map(car => (
+          <Animated.Image
+            key={car.id}
+            source={npcCarSprites[car.color][npcCarFrames[car.id] || 0]}
+            style={{
+              position: "absolute",
+              width: carWidth * 1.2,
+              height: carHeight * 1.2,
+              top: car.row * tileSize,
+              left: npcCarAnims.current[car.id],
+              zIndex: 5,
+            }}
+            resizeMode="contain"
+          />
+        ))}
       </Animated.View>
 
-      {/* Car - fixed */}
+      {/* Player Car */}
       {isCarVisible && (
         <Animated.Image
           source={currentCarSprite}
@@ -530,7 +643,7 @@ export default function DrivingGame() {
         />
       )}
 
-      {/* Question overlay - moved to bottom */}
+      {/* Question overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -547,7 +660,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Answers - moved above bottom overlay */}
+      {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -562,7 +675,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Feedback - moved to bottom */}
+      {/* Feedback */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -583,7 +696,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Next button - positioned above bottom overlay */}
+      {/* Next button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
@@ -596,7 +709,6 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -607,14 +719,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  // No intro styles (responsive)
-  // In-game responsive styles
  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -671,7 +781,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",

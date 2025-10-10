@@ -81,7 +81,7 @@ export default function Home() {
 
   const handleDisclaimerAccept = () => {
     setShowDisclaimer(false);
-    router.push('/login');
+    router.push('scenarios/intersection/phase1/S10P1');
   };
 
   return (

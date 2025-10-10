@@ -62,12 +62,45 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
   ],
 };
+
+const npcCarSprites = {
+  blue: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+  ],
+  red: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/EAST/SEPARATED/Red_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/EAST/SEPARATED/Red_CIVIC_CLEAN_EAST_001.png"),
+  ],
+  green: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/EAST/SEPARATED/Green_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/EAST/SEPARATED/Green_CIVIC_CLEAN_EAST_001.png"),
+  ],
+  yellow: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/EAST/SEPARATED/Yellow_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/EAST/SEPARATED/Yellow_CIVIC_CLEAN_EAST_001.png"),
+  ],
+};
+
+const sideNpcSprites = {
+  NORTH: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  NORTHEAST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTHEAST/SEPARATED/Red_CIVIC_CLEAN_NORTHEAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTHEAST/SEPARATED/Red_CIVIC_CLEAN_NORTHEAST_001.png"),
+  ],
+  EAST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/EAST/SEPARATED/Red_CIVIC_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/EAST/SEPARATED/Red_CIVIC_CLEAN_EAST_001.png"),
+  ],
+};
+
 const treeSprites = {
   tree1: require("../../../../../assets/tree/Tree3_idle_s.png"),
-  // Add more tree variations if you have them
-  // tree2: require("../assets/tree/Tree2_idle_s"),
-  // tree3: require("../assets/tree/Tree1_idle_s"),
 };
+
 const treePositions = [
   // Left side trees (column -1, outside the road)
     { row: 5, col: 0, type: 'tree1' },
@@ -117,15 +150,14 @@ const treePositions = [
 
 const questions = [
   {
-    question: "You're approaching a busy roundabout in Makati during lunch time. There's a Roundabout ahead sign, and you can see the circular intersection has continuous traffic. You need to take the second exit, and there's a motorcycle beside you also approaching the roundabout.",
-    options: ["Race the motorcycle to enter the roundabout first", "Yield to traffic in the roundabout, coordinate with the motorcycle, and enter when both can safely do so", "Stop and wait for traffic to completely clear"],
-    correct: "Yield to traffic in the roundabout, coordinate with the motorcycle, and enter when both can safely do so",
+    question: "You're approaching a busy roundabout in Makati during lunch time. There's a Roundabout ahead sign, and you can see the circular intersection has continuous traffic. You need to take the second exit, and there's a car beside you also approaching the roundabout.",
+    options: ["Race the car to enter the roundabout first", "Yield to traffic in the roundabout, coordinate with the car, and enter when both can safely do so", "Stop and wait for traffic to completely clear"],
+    correct: "Yield to traffic in the roundabout, coordinate with the car, and enter when both can safely do so",
     wrongExplanation: {
-      "Race the motorcycle to enter the roundabout first": "Accident Prone! Racing other vehicles is dangerous and illegal, especially near intersections and roundabouts.",
+      "Race the car to enter the roundabout first": "Accident Prone! Racing other vehicles is dangerous and illegal, especially near intersections and roundabouts.",
       "Stop and wait for traffic to completely clear": "Wrong! Waiting for complete clearance in heavy traffic areas like Makati would create massive traffic jams. Enter when there's a reasonable safe gap."
     }
   },
-  // Add more questions here as needed
 ];
 
 export default function DrivingGame() {
@@ -143,6 +175,7 @@ export default function DrivingGame() {
   const mapHeight = mapLayout.length * tileSize;
 
   const [isCarVisible, setIsCarVisible] = useState(true);
+  const [isSideNpcVisible, setIsSideNpcVisible] = useState(true);
 
   const startOffset = -(mapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
@@ -168,9 +201,56 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
 
+  // Side NPC Car (beside player)
+  const [sideNpcFrame, setSideNpcFrame] = useState(0);
+  const [sideNpcDirection, setSideNpcDirection] = useState("NORTH");
+  const [sideNpcPaused, setSideNpcPaused] = useState(false);
+  const sideNpcXAnim = useRef(new Animated.Value(width / 2 - carWidth * 1.5)).current;
+
+  // NPC Cars state
+  const [npcCars, setNpcCars] = useState([
+    { id: 1, row: 2.5, color: 'red', xAnim: useRef(new Animated.Value(-carWidth)).current, frame: 0 },
+    { id: 2, row: 2.5, color: 'blue', xAnim: useRef(new Animated.Value(-carWidth * 3)).current, frame: 0 },
+    { id: 3, row: 3.5, color: 'green', xAnim: useRef(new Animated.Value(-carWidth * 1.5)).current, frame: 0 },
+    { id: 4, row: 3.5, color: 'yellow', xAnim: useRef(new Animated.Value(-carWidth * 4)).current, frame: 0 },
+  ]);
+
+  // Animate NPC cars continuously
+  useEffect(() => {
+    const animateNPCCar = (car) => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(car.xAnim, {
+            toValue: width + carWidth,
+            duration: 8000,
+            useNativeDriver: false,
+          }),
+          Animated.timing(car.xAnim, {
+            toValue: -carWidth,
+            duration: 0,
+            useNativeDriver: false,
+          }),
+        ])
+      ).start();
+    };
+
+    npcCars.forEach(car => animateNPCCar(car));
+  }, []);
+
+  // NPC car sprite animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNpcCars(prev => prev.map(car => ({
+        ...car,
+        frame: (car.frame + 1) % 2
+      })));
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      // Intersection Phase 1: scenarios 61-70
       const scenarioId = 60 + currentScenario;
       
       console.log('🔍 SCENARIO DEBUG:', {
@@ -188,7 +268,7 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 8; // Adjusted to match the visual stop point
+    const stopRow = 8;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -218,6 +298,17 @@ export default function DrivingGame() {
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
 
+  // Side NPC sprite frame loop
+  useEffect(() => {
+    let iv;
+    if (!sideNpcPaused && sideNpcSprites[sideNpcDirection]) {
+      iv = setInterval(() => {
+        setSideNpcFrame((p) => (p + 1) % sideNpcSprites[sideNpcDirection].length);
+      }, 200);
+    }
+    return () => clearInterval(iv);
+  }, [sideNpcPaused, sideNpcDirection]);
+
   // feedback anims
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
@@ -227,7 +318,7 @@ export default function DrivingGame() {
   const handleFeedback = (answerGiven) => {
       const currentQuestion = questions[questionIndex];
       if (answerGiven === currentQuestion.correct) {
-        setIsCorrectAnswer(true); // Set to true for correct feedback
+        setIsCorrectAnswer(true);
         setAnimationType("correct");
         Animated.timing(correctAnim, {
           toValue: 1,
@@ -238,7 +329,7 @@ export default function DrivingGame() {
           setShowNext(true);
         });
       } else {
-        setIsCorrectAnswer(false); // Set to false for wrong feedback
+        setIsCorrectAnswer(false);
         setAnimationType("wrong");
         Animated.timing(wrongAnim, {
           toValue: 1,
@@ -262,24 +353,26 @@ export default function DrivingGame() {
 
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
-    if (answer === "Race the motorcycle to enter the roundabout first") {
+    if (answer === "Race the car to enter the roundabout first") {
+      // Both cars race quickly to the roundabout
       const turnStartRow = 10;
-      const turnEndRow = 11;
-
       const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
+      // Quick aggressive movement to roundabout
       Animated.timing(scrollY, {
         toValue: initialScrollTarget,
-        duration: 2000,
+        duration: 1500,
         useNativeDriver: true,
       }).start(() => {
         const turnSequence = ["NORTH", "NORTHEAST", "EAST"];
         let currentTurnStep = 0;
 
-        const animateTurnAndMove = () => {
+        const animateBothCarsRacing = () => {
           if (currentTurnStep < turnSequence.length) {
             setCarDirection(turnSequence[currentTurnStep]);
+            setSideNpcDirection(turnSequence[currentTurnStep]);
             setCarFrame(0);
+            setSideNpcFrame(0);
 
             let deltaX = 0;
             let deltaYScroll = 0;
@@ -292,120 +385,196 @@ export default function DrivingGame() {
               deltaYScroll = tileSize / 2;
             }
 
-            // Get current values properly
             const currentCarX = carXAnim._value;
+            const currentSideNpcX = sideNpcXAnim._value;
             const currentScrollY = scrollY._value;
 
+            // Both cars turn simultaneously - racing
             Animated.parallel([
               Animated.timing(carXAnim, {
                 toValue: currentCarX + deltaX,
-                duration: 300,
+                duration: 250,
+                useNativeDriver: false,
+              }),
+              Animated.timing(sideNpcXAnim, {
+                toValue: currentSideNpcX + deltaX,
+                duration: 250,
                 useNativeDriver: false,
               }),
               Animated.timing(scrollY, {
                 toValue: currentScrollY + deltaYScroll,
-                duration: 300,
+                duration: 250,
                 useNativeDriver: true,
               }),
             ]).start(() => {
               currentTurnStep++;
-              animateTurnAndMove();
+              animateBothCarsRacing();
             });
           } else {
-            Animated.timing(carXAnim, {
-              toValue: width * 2,
-              duration: 2500,
-              useNativeDriver: false,
-            }).start(() => {
+            // Both cars speed off screen
+            Animated.parallel([
+              Animated.timing(carXAnim, {
+                toValue: width * 2,
+                duration: 2000,
+                useNativeDriver: false,
+              }),
+              Animated.timing(sideNpcXAnim, {
+                toValue: width * 2 + carWidth * 0.6,
+                duration: 2000,
+                useNativeDriver: false,
+              }),
+            ]).start(() => {
               setIsCarVisible(false);
+              setIsSideNpcVisible(false);
               handleFeedback(answer);
             });
           }
         };
-        animateTurnAndMove();
+        animateBothCarsRacing();
       });
       return;
-    } else if (answer === "C. Stop and wait for traffic to completely clear") {
-        const targetRow = 8;
-        const rowsToMove = targetRow - currentRow;
-        const nextTarget = currentScroll.current + rowsToMove * tileSize;
+    } else if (answer === "Stop and wait for traffic to completely clear") {
+      // Both cars stop and remain stationary
+      const targetRow = 8;
+      const rowsToMove = targetRow - currentRow;
+      const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-        setCarPaused(true); // Car pauses as if yielding
-        setTimeout(() => {
-            setCarPaused(false); // Car resumes after a short pause
-            Animated.timing(scrollY, {
-                toValue: nextTarget,
-                duration: 2000,
-                useNativeDriver: true,
-            }).start(() => {
-                handleFeedback(answer);
-            });
-        }, 1500); // Added delay duration
-    } else if(answer === "Yield to traffic in the roundabout, coordinate with the motorcycle, and enter when both can safely do so"){
-        const turnStartRow = 10;
-        const turnEndRow = 11;
-
-        const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
-
+      setCarPaused(true);
+      setSideNpcPaused(true);
+      
+      setTimeout(() => {
+        setCarPaused(false);
+        setSideNpcPaused(false);
         Animated.timing(scrollY, {
-          toValue: initialScrollTarget,
+          toValue: nextTarget,
           duration: 2000,
           useNativeDriver: true,
         }).start(() => {
-          setTimeout(() => {
-            // Fixed the typo: "NORTHEAST" -> "NORTHEAST"
+          handleFeedback(answer);
+        });
+      }, 2500);
+    } else if(answer === "Yield to traffic in the roundabout, coordinate with the car, and enter when both can safely do so"){
+      // FIXED: Coordinated movement - side NPC goes first, THEN player moves after NPC completely exits
+      const turnStartRow = 9;
+      const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
+
+      // Pause player car movement
+      setCarPaused(true);
+
+      // Move both cars to the roundabout entrance
+      Animated.timing(scrollY, {
+        toValue: initialScrollTarget,
+        duration: 1500,
+        useNativeDriver: true,
+      }).start(() => {
+        // Brief pause to show coordination
+        setTimeout(() => {
+          // First, move NPC car forward (NORTH) before turning
+          const currentSideNpcY = scrollY._value;
+          
+          Animated.timing(scrollY, {
+            toValue: currentSideNpcY + tileSize * 1.5,
+            duration: 800,
+            useNativeDriver: true,
+          }).start(() => {
+            // Now NPC car goes through the roundabout turn
             const turnSequence = ["NORTH", "NORTHEAST", "EAST"];
             let currentTurnStep = 0;
 
-            const animateTurnAndMove = () => {
+            const animateSideNpcFirst = () => {
               if (currentTurnStep < turnSequence.length) {
-                setCarDirection(turnSequence[currentTurnStep]);
-                setCarFrame(0);
+                setSideNpcDirection(turnSequence[currentTurnStep]);
+                setSideNpcFrame(0);
 
                 let deltaX = 0;
-                let deltaYScroll = 0;
 
                 if (turnSequence[currentTurnStep] === "NORTHEAST") {
-                  deltaX = tileSize / 4;
-                  deltaYScroll = tileSize / 4;
+                  deltaX = tileSize / 3;
                 } else if (turnSequence[currentTurnStep] === "EAST") {
                   deltaX = tileSize / 2;
-                  deltaYScroll = tileSize / 2;
                 }
 
-                // Get current values properly
-                const currentCarX = carXAnim._value;
-                const currentScrollY = scrollY._value;
+                const currentSideNpcX = sideNpcXAnim._value;
 
-                Animated.parallel([
-                  Animated.timing(carXAnim, {
-                    toValue: currentCarX + deltaX,
-                    duration: 500,
-                    useNativeDriver: false,
-                  }),
-                  Animated.timing(scrollY, {
-                    toValue: currentScrollY + deltaYScroll,
-                    duration: 500,
-                    useNativeDriver: true,
-                  }),
-                ]).start(() => {
-                  currentTurnStep++;
-                  animateTurnAndMove();
-                });
-              } else {
-                Animated.timing(carXAnim, {
-                  toValue: width * 2,
-                  duration: 1000,
+                // Only animate NPC car horizontally, NO scroll (player stays in place)
+                Animated.timing(sideNpcXAnim, {
+                  toValue: currentSideNpcX + deltaX,
+                  duration: 600,
                   useNativeDriver: false,
                 }).start(() => {
-                  setIsCarVisible(false);
-                  handleFeedback(answer);
+                  currentTurnStep++;
+                  animateSideNpcFirst();
+                });
+              } else {
+                // Side NPC exits the screen completely
+                Animated.timing(sideNpcXAnim, {
+                  toValue: width * 2,
+                  duration: 1200,
+                  useNativeDriver: false,
+                }).start(() => {
+                  setIsSideNpcVisible(false);
+                  
+                  // NOW player car goes through the roundabout AFTER NPC has exited
+                  setTimeout(() => {
+                    setCarPaused(false); // Resume player car animation
+                    let playerTurnStep = 0;
+                    
+                    const animatePlayerCar = () => {
+                      if (playerTurnStep < turnSequence.length) {
+                        setCarDirection(turnSequence[playerTurnStep]);
+                        setCarFrame(0);
+
+                        let deltaX = 0;
+                        let deltaYScroll = 0;
+
+                        if (turnSequence[playerTurnStep] === "NORTHEAST") {
+                          deltaX = tileSize / 3;
+                          deltaYScroll = tileSize / 3;
+                        } else if (turnSequence[playerTurnStep] === "EAST") {
+                          deltaX = tileSize / 2;
+                          deltaYScroll = tileSize / 2;
+                        }
+
+                        const currentCarX = carXAnim._value;
+                        const currentScrollY = scrollY._value;
+
+                        // Animate player car turn with scroll
+                        Animated.parallel([
+                          Animated.timing(carXAnim, {
+                            toValue: currentCarX + deltaX,
+                            duration: 600,
+                            useNativeDriver: false,
+                          }),
+                          Animated.timing(scrollY, {
+                            toValue: currentScrollY + deltaYScroll,
+                            duration: 600,
+                            useNativeDriver: true,
+                          }),
+                        ]).start(() => {
+                          playerTurnStep++;
+                          animatePlayerCar();
+                        });
+                      } else {
+                        // Player exits the screen
+                        Animated.timing(carXAnim, {
+                          toValue: width * 2,
+                          duration: 1200,
+                          useNativeDriver: false,
+                        }).start(() => {
+                          setIsCarVisible(false);
+                          handleFeedback(answer);
+                        });
+                      }
+                    };
+                    animatePlayerCar();
+                  }, 500);
                 });
               }
             };
-            animateTurnAndMove();
+            animateSideNpcFirst();
           });
-        });
+        }, 800);
+      });
       return;
     }
   };
@@ -415,51 +584,54 @@ export default function DrivingGame() {
     setShowNext(false);
     setSelectedAnswer(null);
     setCarFrame(0);
+    setSideNpcFrame(0);
     
-    // Reset car position and visibility
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
+    sideNpcXAnim.setValue(width / 2 - carWidth * 1.5);
     setCarDirection("NORTH");
+    setSideNpcDirection("NORTH");
     setIsCarVisible(true);
+    setIsSideNpcVisible(true);
     setCarPaused(false);
+    setSideNpcPaused(false);
     
     if (questionIndex < questions.length - 1) {
-      // Next question in current scenario
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-      } else if (currentScenario >= 10) {
-        // Last scenario - complete session
-        try {
-          const sessionResults = await completeSession();
-          router.push({
-            pathname: '/result-page',
-            params: {
-              ...sessionResults,
-              userAttempts: JSON.stringify(sessionResults.attempts)
-            }
-          });
-        } catch (error) {
-          console.error('Error completing session:', error);
-          Alert.alert('Error', 'Failed to save session results');
-        }
-      } else {
-      // Move to next scenario
+    } else if (currentScenario >= 10) {
+      try {
+        const sessionResults = await completeSession();
+        router.push({
+          pathname: '/result-page',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
+    } else {
       moveToNextScenario();
       const nextScreen = `S${currentScenario + 1}P1`;
       router.push(`/scenarios/intersection/phase1/${nextScreen}`);
     }
   };
 
-  // Calculate traffic Sign position
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
     ? "Correct! Safe roundabout navigation requires yielding to circulating traffic and being aware of adjacent vehicles. Coordination prevents conflicts."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
-  // Ensure car sprite exists for current direction
   const currentCarSprite = carSprites[carDirection] && carSprites[carDirection][carFrame] 
     ? carSprites[carDirection][carFrame] 
     : carSprites["NORTH"][0];
+
+  const currentSideNpcSprite = sideNpcSprites[sideNpcDirection] && sideNpcSprites[sideNpcDirection][sideNpcFrame]
+    ? sideNpcSprites[sideNpcDirection][sideNpcFrame]
+    : sideNpcSprites["NORTH"][0];
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -492,23 +664,54 @@ export default function DrivingGame() {
         )}
 
         {treePositions.map((tree, index) => (
-                          <Image
-                            key={`tree-${index}`}
-                            source={treeSprites[tree.type]}
-                            style={{
-                              position: "absolute",
-                              width: tileSize * 0.8,
-                              height: tileSize * 1.2,
-                              left: tree.col * tileSize,
-                              top: tree.row * tileSize,
-                              zIndex: 2,
-                            }}
-                            resizeMode="contain"
-                          />
-                        ))}
+          <Image
+            key={`tree-${index}`}
+            source={treeSprites[tree.type]}
+            style={{
+              position: "absolute",
+              width: tileSize * 0.8,
+              height: tileSize * 1.2,
+              left: tree.col * tileSize,
+              top: tree.row * tileSize,
+              zIndex: 2,
+            }}
+            resizeMode="contain"
+          />
+        ))}
+
+        {/* NPC Cars */}
+        {npcCars.map((car) => (
+          <Animated.Image
+            key={car.id}
+            source={npcCarSprites[car.color][car.frame]}
+            style={{
+              position: "absolute",
+              width: carWidth,
+              height: carHeight,
+              top: car.row * tileSize,
+              left: car.xAnim,
+              zIndex: 5,
+            }}
+          />
+        ))}
       </Animated.View>
 
-      {/* Car - fixed */}
+      {/* Side NPC Car */}
+      {isSideNpcVisible && (
+        <Animated.Image
+          source={currentSideNpcSprite}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            bottom: 80,
+            left: sideNpcXAnim,
+            zIndex: 7,
+          }}
+        />
+      )}
+
+      {/* Player Car */}
       {isCarVisible && (
         <Animated.Image
           source={currentCarSprite}
@@ -523,7 +726,7 @@ export default function DrivingGame() {
         />
       )}
 
-      {/* Question overlay - moved to bottom */}
+      {/* Question overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -540,7 +743,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Answers - moved above bottom overlay */}
+      {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -555,7 +758,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Feedback - moved to bottom */}
+      {/* Feedback */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -576,7 +779,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Next button - positioned above bottom overlay */}
+      {/* Next button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
@@ -589,7 +792,6 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -600,14 +802,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  // No intro styles (responsive)
-  // In-game responsive styles
- questionOverlay: {
+  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -634,13 +834,13 @@ const styles = StyleSheet.create({
   questionText: {
     flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 24),
+    fontSize: Math.min(width * 0.045, 18),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.16,
+    top: height * 0.2,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
@@ -656,7 +856,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 18),
+    fontSize: Math.min(width * 0.04, 16),
     textAlign: "center",
   },
   feedbackOverlay: {
@@ -664,7 +864,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",

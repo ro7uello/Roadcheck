@@ -582,11 +582,11 @@ export default function DrivingGame() {
                         animateUTurn();
                       });
                     } else {
-                      // Car drives off into wrong direction
-                      Animated.timing(carXAnim, {
-                        toValue: -width,
+                      // Car continues South (wrong direction) before disappearing
+                      Animated.timing(scrollY, {
+                        toValue: scrollY._value - tileSize * 3,
                         duration: 2000,
-                        useNativeDriver: false,
+                        useNativeDriver: true,
                       }).start(() => {
                         setIsCarVisible(false);
                         handleFeedback(answer);
