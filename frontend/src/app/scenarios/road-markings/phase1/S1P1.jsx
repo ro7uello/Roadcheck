@@ -194,6 +194,7 @@ export default function DrivingGame() {
       lane: 1, // Another lane for SOUTH cars
       yAnim: new Animated.Value(-npcCarHeight * 2), // Staggered start
       frame: 0,
+       speed: 3,
     },
     {
       id: 'npc4',
@@ -204,25 +205,26 @@ export default function DrivingGame() {
     },
   ]).current;
 
-  // Function to start a single NPC car animation loop
-  const startNpcCarAnimation = (npcCar) => {
-    const { direction, yAnim } = npcCar;
-    const isNorth = direction === 'NORTH';
-    const startValue = isNorth ? height : -npcCarHeight;
-    const endValue = isNorth ? -npcCarHeight : height;
-    const duration = 7000 + Math.random() * 3000; // Randomize duration for varied speeds
+// Function to start a single NPC car animation (non-looping)
+const startNpcCarAnimation = (npcCar, shouldLoop = false) => {
+  const { direction, yAnim, speed = 1 } = npcCar; // Add speed with default value 1
+  const isNorth = direction === 'NORTH';
+  const startValue = isNorth ? height : -npcCarHeight;
+  const endValue = isNorth ? -npcCarHeight : height;
+  const baseDuration = 7000 + Math.random() * 7000;
+  
+  // Don't reset position - continue from current position
+  const currentValue = yAnim._value;
+  
+  const animation = Animated.timing(yAnim, {
+    toValue: endValue,
+    duration: (baseDuration / speed) * Math.abs((endValue - currentValue) / (endValue - startValue)), // Divide by speed
+    easing: Easing.linear,
+    useNativeDriver: true,
+  });
 
-    yAnim.setValue(startValue + Math.random() * (height / 2)); // Randomize initial position slightly
-
-    return Animated.loop(
-      Animated.timing(yAnim, {
-        toValue: endValue,
-        duration: duration,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    );
-  };
+  return shouldLoop ? Animated.loop(animation) : animation;
+};
 
   const npcCarAnimationsRef = useRef([]); // To hold individual NPC car animation loops
 
@@ -545,11 +547,13 @@ const animateOvertake = async (targetX) => {
       }
     } else {
       // Move to next scenario in phase 1
-      moveToNextScenario();
+     moveToNextScenario();
       
       const nextScenarioNumber = currentFileScenario + 1;
       const nextScreen = `S${nextScenarioNumber}P1`;
       router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
+  
+
     }
 
     setShowQuestion(false);
@@ -747,7 +751,20 @@ const animateOvertake = async (targetX) => {
 }
 
 const styles = StyleSheet.create({
-  // Intro styles (responsive)
+  // ✅ DATABASE INTEGRATION - Added loading styles
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 18,
+    marginTop: 20,
+  },
+
+  // ADDED: Intro styles (responsive)
   introContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -804,8 +821,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  // In-game responsive styles
-  questionOverlay: {
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -814,7 +830,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
   ltoImage: {
@@ -822,7 +838,7 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.09,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
@@ -832,17 +848,18 @@ const styles = StyleSheet.create({
   },
   questionTextContainer: {
     padding: -height * 0.04,
-    maxWidth: width * 0.6,
+    maxWidth: width * 0.7,
   },
   questionText: {
+    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 28),
+    fontSize: Math.min(width * 0.045, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.4,
+    top: height * 0.15,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
@@ -881,8 +898,9 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
+    textAlign: "center",
   },
   nextButtonContainer: {
     position: "absolute",
