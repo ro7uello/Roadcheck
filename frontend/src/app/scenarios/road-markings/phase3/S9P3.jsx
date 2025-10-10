@@ -1,54 +1,70 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
 // Responsive calculations
-const carWidth = Math.min(width * 0.25, 280);
-const carHeight = carWidth * (350/280);
 const overlayHeight = height * 0.35;
 const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 const roadTiles = {
-    road2: require("../../../../../assets/road/road2.png"),
-    road80: require("../../../../../assets/road/road80.png"),
+  road2: require("../../../../../assets/road/road2.png"),  
+  road3: require("../../../../../assets/road/road3.png"),
+  road17: require("../../../../../assets/road/road17.png"),
+  road20: require("../../../../../assets/road/road20.png"),
+  road76: require("../../../../../assets/road/road76.png"),
+  road86: require("../../../../../assets/road/road86.png"),
+  road80: require("../../../../../assets/road/road80.png"),
+  road96: require("../../../../../assets/road/road96.png"),
 };
 
 const mapLayout = [
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
-  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+  ["road2", "road2", "road3", "road96", "road80"],
+];
+
+const treeSprites = {
+  tree1: require("../../../../../assets/tree/Tree3_idle_s.png"),
+};
+
+const treePositions = [
+  { row: 7, col: 4, type: 'tree1' },
+  { row: 8, col: 4, type: 'tree1' },
+  { row: 9, col: 4, type: 'tree1' },
+  { row: 10, col: 4, type: 'tree1' },
+  { row: 11, col: 4, type: 'tree1' },
+  { row: 12, col: 4, type: 'tree1' },
+  { row: 13, col: 4, type: 'tree1' },
+  { row: 14, col: 4, type: 'tree1' },
+  { row: 15, col: 4, type: 'tree1' },
+  { row: 16, col: 4, type: 'tree1' },
+  { row: 17, col: 4, type: 'tree1' },
+  { row: 18, col: 4, type: 'tree1' },
+  { row: 19, col: 4, type: 'tree1' },
+  { row: 20, col: 4, type: 'tree1' },
 ];
 
 const carSprites = {
@@ -56,58 +72,63 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  NORTHEAST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
-  ],
-  NORTHWEST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
-  ],
-  EAST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
-  ],
-  SOUTHEAST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTHEAST/SEPARATED/Blue_CIVIC_CLEAN_SOUTHEAST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTHEAST/SEPARATED/Blue_CIVIC_CLEAN_SOUTHEAST_001.png"),
-  ],
-  SOUTH: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTH/SEPARATED/Blue_CIVIC_CLEAN_SOUTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTH/SEPARATED/Blue_CIVIC_CLEAN_SOUTH_001.png"),
-  ],
-};
-
-const trafficSign = {
-    sign: require("../../../../../assets/signs/warning_sign2.png"),
 };
 
 const questions = [
   {
-    question: "You're on the Skyway and encounter a REDUCE SPEED NOW sign. You've been maintaining 100 kph, which is the normal expressway speed limit, but traffic ahead seems to be slowing down.",
-    options: ["Maintain your current speed since you're within the speed limit", "Gradually reduce speed and observe traffic conditions ahead", "Brake hard immediately to comply with the sign"],
-    correct: "Gradually reduce speed and observe traffic conditions ahead",
+    question: "You're dropping off guests at a hotel by a busy road side and notice the curb is painted red . The hotel valet suggests you can stop briefly. You don't see any traffic enforcers nearby.",
+    options: [" Follow the valet's suggestion since they work there", "Find an alternative location without restrictions for drop-off","Stop briefly but keep the engine running"],
+    correct: "Find an alternative location without restrictions for drop-off",
     wrongExplanation: {
-      "Maintain your current speed since you're within the speed limit": "Wrong! Special regulatory signs override general speed limits. The sign indicates hazardous conditions ahead requiring reduced speed.",
-      "Brake hard immediately to comply with the sign": "Wrong! Hard braking can cause rear-end collisions and is unnecessary unless there's an immediate danger."
+      " Follow the valet's suggestion since they work there": "Wrong! Hotel staff cannot override traffic regulations; red curbs with no-loading markings are legally binding.",
+      "Stop briefly but keep the engine running": "Wrong! Keeping the engine running doesn't make stopping in restricted zones legal"
     }
   },
-  // Add more questions here as needed
 ];
 
+const trafficSign = {
+    sign: require("../../../../../assets/signs/no_parking.png"),
+};
+
 export default function DrivingGame() {
+
+  const {
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+    sessionData
+  } = useSession();
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      const phaseId = sessionData?.phase_id || 1;
+      const baseId = phaseId === 1 ? 40 : 50;
+      const scenarioId = baseId + currentScenario;
+
+      console.log('🔍 SCENARIO DEBUG:', {
+        currentScenario,
+        calculatedScenarioId: scenarioId,
+        selectedOption,
+        isCorrect
+      });
+
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
+
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
-
-  const [isCarVisible, setIsCarVisible] = useState(true);
 
   const startOffset = -(mapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  const trafficSignRowIndex = 14;
-  const trafficSignColIndex = 3.8;
+  const trafficSignRowIndex = 17;
+  const trafficSignColIndex = 2.8;
   const trafficSignXOffset = 20;
 
   useEffect(() => {
@@ -117,23 +138,19 @@ export default function DrivingGame() {
     return () => scrollY.removeListener(id);
   }, [scrollY]);
 
-  // UI/game states
   const [questionIndex, setQuestionIndex] = useState(0);
   const [showQuestion, setShowQuestion] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(null);
-  const [carDirection, setCarDirection] = useState("NORTH");
 
-  // Car - start in middle lane
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
-  const middleLaneX = width * 0.5 - carWidth / 2;
-  const carXAnim = useRef(new Animated.Value(middleLaneX)).current;
+  const carXAnim = useRef(new Animated.Value(width / 2 - (280 / 2))).current;
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 8;
+    const stopRow = 4.2;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -152,18 +169,16 @@ export default function DrivingGame() {
     startScrollAnimation();
   }, []);
 
-  // Car sprite frame loop (stops when carPaused=true)
   useEffect(() => {
     let iv;
-    if (!carPaused && carSprites[carDirection]) {
+    if (!carPaused) {
       iv = setInterval(() => {
-        setCarFrame((p) => (p + 1) % carSprites[carDirection].length);
+        setCarFrame((p) => (p + 1) % carSprites["NORTH"].length);
       }, 200);
     }
     return () => clearInterval(iv);
-  }, [carPaused, carDirection]);
+  }, [carPaused]);
 
-  // feedback anims
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
   const [animationType, setAnimationType] = useState(null);
@@ -174,113 +189,104 @@ export default function DrivingGame() {
     if (answerGiven === currentQuestion.correct) {
       setIsCorrectAnswer(true);
       setAnimationType("correct");
-      setTimeout(() => {
+      Animated.timing(correctAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        correctAnim.setValue(0);
         setShowNext(true);
-      }, 1000);
+      });
     } else {
       setIsCorrectAnswer(false);
       setAnimationType("wrong");
-      setTimeout(() => {
+      Animated.timing(wrongAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        wrongAnim.setValue(0);
         setShowNext(true);
-      }, 1000);
+      });
     }
   };
 
-  const handleAnswer = (answer) => {
+  const handleAnswer = async (answer) => {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
 
-    if (answer === "Maintain your current speed since you're within the speed limit") {
-      // Drive straight at same speed
-      setCarDirection("NORTH");
-      setCarFrame(0);
-      
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
+
+    const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
+
+    if (answer === "Find an alternative location without restrictions for drop-off") {
+      // CORRECT: Car moves past the red curb to find a legal spot
+      const targetRow = 6;
+      const rowsToMove = targetRow - currentRow;
+      const nextTarget = currentScroll.current + rowsToMove * tileSize;
+
       Animated.timing(scrollY, {
-        toValue: currentScroll.current + tileSize * 5,
-        duration: 2500,
+        toValue: nextTarget,
+        duration: 3000,
         useNativeDriver: true,
       }).start(() => {
-        setIsCarVisible(false);
         handleFeedback(answer);
       });
-      return;
-    } else if (answer === "Gradually reduce speed and observe traffic conditions ahead") {
-      // Drive straight at reduced speed (slower animation)
-      setCarDirection("NORTH");
-      setCarFrame(0);
-      
-      Animated.timing(scrollY, {
-        toValue: currentScroll.current + tileSize * 5,
-        duration: 4000, // Slower duration = reduced speed
-        useNativeDriver: true,
-      }).start(() => {
-        setIsCarVisible(false);
+    } else if (answer === " Follow the valet's suggestion since they work there") {
+      // WRONG: Car stops at the red curb (current position)
+      setTimeout(() => {
         handleFeedback(answer);
-      });
-      return;
-    } else if (answer === "Brake hard immediately to comply with the sign") {
-      // Drive straight then brake (quick stop)
-      setCarDirection("NORTH");
-      setCarFrame(0);
-      
-      // Move forward briefly
-      Animated.timing(scrollY, {
-        toValue: currentScroll.current + tileSize * 1.5,
-        duration: 800,
-        useNativeDriver: true,
-      }).start(() => {
-        // Sudden stop - pause briefly to simulate braking
-        setCarPaused(true);
-        setTimeout(() => {
-          setIsCarVisible(false);
-          handleFeedback(answer);
-        }, 500);
-      });
-      return;
+      }, 1000);
+    } else if (answer === "Stop briefly but keep the engine running") {
+      // WRONG: Car stops at the red curb with engine running
+      setTimeout(() => {
+        handleFeedback(answer);
+      }, 1000);
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setCarFrame(0);
-    
-    // Reset car position and visibility to middle lane
-    const middleLaneX = width * 0.5 - carWidth / 2;
-    carXAnim.setValue(middleLaneX);
-    setCarDirection("NORTH");
-    setIsCarVisible(true);
-    setCarPaused(false);
+    carXAnim.setValue(width / 2 - (280 / 2));
     
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
+    } else if (currentScenario >= 10) {
+      try {
+        const sessionResults = await completeSession();
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
     } else {
-      router.push('S7P2');
-      setQuestionIndex(0);
-      setShowQuestion(false);
+      router.push(`/scenarios/road-markings/phase3/S10P3`);
     }
   };
 
   const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;  
   const trafficSignTop = trafficSignRowIndex * tileSize;
 
-  // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Gradual speed reduction maintains traffic flow safety while allowing you to assess the reason for the speed reduction warning."
+    ? "Correct! You must respect no-loading zones regardless of local staff suggestions or convenience."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
-
-  // Ensure car sprite exists for current direction
-  const currentCarSprite = carSprites[carDirection] && carSprites[carDirection][carFrame] 
-    ? carSprites[carDirection][carFrame] 
-    : carSprites["NORTH"][0];
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
-      {/* Map */}
       <Animated.View
         style={{
           position: "absolute",
@@ -294,7 +300,7 @@ export default function DrivingGame() {
         {mapLayout.map((row, rowIndex) =>
           row.map((tile, colIndex) => (
             <Image
-              key={`${rowIndex}-${colIndex}`}  
+              key={`${rowIndex}-${colIndex}`}
               source={roadTiles[tile]}
               style={{
                 position: "absolute",
@@ -307,36 +313,48 @@ export default function DrivingGame() {
             />
           ))
         )}
-        <Image
-            source={trafficSign.sign}
+        {treePositions.map((tree, index) => (
+          <Image
+            key={`tree-${index}`}
+            source={treeSprites[tree.type]}
             style={{
-            width: tileSize * 1,
-            height: tileSize *1,
+              position: "absolute",
+              width: tileSize * 0.8,
+              height: tileSize * 1.2,
+              left: tree.col * tileSize,
+              top: tree.row * tileSize,
+              zIndex: 2,
+            }}
+            resizeMode="contain"
+          />
+        ))}
+
+        <Image
+          source={trafficSign.sign}
+          style={{
+            width: tileSize * .8,
+            height: tileSize *.8,
             position: "absolute",
             top: trafficSignTop,
             left: trafficSignLeft,
             zIndex: 11,
-                }}
-            resizeMode="contain"
+          }}
+          resizeMode="contain"
         />
       </Animated.View>
 
-      {/* Car - fixed in middle lane */}
-      {isCarVisible && (
-        <Animated.Image
-          source={currentCarSprite}
-          style={{
-            width: carWidth,
-            height: carHeight,
-            position: "absolute",
-            bottom: 80,
-            left: carXAnim,
-            zIndex: 8,
-          }}
-        />
-      )}
+      <Animated.Image
+        source={carSprites["NORTH"][carFrame]}
+        style={{
+          width: 280,
+          height: 350,
+          position: "absolute",
+          bottom: 80,
+          left: carXAnim,
+          zIndex: 8,
+        }}
+      />
 
-      {/* Question overlay - moved to bottom */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -353,7 +371,6 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Answers - moved above bottom overlay */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -368,7 +385,6 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Feedback - moved to bottom */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -383,13 +399,12 @@ export default function DrivingGame() {
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>
-                {feedbackMessage}
+              {feedbackMessage}
             </Text>
           </View>
         </View>
       )}
 
-      {/* Next button - positioned above bottom overlay */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
@@ -404,13 +419,69 @@ export default function DrivingGame() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    fontWeight: 'bold',
+    marginTop: 20,
+  },
+  introContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: width * 0.05,
+  },
+  introLTOImage: {
+    width: width * 0.6,
+    height: height * 0.25,
+    resizeMode: "contain",
+    marginBottom: height * 0.03,
+  },
+  introTextBox: {
+    backgroundColor: "rgba(8, 8, 8, 0.7)",
+    padding: width * 0.06,
+    borderRadius: 15,
+    alignItems: "center",
+    maxWidth: width * 0.85,
+    minHeight: height * 0.3,
+    justifyContent: "center",
+  },
+  introTitle: {
+    color: "white",
+    fontSize: Math.min(width * 0.07, 32),
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: height * 0.02,
+  },
+  introText: {
+    color: "white",
+    fontSize: Math.min(width * 0.045, 20),
+    textAlign: "center",
+    marginBottom: height * 0.04,
+    lineHeight: Math.min(width * 0.06, 26),
+    paddingHorizontal: width * 0.02,
+  },
+  startButton: {
+    backgroundColor: "#007bff",
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.08,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+    minWidth: width * 0.4,
+    alignItems: "center",
+  },
+  startButtonText: {
+    color: "white",
+    fontSize: Math.min(width * 0.055, 24),
+    fontWeight: "bold",
   },
   questionOverlay: {
     position: "absolute",
@@ -444,13 +515,13 @@ const styles = StyleSheet.create({
   questionText: {
     flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: Math.min(width * 0.045, 22),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.16,
+    top: height * 0.15,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,

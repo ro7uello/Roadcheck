@@ -1,14 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
@@ -21,37 +14,34 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 const roadTiles = {
-    road1: require("../../../../../assets/road/road1.png"),
-    road93: require("../../../../../assets/road/road93.png"),
-    road94: require("../../../../../assets/road/road94.png"),
-    toll1: require("../../../../../assets/road/tollgate1.png"),
-    toll2: require("../../../../../assets/road/tollgate2.png"),
-    toll3: require("../../../../../assets/road/tollgate3.png"),
-
-    "tollgate1-1": require("../../../../../assets/road/tollgate1-1.png"),
-    "tollgate1-2": require("../../../../../assets/road/tollgate1-2.png"),
-    "tollgate3-1": require("../../../../../assets/road/tollgate3-1.png"),
-    "tollgate3-2": require("../../../../../assets/road/tollgate3-2.png"),
+    road2: require("../../../../../assets/road/road2.png"),
+    road80: require("../../../../../assets/road/road80.png"),
 };
 
 const mapLayout = [
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road94", "road94", "road94", "road94", "road94"],
-  ["toll1", "toll1", "toll1", "toll2", "toll3"],
-  ["road93", "road93", "road93", "road93", "road93"],
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road1", "road1", "road1", "road1", "road1"],
-  ["road1", "road1", "road1", "road1", "road1"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
 ];
 
 const carSprites = {
@@ -62,6 +52,10 @@ const carSprites = {
   NORTHEAST: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
+  ],
+  NORTHWEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
   ],
   EAST: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
@@ -77,40 +71,46 @@ const carSprites = {
   ],
 };
 
-const npcCarSprites = {
-  NORTH: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
-  ],
+const trafficSign = {
+    sign: require("../../../../../assets/signs/dir_sign_5.png"),
 };
-
 
 const questions = [
   {
-    question: "You're approaching the SLEX toll plaza and see a TOLL CHARGES sign showing: Motorcycles ₱20, Cars ₱180, Buses ₱360. You're driving a car but only have ₱150 cash and no RFID.",
-    options: ["Proceed to a cash lane and explain your situation to the toll operator", "Turn around and exit the expressway before the toll plaza", "Follow another vehicle through the toll gate quickly"],
-    correct: "Proceed to a cash lane and explain your situation to the toll operator",
+    question: "You're on NLEX and see an EXIT 2 km sign, followed by overhead signs showing San Fernando Olongapo EXIT with an arrow. You're going to Olongapo, but you're not sure if this is the correct exit.",
+    options: ["Take the exit since Olongapo is mentioned", "Continue to the next exit to be safe", "Slow down dangerously to read the sign again"],
+    correct: "Take the exit since Olongapo is mentioned",
     wrongExplanation: {
-      "Turn around and exit the expressway before the toll plaza": "Wrong! Turning around near toll plazas is usually impossible and illegal due to expressway design and traffic flow patterns.",
-      "Follow another vehicle through the toll gate quickly": "Accident Prone! Following another vehicle through toll gates without paying is illegal toll evasion and can result in fines and legal consequences."
+      "Maintain your current speed since you're within the speed limit": "Wrong! Ignoring clear directional signage can lead to longer travel times and missing your destination.",
+      "Slow down dangerously to read the sign again": "Wrong! Slowing down dangerously to re-read signs creates traffic hazards. Trust the information provided by the advance warning system."
     }
   },
   // Add more questions here as needed
 ];
 
 export default function DrivingGame() {
+
+  const {
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+    sessionData
+  } = useSession();
+
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
 
   const [isCarVisible, setIsCarVisible] = useState(true);
-  const [tollgate1Open, setTollgate1Open] = useState(false);
-  const [tollgate3Open, setTollgate3Open] = useState(false);
-  const [currentMapLayout, setCurrentMapLayout] = useState(mapLayout);
 
   const startOffset = -(mapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
+
+  const trafficSignRowIndex = 14;
+  const trafficSignColIndex = 3.8;
+  const trafficSignXOffset = 20;
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -127,15 +127,29 @@ export default function DrivingGame() {
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(null);
   const [carDirection, setCarDirection] = useState("NORTH");
 
-  // Car
+  // Car - start in middle lane
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
-  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+  const middleLaneX = width * 0.5 - carWidth / 2;
+  const carXAnim = useRef(new Animated.Value(middleLaneX)).current;
 
-  // NPC Car - stationary at row 7
-  const [npcCarFrame, setNpcCarFrame] = useState(0);
-  const [showNpcCar, setShowNpcCar] = useState(true);
-  const npcCarYAnim = useRef(new Animated.Value(0)).current;
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      
+      const scenarioId = 70 + currentScenario;  
+      
+      console.log('🔍 SCENARIO DEBUG:', {
+        currentScenario,
+        calculatedScenarioId: scenarioId,
+        selectedOption,
+        isCorrect
+      });
+      
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -158,14 +172,6 @@ export default function DrivingGame() {
     startScrollAnimation();
   }, []);
 
-  // Calculate NPC car position relative to map scroll
-  const calculateNpcCarPosition = () => {
-    const npcCarRow = 9;
-    const npcCarAbsoluteY = npcCarRow * tileSize;
-    const relativeY = npcCarAbsoluteY + currentScroll.current + startOffset;
-    return relativeY;
-  };
-
   // Car sprite frame loop (stops when carPaused=true)
   useEffect(() => {
     let iv;
@@ -176,41 +182,6 @@ export default function DrivingGame() {
     }
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
-
-  // NPC Car sprite frame loop
-  useEffect(() => {
-    let iv;
-    if (showNpcCar) {
-      iv = setInterval(() => {
-        setNpcCarFrame((p) => (p + 1) % npcCarSprites["NORTH"].length);
-      }, 200);
-    }
-    return () => clearInterval(iv);
-  }, [showNpcCar]);
-
-  // Update map tiles when tollgates open
-  useEffect(() => {
-    const newLayout = mapLayout.map((row, rowIndex) => 
-      row.map((tile, colIndex) => {
-        // Middle tollgate (column 1) - starts closed
-        if (rowIndex === 6 && colIndex === 2) {
-          if (tile === "toll1" || tile === "tollgate1-1" || tile === "tollgate1-2") {
-            if (tollgate1Open) return "tollgate1-2"; // Fully open
-            return "toll1"; // Closed
-          }
-        }
-        // Rightmost tollgate (column 4) - starts closed
-        if (rowIndex === 6 && colIndex === 4) {
-          if (tile === "toll3" || tile === "tollgate3-1" || tile === "tollgate3-2") {
-            if (tollgate3Open) return "tollgate3-2"; // Fully open
-            return "toll3"; // Closed
-          }
-        }
-        return tile;
-      })
-    );
-    setCurrentMapLayout(newLayout);
-  }, [tollgate1Open, tollgate3Open]);
 
   // feedback anims
   const correctAnim = useRef(new Animated.Value(0)).current;
@@ -223,216 +194,151 @@ export default function DrivingGame() {
     if (answerGiven === currentQuestion.correct) {
       setIsCorrectAnswer(true);
       setAnimationType("correct");
-      Animated.timing(correctAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }).start(() => {
-        correctAnim.setValue(0);
+      setTimeout(() => {
         setShowNext(true);
-      });
+      }, 1000);
     } else {
       setIsCorrectAnswer(false);
       setAnimationType("wrong");
-      Animated.timing(wrongAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }).start(() => {
-        wrongAnim.setValue(0);
+      setTimeout(() => {
         setShowNext(true);
-      });
+      }, 1000);
     }
   };
 
-  const handleAnswer = (answer) => {
+  const handleAnswer = async (answer) => {  
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
 
-    const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
 
-    if (answer === "Proceed to a cash lane and explain your situation to the toll operator") {
-      // Move forward first
-      const moveToRow = 8;
-      const initialScrollTarget = currentScroll.current + (moveToRow - currentRow) * tileSize;
-
+    if (answer === "Continue to the next exit to be safe") {
+      // Drive straight at same speed
+      setCarDirection("NORTH");
+      setCarFrame(0);
+      
       Animated.timing(scrollY, {
-        toValue: initialScrollTarget,
-        duration: 2000,
+        toValue: currentScroll.current + tileSize * 8,
+        duration: 3000,
         useNativeDriver: true,
       }).start(() => {
-        // Switch to rightmost lane using NORTHEAST sprite for smooth diagonal movement
-        setCarDirection("NORTHEAST");
+        setIsCarVisible(false);
+        handleFeedback(answer);
+      });
+      return;
+    } else if (answer === "Take the exit since Olongapo is mentioned") {
+      // Lane change to the right (exit lane)
+      setCarDirection("NORTHEAST");
+      setCarFrame(0);
+      
+      const rightLaneX = width * 0.7 - carWidth / 2;
+      
+      // Animate both lane change and forward movement
+      Animated.parallel([
+        Animated.timing(carXAnim, {
+          toValue: rightLaneX,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + tileSize * 3,
+          duration: 1500,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        // Switch back to NORTH direction after lane change
+        setCarDirection("NORTH");
         setCarFrame(0);
         
-        const rightLaneX = width * .9 - carWidth / 2;
-        
-        Animated.parallel([
-          Animated.timing(carXAnim, {
-            toValue: rightLaneX,
-            duration: 1500,
-            useNativeDriver: false,
-          }),
-          Animated.timing(scrollY, {
-            toValue: initialScrollTarget + tileSize * 0.5,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          // Switch back to NORTH sprite
-          setCarDirection("NORTH");
-          setCarFrame(0);
-          
-          // Animate tollgate opening
-          setTimeout(() => {
-            setTollgate3Open(true);
-          }, 300);
-          
-          // Move forward through tollgate - keeping car in same lane
-          setTimeout(() => {
-            Animated.timing(scrollY, {
-              toValue: initialScrollTarget + tileSize * 3.5,
-              duration: 1500,
-              useNativeDriver: true,
-            }).start(() => {
-              setIsCarVisible(false);
-              handleFeedback(answer);
-            });
-          }, 800);
+        // Continue straight in right lane
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + tileSize * 5,
+          duration: 1500,
+          useNativeDriver: true,
+        }).start(() => {
+          setIsCarVisible(false);
+          handleFeedback(answer);
         });
       });
       return;
-    } else if (answer === "Turn around and exit the expressway before the toll plaza") {
-      // Move to turn position
-      const targetRow = 8;
-      const rowsToMove = targetRow - currentRow;
-      const nextTarget = currentScroll.current + rowsToMove * tileSize;
-
+    } else if (answer === "Slow down dangerously to read the sign again") {
+      // Drive straight then brake (quick stop)
+      setCarDirection("NORTH");
+      setCarFrame(0);
+      
+      // Move forward briefly
       Animated.timing(scrollY, {
-        toValue: nextTarget,
-        duration: 2000,
+        toValue: currentScroll.current + tileSize * 2.5,
+        duration: 1500,
         useNativeDriver: true,
       }).start(() => {
-        // U-turn sequence in one lane using diagonal sprites
-        const turnSequence = ["NORTH", "NORTHEAST", "EAST", "SOUTHEAST", "SOUTH"];
-        let currentTurnStep = 0;
-
-        const animateUTurn = () => {
-          if (currentTurnStep < turnSequence.length) {
-            setCarDirection(turnSequence[currentTurnStep]);
-            setCarFrame(0);
-
-            let deltaX = 0;
-
-            // Move right during first half of turn
-            if (turnSequence[currentTurnStep] === "NORTHEAST") {
-              deltaX = tileSize * 0.3;
-            } else if (turnSequence[currentTurnStep] === "EAST") {
-              deltaX = tileSize * 0.4;
-            } else if (turnSequence[currentTurnStep] === "SOUTHEAST") {
-              deltaX = tileSize * 0.3;
-            }
-
-            const currentCarX = carXAnim._value;
-
-            Animated.timing(carXAnim, {
-              toValue: currentCarX + deltaX,
-              duration: 400,
-              useNativeDriver: false,
-            }).start(() => {
-              currentTurnStep++;
-              animateUTurn();
-            });
-          } else {
-            // Move car backwards (down the screen) after completing U-turn
-            Animated.timing(scrollY, {
-              toValue: nextTarget - tileSize * 3,
-              duration: 2000,
-              useNativeDriver: true,
-            }).start(() => {
-              handleFeedback(answer);
-            });
-          }
-        };
-        animateUTurn();
-      });
-      return;
-    } else if (answer === "Follow another vehicle through the toll gate quickly") {
-      // Move car forward to tollgate
-      const turnStartRow = 8;
-      const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
-
-      Animated.timing(scrollY, {
-        toValue: initialScrollTarget,
-        duration: 2000,
-        useNativeDriver: true,
-      }).start(() => {
-        // Animate tollgate 1 (middle) opening
+        // Sudden stop - pause briefly to simulate braking
+        setCarPaused(true);
         setTimeout(() => {
-          setTollgate1Open(true);
-        }, 300);
-        
-        setTimeout(() => {
-          // NPC car moves forward through tollgate first
-          Animated.timing(npcCarYAnim, {
-            toValue: initialScrollTarget + tileSize * 2,
-            duration: 1500,
-            useNativeDriver: true,
-          }).start(() => {
-            setShowNpcCar(false);
-          });
-          
-          // Then player car follows after NPC is through
-          setTimeout(() => {
-            Animated.timing(scrollY, {
-              toValue: initialScrollTarget + tileSize * 2,
-              duration: 1500,
-              useNativeDriver: true,
-            }).start(() => {
-              setIsCarVisible(false);
-              handleFeedback(answer);
-            });
-          }, 1000);
-        }, 800);
+          setIsCarVisible(false);
+          handleFeedback(answer);
+        }, 500);
       });
       return;
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setCarFrame(0);
+    setIsCorrectAnswer(null);
     
-    // Reset car position and visibility
-    const centerX = width / 2 - carWidth / 2;
-    carXAnim.setValue(centerX);
+    // Reset car position and visibility to middle lane
+    const middleLaneX = width * 0.5 - carWidth / 2;
+    carXAnim.setValue(middleLaneX);
     setCarDirection("NORTH");
     setIsCarVisible(true);
     setCarPaused(false);
-    setTollgate1Open(false);
-    setTollgate3Open(false);
-    
-    // Reset NPC car
-    setShowNpcCar(true);
-    npcCarYAnim.setValue(0);
     
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
+    } else if (currentScenario === 10) {
+      try {
+        console.log('🔍 Completing session for scenario 10...');
+        const sessionResults = await completeSession();
+        
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session.');
+          return;
+        }
+        
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
     } else {
-      router.push('S2P2');
-      setQuestionIndex(0);
-      setShowQuestion(false);
+      // Move to next scenario
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P2`;  
+      router.push(`/scenarios/intersection/phase2/${nextScreen}`); 
     }
   };
+
+  const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;  
+  const trafficSignTop = trafficSignRowIndex * tileSize;
 
   // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Toll operators can assist with payment issues and may have procedures for insufficient funds."
+    ? "Correct! Exit direction signs clearly indicate destinations accessible from that exit. If Olongapo is listed, this exit provides access to it."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction
@@ -453,7 +359,7 @@ export default function DrivingGame() {
           zIndex: 1,
         }}
       >
-        {currentMapLayout.map((row, rowIndex) =>
+        {mapLayout.map((row, rowIndex) =>
           row.map((tile, colIndex) => (
             <Image
               key={`${rowIndex}-${colIndex}`}  
@@ -469,9 +375,21 @@ export default function DrivingGame() {
             />
           ))
         )}
+        <Image
+            source={trafficSign.sign}
+            style={{
+            width: tileSize * 1,
+            height: tileSize *1,
+            position: "absolute",
+            top: trafficSignTop,
+            left: trafficSignLeft,
+            zIndex: 11,
+                }}
+            resizeMode="contain"
+        />
       </Animated.View>
 
-      {/* Car - fixed */}
+      {/* Car - fixed in middle lane */}
       {isCarVisible && (
         <Animated.Image
           source={currentCarSprite}
@@ -482,25 +400,6 @@ export default function DrivingGame() {
             bottom: 80,
             left: carXAnim,
             zIndex: 8,
-          }}
-        />
-      )}
-
-      {/* NPC Car - stationary at row 6, moves forward when activated */}
-      {showNpcCar && (
-        <Animated.Image
-          source={npcCarSprites["NORTH"][npcCarFrame]}
-          style={{
-            width: carWidth,
-            height: carHeight,
-            position: "absolute",
-            top: 6 * tileSize,
-            left: width / 2 - carWidth / 2,
-            transform: [
-              { translateY: scrollY },
-              { translateY: npcCarYAnim }
-            ],
-            zIndex: 7,
           }}
         />
       )}

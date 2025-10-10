@@ -1,14 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
@@ -74,12 +67,9 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
-};
-
-const busSprites = {
-    NORTH: [
-    require("../../../../../assets/car/BUS TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_BUS_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/BUS TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_BUS_CLEAN_NORTH_001.png"),
+  NORTHWEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
   ],
 };
 
@@ -101,24 +91,32 @@ const treePositions = [
 
 const questions = [
   {
-    question: "On a highway in Laguna, you see an Approach to Intersection sign followed by a reassurance sign showing Angeles 70km and Baguio 156km. A provincial bus is tailgating you, and there's an intersection ahead.",
-    options: ["Speed up to get away from the tailgating bus", "Maintain safe speed, signal early for your intended direction, and let the bus pass if safe", "Brake suddenly to teach the bus driver a lesson"],
-    correct: "Maintain safe speed, signal early for your intended direction, and let the bus pass if safe",
+    question: "You're driving along Commonwealth Avenue and encounter an Intersection ahead warning sign, followed by advance direction signs showing Bataan ➡ and Pampanga ⬅. You're going to Pampanga, and it's rush hour with heavy traffic.",
+    options: ["Change lanes immediately to the left lane", "Plan your lane change early, signal, and move to the left lane when traffic permits", "Stay in the right lane and change at the last moment"],
+    correct: "Plan your lane change early, signal, and move to the left lane when traffic permits",
     wrongExplanation: {
-      "Speed up to get away from the tailgating bus": "Accident Prone! Speeding near intersections is dangerous, and you shouldn't let other drivers pressure you into unsafe behavior.",
-      "Brake suddenly to teach the bus driver a lesson": "Accident Prone! Road rage behaviors like brake-checking are extremely dangerous and illegal."
+      "Change lanes immediately to the left lane": "Accident Prone! Immediate lane changes without proper signaling and checking are dangerous, especially in heavy traffic.",
+      "Stay in the right lane and change at the last moment": "Wrong! Last-minute lane changes are dangerous and often illegal, especially in heavy traffic conditions."
     }
   },
 ];
 
 const trafficSign = {
-  sign: require("../../../../../assets/signs/dir_sign_4.png"),
+  sign: require("../../../../../assets/signs/dir_sign_3.png"),
 };
 const trafficSign2 = {
-  sign: require("../../../../../assets/signs/t_junction5.png"),
+  sign: require("../../../../../assets/signs/t_junction4.png"),
 };
 
 export default function DrivingGame() {
+  
+  const {
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+    sessionData
+  } = useSession();
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
@@ -156,10 +154,23 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
 
-  const [busFrame, setBusFrame] = useState(0);
-  const [isBusVisible, setIsBusVisible] = useState(true);
-  const busYAnim = useRef(new Animated.Value(180)).current; // Distance behind car
-  const busXAnim = useRef(new Animated.Value(width / 2.3 - carWidth / 2.3)).current;
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      // Intersection Phase 1: scenarios 61-70
+      const scenarioId = 60 + currentScenario;
+      
+      console.log('🔍 SCENARIO DEBUG:', {
+        currentScenario,
+        calculatedScenarioId: scenarioId,
+        selectedOption,
+        isCorrect
+      });
+      
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -191,16 +202,6 @@ export default function DrivingGame() {
     }
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
-
-  useEffect(() => {
-    let iv;
-    if (isBusVisible && busSprites["NORTH"]) {
-      iv = setInterval(() => {
-        setBusFrame((p) => (p + 1) % busSprites["NORTH"].length);
-      }, 200);
-    }
-    return () => clearInterval(iv);
-  }, [isBusVisible]);
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
@@ -234,86 +235,156 @@ export default function DrivingGame() {
     }
   };
 
-  const handleAnswer = (answer) => {
+  const handleAnswer = async (answer) => {  
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
+
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
-    if (answer === "Speed up to get away from the tailgating bus") {
-      // Speed up - car accelerates forward, bus falls behind
-      const speedUpRow = 7;
-      const speedUpTarget = currentScroll.current + (speedUpRow - currentRow) * tileSize;
+    if (answer === "Change lanes immediately to the left lane") {
+      // Move forward slightly then immediately change to left lane
+      const moveForwardRow = 2;
+      const initialScrollTarget = currentScroll.current + (moveForwardRow - currentRow) * tileSize;
 
-      Animated.parallel([
-        Animated.timing(scrollY, {
-          toValue: speedUpTarget,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        // Bus falls behind as car speeds up
-        Animated.timing(busYAnim, {
-          toValue: 250,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setCarPaused(true);
-        setTimeout(() => {
-          handleFeedback(answer);
-        }, 500);
-      });
-      return;
-    } else if (answer === "Maintain safe speed, signal early for your intended direction, and let the bus pass if safe") {
-        // Continue straight at same speed
-        const passRow = 7;
-        const passTarget = currentScroll.current + (passRow - currentRow) * tileSize;
+      Animated.timing(scrollY, {
+        toValue: initialScrollTarget,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        // Start immediate lane change animation to LEFT
+        setCarDirection("NORTHWEST");
+        setCarFrame(0);
 
+        const currentCarX = carXAnim._value;
+        const currentScrollY = scrollY._value;
+        
+        // Move diagonally to LEFT lane (subtract from X position)
         Animated.parallel([
-          Animated.timing(scrollY, {
-            toValue: passTarget,
-            duration: 2500,
-            useNativeDriver: true,
+          Animated.timing(carXAnim, {
+            toValue: currentCarX - tileSize * 0.8, // Move to LEFT lane
+            duration: 600,
+            useNativeDriver: false,
           }),
-          // Bus maintains distance
-          Animated.timing(busYAnim, {
-            toValue: 120,
-            duration: 2500,
+          Animated.timing(scrollY, {
+            toValue: currentScrollY + tileSize * 0.6,
+            duration: 600,
             useNativeDriver: true,
           }),
         ]).start(() => {
-          setCarPaused(true);
-          handleFeedback(answer);
+          // Straighten out in left lane
+          setCarDirection("NORTH");
+          setCarFrame(0);
+
+          Animated.timing(scrollY, {
+            toValue: scrollY._value + tileSize * 2,
+            duration: 600,
+            useNativeDriver: true,
+          }).start(() => {
+            setCarPaused(true);
+            setTimeout(() => {
+              handleFeedback(answer);
+            }, 500);
+          });
         });
-    } else if(answer === "Brake suddenly to teach the bus driver a lesson"){
-        // Sudden brake - car stops, bus crashes into it
-        const brakeRow = 4;
-        const brakeTarget = currentScroll.current + (brakeRow - currentRow) * tileSize;
+      });
+      return;
+    } else if (answer === "Plan your lane change early, signal, and move to the left lane when traffic permits") {
+        // Continue straight, then SLOWLY change to left lane
+        const passRow = 3;
+        const passTarget = currentScroll.current + (passRow - currentRow) * tileSize;
+
+        setCarPaused(true);
+        setTimeout(() => {
+          setCarPaused(false);
+          Animated.timing(scrollY, {
+            toValue: passTarget,
+            duration: 2000,
+            useNativeDriver: true,
+          }).start(() => {
+            setCarDirection("NORTHWEST");
+            setCarFrame(0);
+
+            const currentCarX = carXAnim._value;
+            const currentScrollY = scrollY._value;
+
+            // SLOWLY move to LEFT lane
+            Animated.parallel([
+              Animated.timing(carXAnim, {
+                toValue: currentCarX - tileSize * 0.8, // Move to LEFT lane
+                duration: 1200,
+                useNativeDriver: false,
+              }),
+              Animated.timing(scrollY, {
+                toValue: currentScrollY + tileSize * 1.0,
+                duration: 1200,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              setCarDirection("NORTH");
+              setCarFrame(0);
+
+              // Continue forward in left lane
+              Animated.timing(scrollY, {
+                toValue: scrollY._value + tileSize * 2,
+                duration: 800,
+                useNativeDriver: true,
+              }).start(() => {
+                handleFeedback(answer);
+              });
+            });
+          });
+        }, 800);
+    } else if(answer === "Stay in the right lane and change at the last moment"){
+        // Stay in right lane until just before intersection
+        const beforeIntersectionRow = 5;
+        const rowsToMove = beforeIntersectionRow - currentRow;
+        const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
         Animated.timing(scrollY, {
-            toValue: brakeTarget,
-            duration: 1000,
+            toValue: nextTarget,
+            duration: 2500,
             useNativeDriver: true,
         }).start(() => {
-            // Sudden stop
-            setCarPaused(true);
-            
-            // Bus crashes into car
-            Animated.timing(busYAnim, {
-              toValue: 100, // Crash position - very close to car
-              duration: 800,
-              useNativeDriver: true,
-            }).start(() => {
-              setTimeout(() => {
+            // Last moment lane change to LEFT
+            setCarDirection("NORTHWEST");
+            setCarFrame(0);
+
+            const currentCarX = carXAnim._value;
+            const currentScrollY = scrollY._value;
+
+            Animated.parallel([
+              Animated.timing(carXAnim, {
+                toValue: currentCarX - tileSize * 0.8, // Move to LEFT lane
+                duration: 500,
+                useNativeDriver: false,
+              }),
+              Animated.timing(scrollY, {
+                toValue: currentScrollY + tileSize * 0.5,
+                duration: 500,
+                useNativeDriver: true,
+              }),
+            ]).start(() => {
+              setCarDirection("NORTH");
+              setCarFrame(0);
+
+              Animated.timing(scrollY, {
+                toValue: scrollY._value + tileSize * 0.3,
+                duration: 400,
+                useNativeDriver: true,
+              }).start(() => {
                 handleFeedback(answer);
-              }, 300);
+              });
             });
         });
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
@@ -321,20 +392,41 @@ export default function DrivingGame() {
     
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
-    busXAnim.setValue(centerX);
-    busYAnim.setValue(120);
     setCarDirection("NORTH");
     setIsCarVisible(true);
-    setIsBusVisible(true);
     setCarPaused(false);
     
     if (questionIndex < questions.length - 1) {
+      // Next question in current scenario
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
+    } else if (currentScenario === 10) {
+      // Last scenario - complete session
+      try {
+        console.log('🔍 Completing session for scenario 10...');
+        const sessionResults = await completeSession();
+        
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session.');
+          return;
+        }
+        
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
     } else {
-      router.push('/driver-game/intersections/phase-1/S8P1');
-      setQuestionIndex(0);
-      setShowQuestion(false);
+      // Move to next scenario
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P1`;
+      router.push(`/scenarios/intersection/phase1/${nextScreen}`);
     }
   };
 
@@ -346,7 +438,7 @@ export default function DrivingGame() {
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Defensive driving means maintaining safe speeds and clear communication while managing aggressive drivers safely."
+    ? "Correct! Early signaling allows other drivers to accommodate your lane change, and waiting for a safe opportunity prevents accidents."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   const currentCarSprite = carSprites[carDirection] && carSprites[carDirection][carFrame] 
@@ -433,21 +525,6 @@ export default function DrivingGame() {
             bottom: 80,
             left: carXAnim,
             zIndex: 8,
-          }}
-        />
-      )}
-
-      {isBusVisible && (
-        <Animated.Image
-          source={busSprites["NORTH"][busFrame]}
-          style={{
-            width: carWidth * 1.5,
-            height: carHeight * 1.5,
-            position: "absolute",
-            bottom: -100,
-            left: busXAnim,
-            zIndex: 9,
-            transform: [{ translateY: busYAnim }],
           }}
         />
       )}
@@ -562,7 +639,7 @@ const styles = StyleSheet.create({
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.16,
+    top: height * 0.2,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,

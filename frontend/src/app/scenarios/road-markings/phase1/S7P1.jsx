@@ -1,21 +1,8 @@
-import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing, // Import Easing for more control over animations
-} from "react-native";
-import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@env';
 import { useSession } from '../../../../contexts/SessionManager';
-
-// Debug API_URL at module level
-console.log('S7P1 Module loaded. API_URL from env:', API_URL);
+import React, { useRef, useEffect, useState } from "react";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
+import { useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
@@ -28,7 +15,7 @@ const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
-// --- assets and tiles (same as yours) ---
+// --- ../../../assets and tiles (same as yours) ---
 const roadTiles = {
   road1: require("../../../../../assets/road/road1.png"),
   road3: require("../../../../../assets/road/road3.png"),
@@ -90,16 +77,8 @@ const ambulanceSprites = {
   ],
 };
 
-// NEW: NPC Car Sprites
-const npcCarSprites = {
-  NORTH: [
-    require("../../../../../assets/car/SUV TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_SUV_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/SUV TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_SUV_CLEAN_NORTH_001.png"),
-  ],
-};
-
-// Fallback questions - keep your original questions as backup
-const fallbackQuestions = [
+// Updated question structure following S2P1 format
+const questions = [
   {
     question: "You're in heavy traffic with solid white lines between lanes. An ambulance is approaching from behind with sirens on.",
     options: ["Stay in your lane since crossing solid white lines is discouraged", "Speed up to clear the way without changing lanes", "Carefully move to give way to the ambulance, crossing the solid white line if necessary"],
@@ -115,18 +94,23 @@ export default function DrivingGame() {
   const navigation = useNavigation();
 
   const {
-      updateScenarioProgress,
-      moveToNextScenario,
-      completeSession,
-      currentScenario,
-      getScenarioProgress,
-      sessionData
-    } = useSession();
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario: sessionCurrentScenario,
+    sessionData
+  } = useSession();
 
-  // ✅ DATABASE INTEGRATION - Added these 3 state variables
-  const [questions, setQuestions] = useState(fallbackQuestions);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+    const currentScenario = 7; 
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      const scenarioId = currentScenario; 
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
@@ -134,7 +118,6 @@ export default function DrivingGame() {
 
   const [isCarVisible, setIsCarVisible] = useState(true);
   const [isAmbulanceVisible, setIsAmbulanceVisible] = useState(false); // New state for ambulance visibility
-  const [isNpcCarVisible, setIsNpcCarVisible] = useState(true); // NEW: State for NPC car visibility
 
   const startOffset = -(mapHeight - height);
 
@@ -160,99 +143,13 @@ export default function DrivingGame() {
 
   // Responsive car positioning
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current; // Player car starts centered
-  const AmbulanceYAnim = useRef(new Animated.Value(height * 3)).current; // Start well below the screen
+  const AmbulanceYAnim = useRef(new Animated.Value(height * 1.5)).current; // Start well below the screen
   const AmbulanceXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2 - tileSize)).current; // Default lane to the left of player
-  
-  // UPDATED: NPC Car Y position, set to the very edge of the screen (negative value to ensure top edge)
-  const NpcCarYAnim = useRef(new Animated.Value(-30)).current;
-  const NpcCarXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2 + tileSize)).current; // Position NPC car in the right lane
-
+  // const AmbulanceXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2 + tileSize)).current; // Default lane to the right of player
   const AmbulanceEntryAnim = useRef(new Animated.Value(0)).current;
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
-
-  // ✅ DATABASE INTEGRATION - Added this useEffect to fetch data
-  useEffect(() => {
-    const fetchScenarioData = async () => {
-      try {
-        console.log('S7P1: Fetching scenario data...');
-        console.log('S7P1: API_URL value:', API_URL);
-        
-        const token = await AsyncStorage.getItem('access_token');
-        console.log('S7P1: Token retrieved:', token ? 'Yes' : 'No');
-        
-        const url = `${API_URL}/scenarios/7`;
-        console.log('S7P1: Fetching from URL:', url);
-        
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        console.log('S7P1: Response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        console.log('S7P1: Data received:', data);
-        
-        if (data && data.scenario) {
-          // Transform database response to match your frontend format
-          const transformedQuestion = {
-            question: data.scenario.question_text,
-            options: data.choices.map(choice => choice.choice_text),
-            correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
-            wrongExplanation: {}
-          };
-          
-          // Build wrong explanations
-          data.choices.forEach(choice => {
-            if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
-              transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
-            }
-          });
-          
-          setQuestions([transformedQuestion]);
-          console.log('S7P1: ✅ Database questions loaded successfully');
-        } else {
-          console.log('S7P1: ⚠️ Invalid data structure, using fallback');
-          setQuestions(fallbackQuestions);
-        }
-      } catch (error) {
-        console.log('S7P1: ❌ Database error, using fallback questions:', error.message);
-        setQuestions(fallbackQuestions);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchScenarioData();
-  }, []);
-
-  // ✅ DATABASE INTEGRATION - Added updateProgress function
-  const updateProgress = async (selectedOption, isCorrect) => {
-    try {
-      if (!sessionData) {
-        console.log('No session data available');
-        return;
-      }
-
-      // Calculate the correct scenario ID for this phase and scenario number
-      const scenarioId = ((sessionData.phase_id - 1) * 10) + currentScenario;
-
-      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
-      console.log(`Scenario ${currentScenario} progress updated successfully`);
-    } catch (error) {
-      console.log('Error updating progress:', error.message);
-    }
-  };
 
   // Car animation frame cycling
   useEffect(() => {
@@ -267,8 +164,6 @@ export default function DrivingGame() {
     carXAnim.setValue(width / 2 - carWidth / 2); // Reset car position to center lane
     setCarDirection("NORTH"); // Reset car direction
     setIsCarVisible(true); // Ensure car is visible
-    setIsNpcCarVisible(true); // NEW: Ensure NPC car is visible at the start of each animation cycle
-    NpcCarYAnim.setValue(-30); // UPDATED: Reset NPC car Y position to the very edge of the screen (-30)
 
     const stopRow = 6.5; // Row where the question appears
     const stopOffset = startOffset + stopRow * tileSize;
@@ -285,22 +180,14 @@ export default function DrivingGame() {
     });
   }
 
-  // ✅ DATABASE INTEGRATION - Modified useEffect to wait for data
   useEffect(() => {
-    if (!loading) {
-      startScrollAnimation();
-    }
-  }, [loading]); // Added loading dependency
+    startScrollAnimation();
+  }, []);
 
   // Updated handleFeedback function from S2P1
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
-    const isCorrect = answerGiven === currentQuestion.correct;
-    
-    // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
-    updateProgress(answerGiven, isCorrect); // scenario_id = 7 for S7P1
-    
-    if (isCorrect) {
+    if (answerGiven === currentQuestion.correct) {
       setIsCorrectAnswer(true); // Set to true for correct feedback
       setAnimationType("correct");
       Animated.timing(correctAnim, {
@@ -348,6 +235,10 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = option === currentQuestion.correct;
+    updateProgress(option, isCorrect);
+    
     const actualCorrectAnswer = questions[questionIndex].correct;
     const originalLaneX = width / 2 - carWidth / 2; // Original lane center
     const rightLaneX = width / 2 - carWidth / 2 + tileSize; // One lane to the right
@@ -357,7 +248,6 @@ export default function DrivingGame() {
       // Correct Answer: Player moves right, Ambulance passes on left
       setIsCarVisible(true);
       setIsAmbulanceVisible(true); // Show ambulance for this scenario
-      setIsNpcCarVisible(true); // Keep NPC car visible
 
       Animated.sequence([
         // 1. Player car moves to the right lane
@@ -379,12 +269,12 @@ export default function DrivingGame() {
         Animated.parallel([
           Animated.timing(AmbulanceYAnim, {
             toValue: -carHeight, // Move off-screen to the top
-            duration: 2000, // Speed of ambulance passing
+            duration: 1500, // Speed of ambulance passing
             easing: Easing.linear,
             useNativeDriver: false,
           }),
           Animated.timing(AmbulanceXAnim, {
-            toValue: originalLaneX, // Ensure ambulance is in the left lane (player's original lane)
+            toValue: leftLaneX, // Ensure ambulance is in the left lane
             duration: 1, // Instantly set position
             useNativeDriver: false,
           }),
@@ -400,39 +290,36 @@ export default function DrivingGame() {
       });
 
     } else if (option === "Stay in your lane since crossing solid white lines is discouraged") {
-      // WRONG Answer: Ambulance follows closely behind player
+      // WRONG Answer: Ambulance overtakes from the right
       setIsAmbulanceVisible(true); // Show ambulance
-      setIsNpcCarVisible(true); // Keep NPC car visible
-    
-      // Ensure ambulance starts from behind the player in the same lane
-      const playerCarBottom = height * 0.1; // Player car's bottom edge
-      const playerCarVisualTop = height - playerCarBottom - carHeight; // Player car's visual top edge on screen
 
-      AmbulanceXAnim.setValue(originalLaneX); // Ambulance in player's lane (center lane)
-      // Start ambulance visually behind the player, just touching or slightly below
-      AmbulanceYAnim.setValue(playerCarVisualTop + carHeight * 0.5); // Start position, adjust multiplier as needed
-    
+      // Ensure ambulance starts from behind and in the right lane
+      AmbulanceXAnim.setValue(rightLaneX);
+      AmbulanceYAnim.setValue(height * 1.5); // Start off-screen bottom
+
       Animated.sequence([
-        // Player and Ambulance continue moving forward together, ambulance remains behind
+        // 1. Ambulance appears from behind and overtakes in the right lane
         Animated.parallel([
+          Animated.timing(AmbulanceYAnim, {
+            toValue: -carHeight, // Move off-screen to the top
+            duration: 2500, // Duration for ambulance to pass
+            easing: Easing.linear,
+            useNativeDriver: false,
+          }),
+          // Player car continues to scroll slowly during ambulance's appearance and pass
           Animated.timing(scrollY, {
             toValue: currentScroll.current + tileSize * 5, // Scroll for 5 tiles
-            duration: 3000, // Duration for cars to move forward
+            duration: 2500, // Duration adjusted to match ambulance's pass
             easing: Easing.linear,
             useNativeDriver: true,
           }),
-          // Ambulance maintains position relative to the player by effectively standing still on screen
-          // Its Y position remains constant because the whole map is scrolling
-          // We only need to set its initial Y and it will look like it's following due to map scroll
-          // (Unless we want it to drift closer/further, but "following closely" implies stable distance)
         ])
       ]).start(() => handleFeedback(option));
 
     } else if (option === "Speed up to clear the way without changing lanes") {
       // Wrong Answer: Player car speeds up (scrolls faster and further)
-      setIsNpcCarVisible(false); // Hide NPC car for this sequence as requested
       Animated.timing(scrollY, {
-        toValue: currentScroll.current + tileSize * 14, // Target row 18 (relative to current position)
+        toValue: currentScroll.current + tileSize * 18, // Target row 18 (relative to current position)
         duration: 4000, // Speed of 4 seconds
         easing: Easing.linear,
         useNativeDriver: true,
@@ -443,81 +330,65 @@ export default function DrivingGame() {
     }
   };
 
-  // Update handleNext in ALL scenario files
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setIsCorrectAnswer(null);
-    setCarFrame(0); // S7P1 uses carFrame, not playerCarFrame
+    setIsCorrectAnswer(null); // Reset feedback state from S2P1
+    setCarFrame(0);
 
-    const centerX = width / 2 - carWidth / 2; // S7P1 uses carWidth, not playerCarWidth
-    carXAnim.setValue(centerX); // S7P1 uses carXAnim, not playerCarXAnim
-    setCarDirection("NORTH"); // S7P1 uses carDirection, not playerCarDirection
-    setIsCarVisible(true); // S7P1 uses isCarVisible, not isPlayerCarVisible
+    const centerX = width / 2 - carWidth / 2;
+    carXAnim.setValue(centerX);
+    setCarDirection("NORTH");
+    setIsCarVisible(true);
     setIsAmbulanceVisible(false); // Hide ambulance for next question
-    setIsNpcCarVisible(true); // Reset NPC car visibility
-
-    // Reset ambulance position
-    AmbulanceYAnim.setValue(height * 3);
+    AmbulanceYAnim.setValue(height * 1.5); // Reset ambulance position off-screen bottom
+    AmbulanceXAnim.setValue(width / 2 - carWidth / 2 - tileSize); // Reset ambulance X to left lane for next potential pass
 
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else {
-      // Get current scenario number from file name (S7P1 = 7)
-      const currentFileScenario = 7;
-
-      if (currentFileScenario >= 10) {
-        // Last scenario - complete session and go to results
+    setQuestionIndex(questionIndex + 1);
+    startScrollAnimation();
+  } else {
+    // Get current scenario number from file name
+    const currentFileScenario = 7; // For S1P1, this is 1; for S2P1 it would be 2, etc.
+    
+    if (currentFileScenario >= 10) {
+      // Last scenario of phase 1 - complete session and go to results
+      try {
         const sessionResults = await completeSession();
         if (sessionResults) {
-          navigation.navigate('ResultPage', {
-            ...sessionResults,
-            userAttempts: JSON.stringify(sessionResults.attempts),
-            scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+          router.push({
+            pathname: '/result',
+            params: {
+              ...sessionResults,
+              userAttempts: JSON.stringify(sessionResults.attempts),
+              scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+            }
           });
         }
-      } else {
-        // Move to next scenario
-        moveToNextScenario();
-
-        // Navigate to next scenario using file-based numbering
-        const nextScenarioNumber = currentFileScenario + 1; // Will be 8
-        const phaseId = sessionData?.phase_id || 1;
-        const nextScreen = `S${nextScenarioNumber}P${phaseId}`; // Will be "S8P1"
-
-        console.log('S7P1 navigating to:', nextScreen);
-        navigation.navigate(nextScreen);
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
       }
-
-      setShowQuestion(false);
+    } else {
+      // Move to next scenario in phase 1
+      moveToNextScenario();
+      
+      const nextScenarioNumber = currentFileScenario + 1;
+      const nextScreen = `S${nextScenarioNumber}P1`;
+      router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
     }
-  };
 
-  // Add this helper function to each scenario file
-  const getCurrentScenarioNumber = () => {
-    // Return the scenario number based on the current file
-    // For S1P1, return 1
-    // For S2P1, return 2
-    // For S3P1, return 3
-    // etc.
-
-    // You can hardcode this in each file:
-    return 7; // For S2P1.jsx
-    // return 3; // For S3P1.jsx
-    // return 4; // For S4P1.jsx
-    // etc.
-  };
-
-  // ✅ DATABASE INTEGRATION - Show loading screen while fetching data
-  if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: 'black' }]}>
-        <Text style={styles.loadingText}>Loading scenario...</Text>
-      </View>
-    );
+    setShowQuestion(false);
+    if (scrollAnimationRef.current) {
+      scrollAnimationRef.current.stop();
+    }
+    if (jeepneyAnimationRef.current) {
+      jeepneyAnimationRef.current.stop();
+    }
+    npcCarAnimationsRef.current.forEach(anim => anim.stop());
   }
+};
 
   // Determine the feedback message based on whether the answer was correct or wrong (from S2P1)
   const currentQuestionData = questions[questionIndex];
@@ -570,21 +441,6 @@ export default function DrivingGame() {
               { translateX: carXAnim }
             ],
             zIndex: 5,
-          }}
-        />
-      )}
-
-      {/* UPDATED: Responsive NPC Car - Now positioned at the very top of the screen */}
-      {isNpcCarVisible && (
-        <Animated.Image
-          source={npcCarSprites["NORTH"][carFrame]}
-          style={{
-            width: carWidth,
-            height: carHeight,
-            position: "absolute",
-            top: NpcCarYAnim, // Position controlled by animation, now set to 0 (top of screen)
-            left: NpcCarXAnim, // Position in the right lane
-            zIndex: 4, // Always behind player car
           }}
         />
       )}
@@ -659,28 +515,17 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
   // Responsive styles for in-game elements
- questionOverlay: {
+  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: 0,
+    paddingBottom: height * 0.01,
     zIndex: 10,
   },
   ltoImage: {
@@ -688,36 +533,34 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.12,
+    marginBottom: -height * 0.09,
   },
   questionBox: {
     flex: 1,
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
+    paddingBottom: height * 0.05,
   },
   questionTextContainer: {
-    padding: -height * 0.04,
-    maxWidth: width * 0.7,
+    maxWidth: width * 0.6,
   },
   questionText: {
-    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 24),
+    fontSize: Math.min(width * 0.045, 20),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.1,
+    top: height * 0.25,
     right: sideMargin,
     width: width * 0.35,
-    height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.015,
+    padding: height * 0.02,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -733,7 +576,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -748,9 +591,9 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 24),
+    fontSize: Math.min(width * 0.06, 28),
     fontWeight: "bold",
-    textAlign: "center",
+    textAlign: 'center', // Added for multi-line explanations
   },
   nextButtonContainer: {
     position: "absolute",

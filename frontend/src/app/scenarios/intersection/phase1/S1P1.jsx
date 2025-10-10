@@ -1,14 +1,8 @@
+// frontend\src\app\scenarios\intersection\phase1\S1P1.jsx
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
@@ -46,7 +40,6 @@ const roadTiles = {
   int2: require("../../../../../assets/road/int2.png"),
   int3: require("../../../../../assets/road/int3.png"),
   int4: require("../../../../../assets/road/int4.png"),
-
 };
 
 const mapLayout = [
@@ -81,12 +74,11 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
   ],
 };
+
 const treeSprites = {
   tree1: require("../../../../../assets/tree/Tree3_idle_s.png"),
-  // Add more tree variations if you have them
-  // tree2: require("../assets/tree/Tree2_idle_s"),
-  // tree3: require("../assets/tree/Tree1_idle_s"),
 };
+
 const treePositions = [
   // Left side trees (column -1, outside the road)
     { row: 5, col: 0, type: 'tree1' },
@@ -144,7 +136,6 @@ const questions = [
       "Stop completely at the intersection and wait for all traffic to clear": "Wrong! Stopping completely when not required can cause traffic congestion and rear-end collisions. You only need to yield, not stop completely."
     }
   },
-  // Add more questions here as needed
 ];
 
 const trafficSign = {
@@ -156,6 +147,14 @@ const trafficSign2 = {
 
 export default function DrivingGame() {
 
+  const {
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+    sessionData
+  } = useSession();
+
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
@@ -166,13 +165,13 @@ export default function DrivingGame() {
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  // Traffic Sign position (place it before the pedestrian crossing)
-  const trafficSignRowIndex = 4.8; // One row before the 'crossing' point
-  const trafficSignColIndex = 3; // Left side of the road
+  // Traffic Sign position
+  const trafficSignRowIndex = 4.8;
+  const trafficSignColIndex = 3;
   const trafficSignXOffset = -30;
 
-  const trafficSign2RowIndex = 5.3; // One row before the 'crossing' point
-  const trafficSign2ColIndex = 3; // Left side of the road
+  const trafficSign2RowIndex = 5.3;
+  const trafficSign2ColIndex = 3;
   const trafficSign2XOffset = -30;
 
   useEffect(() => {
@@ -195,9 +194,27 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
 
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      // Intersection Phase 1: scenarios 61-70
+      const scenarioId = 60 + currentScenario;
+      
+      console.log('🔍 SCENARIO DEBUG:', {
+        currentScenario,
+        calculatedScenarioId: scenarioId,
+        selectedOption,
+        isCorrect
+      });
+      
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
+
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 8; // Adjusted to match the visual stop point
+    const stopRow = 8;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -216,7 +233,6 @@ export default function DrivingGame() {
     startScrollAnimation();
   }, []);
 
-  // Car sprite frame loop (stops when carPaused=true)
   useEffect(() => {
     let iv;
     if (!carPaused && carSprites[carDirection]) {
@@ -236,7 +252,7 @@ export default function DrivingGame() {
   const handleFeedback = (answerGiven) => {
       const currentQuestion = questions[questionIndex];
       if (answerGiven === currentQuestion.correct) {
-        setIsCorrectAnswer(true); // Set to true for correct feedback
+        setIsCorrectAnswer(true);
         setAnimationType("correct");
         Animated.timing(correctAnim, {
           toValue: 1,
@@ -247,7 +263,7 @@ export default function DrivingGame() {
           setShowNext(true);
         });
       } else {
-        setIsCorrectAnswer(false); // Set to false for wrong feedback
+        setIsCorrectAnswer(false);
         setAnimationType("wrong");
         Animated.timing(wrongAnim, {
           toValue: 1,
@@ -260,18 +276,19 @@ export default function DrivingGame() {
       }
     };
   
-
-  const handleAnswer = (answer) => {
+  const handleAnswer = async (answer) => {  
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
+
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
 
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
     if (answer === "Speed up to beat the traffic and make a quick left turn") {
       const turnStartRow = 10;
-      const turnEndRow = 11;
-
       const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
       Animated.timing(scrollY, {
@@ -298,7 +315,6 @@ export default function DrivingGame() {
               deltaYScroll = tileSize / 2;
             }
 
-            // Get current values properly
             const currentCarX = carXAnim._value;
             const currentScrollY = scrollY._value;
 
@@ -336,9 +352,9 @@ export default function DrivingGame() {
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-        setCarPaused(true); // Car pauses as if yielding
+        setCarPaused(true);
         setTimeout(() => {
-            setCarPaused(false); // Car resumes after a short pause
+            setCarPaused(false);
             Animated.timing(scrollY, {
                 toValue: nextTarget,
                 duration: 2000,
@@ -346,11 +362,9 @@ export default function DrivingGame() {
             }).start(() => {
                 handleFeedback(answer);
             });
-        }); // Added delay duration
+        }, 1500);
     } else if(answer === "Slow down, check for oncoming traffic, signal left, and turn when safe"){
         const turnStartRow = 10;
-        const turnEndRow = 11;
-
         const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
         Animated.timing(scrollY, {
@@ -359,7 +373,6 @@ export default function DrivingGame() {
           useNativeDriver: true,
         }).start(() => {
           setTimeout(() => {
-            // Fixed the typo: "NORTHwEST" -> "NORTHWEST"
             const turnSequence = ["NORTH", "NORTHWEST", "WEST"];
             let currentTurnStep = 0;
 
@@ -379,7 +392,6 @@ export default function DrivingGame() {
                   deltaYScroll = tileSize / 2;
                 }
 
-                // Get current values properly
                 const currentCarX = carXAnim._value;
                 const currentScrollY = scrollY._value;
 
@@ -410,17 +422,18 @@ export default function DrivingGame() {
               }
             };
             animateTurnAndMove();
-          });
+          }, 1000);
         });
       return;
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => { 
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setCarFrame(0);
+    setIsCorrectAnswer(null);
     
     // Reset car position and visibility
     const centerX = width / 2 - carWidth / 2;
@@ -430,12 +443,36 @@ export default function DrivingGame() {
     setCarPaused(false);
     
     if (questionIndex < questions.length - 1) {
+      // Next question in current scenario
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
+    } else if (currentScenario === 10) {
+      // Last scenario - complete session
+      try {
+        console.log('🔍 Completing session for scenario 10...');
+        const sessionResults = await completeSession();
+        
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session.');
+          return;
+        }
+        
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
     } else {
-      router.push('/driver-game/intersections/phase-1/S2P1');
-      setQuestionIndex(0);
-      setShowQuestion(false);
+      // Move to next scenario (S1P1 → S2P1 → ... → S10P1)
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P1`;
+      router.push(`/scenarios/intersection/phase1/${nextScreen}`);
     }
   };
 
@@ -451,14 +488,12 @@ export default function DrivingGame() {
     ? "Correct! This follows proper intersection protocol - reduce speed when approaching intersections, signal your intention, check for oncoming traffic, and proceed when safe."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
-  // Ensure car sprite exists for current direction
   const currentCarSprite = carSprites[carDirection] && carSprites[carDirection][carFrame] 
     ? carSprites[carDirection][carFrame] 
     : carSprites["NORTH"][0];
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
-      {/* Map */}
       <Animated.View
         style={{
           position: "absolute",
@@ -485,7 +520,6 @@ export default function DrivingGame() {
             />
           ))
         )}
-        {/* Traffic Sign */}
         <Image
                 source={trafficSign.sign}
                 style={{
@@ -528,7 +562,6 @@ export default function DrivingGame() {
                         ))}
       </Animated.View>
 
-      {/* Car - fixed */}
       {isCarVisible && (
         <Animated.Image
           source={currentCarSprite}
@@ -543,7 +576,6 @@ export default function DrivingGame() {
         />
       )}
 
-      {/* Question overlay - moved to bottom */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -560,7 +592,6 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Answers - moved above bottom overlay */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -575,7 +606,6 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Feedback - moved to bottom */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -596,7 +626,6 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Next button - positioned above bottom overlay */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
@@ -607,8 +636,8 @@ export default function DrivingGame() {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -619,14 +648,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  // No intro styles (responsive)
-  // In-game responsive styles
  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -683,7 +710,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",

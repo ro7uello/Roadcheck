@@ -1,5 +1,4 @@
-// frontend/src/app/scenarios/road-markings/phase2/S4P2.jsx
-import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
+import { useSession } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
 import { router } from 'expo-router';
@@ -32,6 +31,7 @@ const roadTiles = {
   road52: require("../../../../../assets/road/road52.png"),
   road57: require("../../../../../assets/road/road57.png"),
   road58: require("../../../../../assets/road/road58.png"),
+  road59: require("../../../../../assets/road/road59.png"),
   road60: require("../../../../../assets/road/road60.png"),
   int1: require("../../../../../assets/road/int1.png"),
   int2: require("../../../../../assets/road/int2.png"),
@@ -104,24 +104,18 @@ const questions = [
 ];
 
 export default function DrivingGame() {
+
   const {
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-    currentScenario,
-    sessionData
-  } = useSession();
+  updateScenarioProgress,
+  moveToNextScenario,
+  completeSession,
+  currentScenario,
+  sessionData
+} = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
       const scenarioId = 10 + currentScenario;
-      console.log('🔍 SCENARIO DEBUG:', {
-        currentScenario,
-        calculatedScenarioId: scenarioId,
-        selectedOption,
-        isCorrect
-      });
-
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -188,8 +182,7 @@ export default function DrivingGame() {
     setTrafficLightState('normal'); // Start with green light
     setLightChangeTriggered(false);
 
-    // FIXED: Better stop position at row 6.5
-    const stopRow = 6.5;
+    const stopRow = 6.8;
     const stopOffset = startOffset + stopRow * tileSize;
 
     // Calculate when to trigger red light
@@ -250,92 +243,66 @@ export default function DrivingGame() {
     }
   };
 
-  // FIXED: Proper async handleAnswer with better animations
   const handleAnswer = async (answer) => {
-    console.log('🎯 handleAnswer START:', answer);
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
-
     const currentQuestion = questions[questionIndex];
-    const isCorrect = answer === currentQuestion.correct;
-    await updateProgress(answer, isCorrect);
-    console.log('✅ Progress updated');
-
+      const isCorrect = answer === currentQuestion.correct;
+      await updateProgress(answer, isCorrect);
     const currentRow = Math.abs(currentScroll.current - startOffset) / tileSize;
 
-    try {
-      if (answer === "Proceed through since the intersection appears safe") {
-        // FIXED: Choice 1 - Car proceeds through red light
-        console.log('🔴 Choice 1: Running red light');
-        const targetRow = 12;
-        const rowsToMove = targetRow - currentRow;
-        const nextTarget = currentScroll.current + rowsToMove * tileSize;
-        
-        await new Promise(resolve => {
+    if (answer === "Proceed through since the intersection appears safe") {
+      // Animation: Car proceeds through the intersection
+      const targetRow = 12;
+      const rowsToMove = targetRow - currentRow;
+      const nextTarget = currentScroll.current + rowsToMove * tileSize;
+
+      Animated.timing(scrollY, {
+        toValue: nextTarget,
+        duration: 3000,
+        useNativeDriver: true,
+      }).start(() => {
+        handleFeedback(answer);
+      });
+    } else if (answer === "Stop at the stop line and wait for the green light") {
+      // Animation: Car stops at stop line and waits, then light turns green
+      setCarPaused(true);
+
+      // Wait for 2 seconds, then turn light green
+      setTimeout(() => {
+        setTrafficLightState('normal'); // Green light
+
+        // Wait another second, then continue moving
+        setTimeout(() => {
+          setCarPaused(false);
+          const targetRow = 12;
+          const rowsToMove = targetRow - currentRow;
+          const nextTarget = currentScroll.current + rowsToMove * tileSize;
+
           Animated.timing(scrollY, {
             toValue: nextTarget,
             duration: 3000,
-            easing: Easing.linear,
             useNativeDriver: true,
-          }).start(resolve);
-        });
+          }).start(() => {
+            handleFeedback(answer);
+          });
+        }, 1000);
+      }, 2000);
+    } else if (answer === "Stop just past the stop line to get a better view of cross traffic") {
+      // Animation: Car goes past the stop line and stops at road57
+      const targetRow = 7.2; // Past the stop line, at road57
+      const rowsToMove = targetRow - currentRow;
+      const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
+      Animated.timing(scrollY, {
+        toValue: nextTarget,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start(() => {
+        setCarPaused(true); // Stop the car
         handleFeedback(answer);
-      } else if (answer === "Stop at the stop line and wait for the green light") {
-        // FIXED: Choice 2 - Proper stop and wait animation
-        console.log('🟢 Choice 2: Stopping at stop line');
-        setCarPaused(true);
-        
-        // Wait for 2 seconds
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Turn light green
-        setTrafficLightState('normal');
-        console.log('✅ Light turned green');
-        
-        // Wait another second
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Continue moving
-        setCarPaused(false);
-        const targetRow = 12;
-        const rowsToMove = targetRow - currentRow;
-        const nextTarget = currentScroll.current + rowsToMove * tileSize;
-        
-        await new Promise(resolve => {
-          Animated.timing(scrollY, {
-            toValue: nextTarget,
-            duration: 3000,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          }).start(resolve);
-        });
-
-        handleFeedback(answer);
-      } else if (answer === "Stop just past the stop line to get a better view of cross traffic") {
-        // FIXED: Choice 3 - Smoother animation past the stop line
-        console.log('🟡 Choice 3: Stopping past stop line');
-        const targetRow = 7.5; // FIXED: Better position past the stop line
-        const rowsToMove = targetRow - currentRow;
-        const nextTarget = currentScroll.current + rowsToMove * tileSize;
-        
-        await new Promise(resolve => {
-          Animated.timing(scrollY, {
-            toValue: nextTarget,
-            duration: 1500, // FIXED: Smoother duration
-            easing: Easing.easeInOut, // FIXED: Better easing
-            useNativeDriver: true,
-          }).start(resolve);
-        });
-
-        setCarPaused(true);
-        console.log('🛑 Car stopped past stop line');
-        handleFeedback(answer);
-      }
-    } catch (error) {
-      console.error('❌ Error in animation:', error);
-      handleFeedback(answer);
+      });
     }
   };
 
@@ -351,7 +318,7 @@ export default function DrivingGame() {
     carXAnim.setValue(centerX);
     setCarDirection("NORTH");
     setIsCarVisible(true);
-    
+
     // Reset traffic light
     setTrafficLightState('normal');
     setLightChangeTriggered(false);
@@ -360,25 +327,25 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else if (currentScenario >= 10) {
-      // Last scenario in phase - complete session
-      try {
-        const sessionResults = await completeSession();
-        router.push({
-          pathname: '/result',
-          params: {
-            ...sessionResults,
-            userAttempts: JSON.stringify(sessionResults.attempts)
+          // Last scenario in phase - complete session
+          try {
+            const sessionResults = await completeSession();
+            router.push({
+              pathname: '/result',
+              params: {
+                ...sessionResults,
+                userAttempts: JSON.stringify(sessionResults.attempts)
+              }
+            });
+          } catch (error) {
+            console.error('Error completing session:', error);
+            Alert.alert('Error', 'Failed to save session results');
           }
-        });
-      } catch (error) {
-        console.error('Error completing session:', error);
-        Alert.alert('Error', 'Failed to save session results');
-      }
-    } else {
-      moveToNextScenario();
-      const nextScreen = `S${currentScenario + 1}P2`;
-      router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-    }
+        } else {
+          moveToNextScenario();
+          const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
+          router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+        }
   };
 
   // Calculate traffic light position
@@ -421,7 +388,7 @@ export default function DrivingGame() {
             />
           ))
         )}
-        
+
         {/* Traffic Light */}
         <Image
           source={trafficLightSprites[trafficLightState]}
@@ -452,11 +419,11 @@ export default function DrivingGame() {
         />
       )}
 
-      {/* Responsive Question Overlay - FIXED: Better LTO positioning */}
+      {/* Responsive Question Overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
-            source={require("../../../../../assets/dialog/Dialog.png")}
+            source={require("../../../../../assets/dialog/LTO.png")}
             style={styles.ltoImage}
           />
           <View style={styles.questionBox}>
@@ -487,7 +454,7 @@ export default function DrivingGame() {
       {/* Responsive Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../../assets/dialog/Dialog w answer.png")} style={styles.ltoImage} />
+          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
@@ -507,43 +474,55 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  questionOverlay: {
+  // Loading screen styles
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  // No intro styles (responsive)
+  // In-game responsive styles
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: height * 0.01,
+    paddingBottom: 0,
     zIndex: 10,
   },
-  // FIXED: Better LTO image positioning to stay in container
   ltoImage: {
     width: ltoWidth,
     height: ltoHeight,
     resizeMode: "contain",
-    marginLeft: -width * 0.02,
-    marginBottom: -height * 0.08,
+    marginLeft: -width * 0.03,
+    marginBottom: -height * 0.12,
   },
   questionBox: {
     flex: 1,
     bottom: height * 0.1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: height * 0.05,
   },
   questionTextContainer: {
-    maxWidth: width * 0.6,
+    padding: -height * 0.04,
+    maxWidth: width * 0.7,
   },
-  // FIXED: Increased font size from 20 to 22
   questionText: {
+    flexWrap: "wrap",
     color: "white",
     fontSize: Math.min(width * 0.045, 22),
     fontWeight: "bold",
     textAlign: "center",
-    flexWrap: "wrap",
   },
   answersContainer: {
     position: "absolute",
@@ -555,13 +534,12 @@ const styles = StyleSheet.create({
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.02,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
     borderColor: "#555",
   },
-  // FIXED: Increased font size from backend's smaller size to 18
   answerText: {
     color: "white",
     fontSize: Math.min(width * 0.04, 18),
@@ -572,7 +550,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -587,7 +565,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 28),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
   },

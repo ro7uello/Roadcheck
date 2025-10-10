@@ -1,21 +1,8 @@
-import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Easing,
-} from "react-native";
-import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@env';
 import { useSession } from '../../../../contexts/SessionManager';
-
-// Debug API_URL at module level
-console.log('S6P1 Module loaded. API_URL from env:', API_URL);
+import React, { useRef, useEffect, useState } from "react";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
+import { useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
@@ -35,6 +22,7 @@ const roadTiles = {
     road20: require("../../../../../assets/road/road20.png"), // Straight road
     road8: require("../../../../../assets/road/road8.png"),   // Straight road with dashed lines
     road69: require("../../../../../assets/road/road69.png"), // Straight road with solid lines
+    
 };
 
 // Map layout
@@ -94,8 +82,8 @@ const jeepneySprites = {
   ],
 };
 
-// Fallback questions - keep your original questions as backup
-const fallbackQuestions = [
+// Updated question structure following S2P1 format
+const questions = [
   {
     question: "You're on a narrow provincial road with a single solid yellow line on the opposite side and a broken line on your side. You want to overtake a car.",
     options: ["Don't overtake since there's a solid yellow line.", "Overtake carefully since your side has a broken line", "Wait for both lines to become broken"],
@@ -111,18 +99,23 @@ export default function DrivingGame() {
   const navigation = useNavigation();
 
   const {
-      updateScenarioProgress,
-      moveToNextScenario,
-      completeSession,
-      currentScenario,
-      getScenarioProgress,
-      sessionData
-    } = useSession();
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario: sessionCurrentScenario,
+    sessionData
+  } = useSession();
 
-  // ✅ DATABASE INTEGRATION - Added these 3 state variables
-  const [questions, setQuestions] = useState(fallbackQuestions);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+    const currentScenario = 6; 
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      const scenarioId = currentScenario; // For Phase 1: S1P1 = scenario 1, S2P1 = scenario 2, etc.
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
@@ -161,90 +154,9 @@ export default function DrivingGame() {
   // Starts off-screen TOP
   const jeepneyYAnim = useRef(new Animated.Value(-jeepHeight)).current;
 
+
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
-
-  // ✅ DATABASE INTEGRATION - Added this useEffect to fetch data
-  useEffect(() => {
-    const fetchScenarioData = async () => {
-      try {
-        console.log('S6P1: Fetching scenario data...');
-        console.log('S6P1: API_URL value:', API_URL);
-        
-        const token = await AsyncStorage.getItem('access_token');
-        console.log('S6P1: Token retrieved:', token ? 'Yes' : 'No');
-        
-        const url = `${API_URL}/scenarios/6`;
-        console.log('S6P1: Fetching from URL:', url);
-        
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        console.log('S6P1: Response status:', response.status);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        console.log('S6P1: Data received:', data);
-        
-        if (data && data.scenario) {
-          // Transform database response to match your frontend format
-          const transformedQuestion = {
-            question: data.scenario.question_text,
-            options: data.choices.map(choice => choice.choice_text),
-            correct: data.choices.find(choice => choice.choice_id === data.scenario.correct_choice_id)?.choice_text,
-            wrongExplanation: {}
-          };
-          
-          // Build wrong explanations
-          data.choices.forEach(choice => {
-            if (choice.choice_id !== data.scenario.correct_choice_id && choice.explanation) {
-              transformedQuestion.wrongExplanation[choice.choice_text] = choice.explanation;
-            }
-          });
-          
-          setQuestions([transformedQuestion]);
-          console.log('S6P1: ✅ Database questions loaded successfully');
-        } else {
-          console.log('S6P1: ⚠️ Invalid data structure, using fallback');
-          setQuestions(fallbackQuestions);
-        }
-      } catch (error) {
-        console.log('S6P1: ❌ Database error, using fallback questions:', error.message);
-        setQuestions(fallbackQuestions);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchScenarioData();
-  }, []);
-
-  // ✅ DATABASE INTEGRATION - Added updateProgress function
-  const updateProgress = async (selectedOption, isCorrect) => {
-    try {
-      if (!sessionData) {
-        console.log('No session data available');
-        return;
-      }
-
-      // Calculate the correct scenario ID for this phase and scenario number
-      const scenarioId = ((sessionData.phase_id - 1) * 10) + currentScenario;
-
-      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
-      console.log(`Scenario ${currentScenario} progress updated successfully`);
-    } catch (error) {
-      console.log('Error updating progress:', error.message);
-    }
-  };
 
   // Animation for player's car sprite
   useEffect(() => {
@@ -319,11 +231,8 @@ export default function DrivingGame() {
     });
   }
 
-  // ✅ DATABASE INTEGRATION - Modified useEffect to wait for data
   useEffect(() => {
-    if (!loading) {
-      startScrollAnimation();
-    }
+    startScrollAnimation();
     return () => {
       if (scrollAnimationRef.current) {
         scrollAnimationRef.current.stop();
@@ -332,17 +241,12 @@ export default function DrivingGame() {
           jeepneyAnimationRef.current.stop();
       }
     };
-  }, [loading]); // Added loading dependency
+  }, []);
 
   // Updated handleFeedback function from S2P1
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
-    const isCorrect = answerGiven === currentQuestion.correct;
-    
-    // ✅ DATABASE INTEGRATION - Update progress when feedback is shown
-    updateProgress(answerGiven, isCorrect); // scenario_id = 6 for S6P1
-    
-    if (isCorrect) {
+    if (answerGiven === currentQuestion.correct) {
       setIsCorrectAnswer(true); // Set to true for correct feedback
       setAnimationType("correct");
       Animated.timing(correctAnim, {
@@ -466,11 +370,16 @@ export default function DrivingGame() {
     handleFeedback(selectedAnswer); // Pass the selected correct answer to feedback
   };
 
+
   const handleAnswer = async (option) => {
     setSelectedAnswer(option);
     setShowQuestion(false);
     setShowAnswers(false);
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = option === currentQuestion.correct;
+    updateProgress(option, isCorrect);
+    
     // Stop continuous scroll and sprite animations immediately
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
     if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
@@ -505,12 +414,11 @@ export default function DrivingGame() {
     handleFeedback(option);
   };
 
-  // Update handleNext in ALL scenario files
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setIsCorrectAnswer(null);
+    setIsCorrectAnswer(null); // Reset feedback state from S2P1
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
 
@@ -521,70 +429,56 @@ export default function DrivingGame() {
     setIsJeepneyVisible(true);
 
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else {
-      // FIXED: Use the next scenario number based on current file, not session context
-
-      // Get current scenario number from file name (S1P1 = 1, S2P1 = 2, etc.)
-      const currentFileScenario = getCurrentScenarioNumber(); // Helper function
-
-      if (currentFileScenario >= 10) {
-        // Last scenario - complete session and go to results
+    setQuestionIndex(questionIndex + 1);
+    startScrollAnimation();
+  } else {
+    // Get current scenario number from file name
+    const currentFileScenario = 6; // For S1P1, this is 1; for S2P1 it would be 2, etc.
+    
+    if (currentFileScenario >= 10) {
+      // Last scenario of phase 1 - complete session and go to results
+      try {
         const sessionResults = await completeSession();
         if (sessionResults) {
-          navigation.navigate('ResultPage', {
-            ...sessionResults,
-            userAttempts: JSON.stringify(sessionResults.attempts),
-            scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+          router.push({
+            pathname: '/result',
+            params: {
+              ...sessionResults,
+              userAttempts: JSON.stringify(sessionResults.attempts),
+              scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+            }
           });
         }
-      } else {
-        // Move to next scenario
-        moveToNextScenario();
-
-        // Navigate to next scenario using file-based numbering
-        const nextScenarioNumber = currentFileScenario + 1;
-        const phaseId = sessionData?.phase_id || 1;
-        const nextScreen = `S${nextScenarioNumber}P${phaseId}`;
-
-        navigation.navigate(nextScreen);
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
       }
-
-      setShowQuestion(false);
-      // ... cleanup code
+    } else {
+      // Move to next scenario in phase 1
+      moveToNextScenario();
+      
+      const nextScenarioNumber = currentFileScenario + 1;
+      const nextScreen = `S${nextScenarioNumber}P1`;
+      router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
     }
-  };
 
-  // Add this helper function to each scenario file
-  const getCurrentScenarioNumber = () => {
-    // Return the scenario number based on the current file
-    // For S1P1, return 1
-    // For S2P1, return 2
-    // For S3P1, return 3
-    // etc.
-
-    // You can hardcode this in each file:
-    return 6; // For S2P1.jsx
-    // return 3; // For S3P1.jsx
-    // return 4; // For S4P1.jsx
-    // etc.
-  };
-
-  // ✅ DATABASE INTEGRATION - Show loading screen while fetching data
-  if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: 'black' }]}>
-        <Text style={styles.loadingText}>Loading scenario...</Text>
-      </View>
-    );
+    setShowQuestion(false);
+    if (scrollAnimationRef.current) {
+      scrollAnimationRef.current.stop();
+    }
+    if (jeepneyAnimationRef.current) {
+      jeepneyAnimationRef.current.stop();
+    }
+    npcCarAnimationsRef.current.forEach(anim => anim.stop());
   }
+};
 
   // Determine the feedback message based on whether the answer was correct or wrong (from S2P1)
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
     ? "Correct! The broken line on your side allows overtaking if done safely, even if the opposite side has a solid line."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
+
 
   return (
     <View style={{ flex: 1, backgroundColor: "black", overflow: 'hidden' }}>
@@ -712,29 +606,18 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
   // No intro styles (responsive)
   // In-game responsive styles
- questionOverlay: {
+  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingBottom: 0,
+    paddingBottom: height * 0.01,
     zIndex: 10,
   },
   ltoImage: {
@@ -742,7 +625,7 @@ const styles = StyleSheet.create({
     height: ltoHeight,
     resizeMode: "contain",
     marginLeft: -width * 0.03,
-    marginBottom: -height * 0.12,
+    marginBottom: -height * 0.09,
   },
   questionBox: {
     flex: 1,
@@ -752,21 +635,20 @@ const styles = StyleSheet.create({
   },
   questionTextContainer: {
     padding: -height * 0.04,
-    maxWidth: width * 0.7,
+    maxWidth: width * 0.6,
   },
   questionText: {
-    flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 24),
+    fontSize: Math.min(width * 0.045, 28),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.2,
+    top: height * 0.4,
     right: sideMargin,
     width: width * 0.35,
-    height: height * 0.21,
+    height: height * 0.25,
     zIndex: 11,
   },
   answerButton: {
@@ -787,7 +669,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -802,7 +684,7 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.06, 24),
+    fontSize: Math.min(width * 0.06, 28),
     fontWeight: "bold",
     textAlign: "center",
   },

@@ -1,6 +1,6 @@
 import { useSession } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
-import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
@@ -21,7 +21,6 @@ const roadTiles = {
   road17: require("../../../../../assets/road/road17.png"),
   road18: require("../../../../../assets/road/road18.png"),
   road19: require("../../../../../assets/road/road19.png"),
-  road59: require("../../../../../assets/road/road59.png"),
   road20: require("../../../../../assets/road/road20.png"),
   road23: require("../../../../../assets/road/road23.png"),
   road24: require("../../../../../assets/road/road24.png"),
@@ -33,45 +32,38 @@ const roadTiles = {
   road58: require("../../../../../assets/road/road58.png"),
   road59: require("../../../../../assets/road/road59.png"),
   road60: require("../../../../../assets/road/road60.png"),
+  road83: require("../../../../../assets/road/road83.png"),
   int1: require("../../../../../assets/road/int1.png"),
   int2: require("../../../../../assets/road/int2.png"),
   int3: require("../../../../../assets/road/int3.png"),
   int4: require("../../../../../assets/road/int4.png"),
 };
 
+// Map layout with complex intersection including crosswalks
 const mapLayout = [
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
+  ["road18", "road4", "road83", "road17", "road20"],
+  ["road18", "road4", "road83", "road17", "road20"],
+  ["road18", "road4", "road83", "road17", "road20"],
+  ["road18", "road4", "road83", "road17", "road20"],
+  ["road18", "road4", "road83", "road17", "road20"],
+  ["road18", "road4", "road83", "road17", "road20"],
   ["road49", "road59", "road57", "road50", "road52"],
   ["road60", "int3", "int4", "road60", "road24"],
   ["road58", "int2", "int1", "road58", "road23"],
-  ["road19", "road59", "road57", "road16", "road51"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
+  ["road19", "road57", "road57", "road16", "road51"],
+  ["road18", "road4", "road83", "road17", "road20"],
+  ["road18", "road4", "road83", "road17", "road20"],
+  ["road18", "road4", "road83", "road17", "road20"],
+  ["road18", "road4", "road83", "road17", "road20"],
+  ["road18", "road4", "road83", "road17", "road20"],
+  ["road18", "road4", "road83", "road17", "road20"],
 ];
 
+// Player car sprites (Blue)
 const carSprites = {
   NORTH: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
-  ],
-  NORTHWEST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
-  ],
-  WEST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
   ],
   NORTHEAST: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
@@ -83,37 +75,42 @@ const carSprites = {
   ],
 };
 
-// Updated question structure for pedestrian crossing
 const questions = [
   {
-    question: "You approach a non-signalized pedestrian crossing (zebra crossing) where pedestrians are waiting to cross during rush hour traffic.",
+    question: "You're driving on a road with a painted bicycle lane marked \"BIKE LANE\" with solid white lines. You need to turn right, but a cyclist is using the bike lane.",
     options: [
-      "Continue driving since there's no traffic light controlling the crossing",
-      "Stop and give way to pedestrians wanting to cross",
-      "Honk to alert pedestrians and proceed carefully"
+      "Drive into the bike lane to make your turn",
+      "Wait behind the bike lane until the cyclist passes, then turn",
+      "Honk at the cyclist to move out of your way"
     ],
-    correct: "Stop and give way to pedestrians wanting to cross",
-    correctExplanation: "Correct! At non-signalized pedestrian crossings, drivers must yield to pedestrians who are crossing or about to cross.",
-    wrongExplanations: {
-      "Continue driving since there's no traffic light controlling the crossing": "Accident Prone! Non-signalized pedestrian crossings still give pedestrians right of way when they're crossing.",
-      "Honk to alert pedestrians and proceed carefully": "Wrong! Honking doesn't give you right of way over pedestrians at designated crossings."
+    correct: "Wait behind the bike lane until the cyclist passes, then turn",
+    wrongExplanation: {
+      "Drive into the bike lane to make your turn": "Wrong! You are required to yield and let the bike pass before making your turn",
+      "Honk at the cyclist to move out of your way": "Wrong! Cyclists have the right of way in bike lanes; honking is inappropriate and potentially dangerous."
     }
   },
 ];
 
-export default function DrivingGame() {
+export default function S4P3() {
 
   const {
-  updateScenarioProgress,
-  moveToNextScenario,
-  completeSession,
-  currentScenario,
-  sessionData
-} = useSession();
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+    sessionData
+  } = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
       const scenarioId = 10 + currentScenario;
+      console.log('🔍 SCENARIO DEBUG:', {
+        currentScenario,
+        calculatedScenarioId: scenarioId,
+        selectedOption,
+        isCorrect
+      });
+
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -127,7 +124,6 @@ export default function DrivingGame() {
   const [isCarVisible, setIsCarVisible] = useState(true);
 
   const startOffset = -(mapHeight - height);
-
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
@@ -148,47 +144,55 @@ export default function DrivingGame() {
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
-  const [showHornIcon, setShowHornIcon] = useState(false);
 
-  // Responsive car positioning
+  // Car positioning
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
-
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
 
   // Car animation frame cycling
   useEffect(() => {
     let iv;
-    if (!carPaused) {
+    if (!carPaused && isCarVisible) {
       iv = setInterval(() => {
         setCarFrame((p) => (p + 1) % carSprites[carDirection].length);
       }, 200);
     }
     return () => clearInterval(iv);
-  }, [carPaused, carDirection]);
+  }, [carPaused, carDirection, isCarVisible]);
+
+  const scrollAnimationRef = useRef(null);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    setShowHornIcon(false);
+    
+    // Reset car position
+    const centerX = width / 2 - carWidth / 2;
+    carXAnim.setValue(centerX);
 
-    const stopRow = 5; // Stop before the pedestrian crossing to show the question
-    const stopOffset = startOffset + stopRow * tileSize;
-
-    Animated.timing(scrollY, {
-      toValue: stopOffset,
-      duration: 3000,
+    // Start continuous map scrolling
+    scrollAnimationRef.current = Animated.timing(scrollY, {
+      toValue: startOffset + 4.7 * tileSize,
+      duration: 4000,
       useNativeDriver: true,
-    }).start(() => {
-      // Show question when car reaches the stopping point
-      setShowQuestion(true);
+    });
+
+    scrollAnimationRef.current.start(() => {
+      // Show question after scrolling
       setTimeout(() => {
-        setShowAnswers(true);
-      }, 1000);
+        setShowQuestion(true);
+        setTimeout(() => {
+          setShowAnswers(true);
+        }, 1000);
+      }, 1500);
     });
   }
 
   useEffect(() => {
     startScrollAnimation();
+    return () => {
+      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+    };
   }, []);
 
   const handleFeedback = (answerGiven) => {
@@ -196,15 +200,25 @@ export default function DrivingGame() {
     if (answerGiven === currentQuestion.correct) {
       setIsCorrectAnswer(true);
       setAnimationType("correct");
-      setTimeout(() => {
+      Animated.timing(correctAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        correctAnim.setValue(0);
         setShowNext(true);
-      }, 500);
+      });
     } else {
       setIsCorrectAnswer(false);
       setAnimationType("wrong");
-      setTimeout(() => {
+      Animated.timing(wrongAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        wrongAnim.setValue(0);
         setShowNext(true);
-      }, 500);
+      });
     }
   };
 
@@ -213,75 +227,79 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
     const currentQuestion = questions[questionIndex];
-      const isCorrect = answer === currentQuestion.correct;
-      await updateProgress(answer, isCorrect);
-    const currentRow = Math.abs(currentScroll.current - startOffset) / tileSize;
-
-    if (answer === "Continue driving since there's no traffic light controlling the crossing") {
-      // Option 1: Continue smoothly through the pedestrian crossing
-      const targetRow = 12;
-      const rowsToMove = targetRow - currentRow;
-      const nextTarget = currentScroll.current + rowsToMove * tileSize;
-
-      Animated.timing(scrollY, {
-        toValue: nextTarget,
-        duration: 3500, // Smooth continuous animation
-        useNativeDriver: true,
-      }).start(() => {
-        handleFeedback(answer);
-      });
-    } else if (answer === "Stop and give way to pedestrians wanting to cross") {
-      // Option 2: Stop before road59, wait 2 seconds, then proceed
-      const stopBeforeRow = 6.3; // Stop just before the pedestrian crossing (before road59)
-      const rowsToMove = stopBeforeRow - currentRow;
-      const nextTarget = currentScroll.current + rowsToMove * tileSize;
-
-      Animated.timing(scrollY, {
-        toValue: nextTarget,
-        duration: 2000, // Move to stop position
-        useNativeDriver: true,
-      }).start(() => {
-        // Car stops at the crossing
-        setCarPaused(true);
-
-        // Wait for 2 seconds, then continue
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
+    
+    if (answer === "Drive into the bike lane to make your turn") {
+      // WRONG ANIMATION: Car drives into bike lane dangerously
+      setCarPaused(false);
+      
+      Animated.parallel([
+        Animated.timing(carXAnim, {
+          toValue: (width / 2 - carWidth / 2) + carWidth * 0.2,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + tileSize * 0.5,
+          duration: 1500,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
         setTimeout(() => {
-          setCarPaused(false);
+          handleFeedback(answer);
+        }, 500);
+      });
 
-          // Continue to the end
-          const finalTargetRow = 12;
-          const finalRowsToMove = finalTargetRow - stopBeforeRow;
-          const finalTarget = nextTarget + finalRowsToMove * tileSize;
-
-          Animated.timing(scrollY, {
-            toValue: finalTarget,
-            duration: 3000,
-            useNativeDriver: true,
+    } else if (answer === "Wait behind the bike lane until the cyclist passes, then turn") {
+      // CORRECT ANIMATION: Car stops, waits for cyclist to clear, then turns
+      setCarPaused(true);
+      
+      // Wait for cyclist to pass (simulate waiting)
+      setTimeout(() => {
+        setCarPaused(false);
+        
+        // First move straight north
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + tileSize * 1.7,
+          duration: 700,
+          useNativeDriver: true,
+        }).start(() => {
+          // Then turn east
+          setCarDirection("EAST");
+          
+          Animated.timing(carXAnim, {
+            toValue: (width / 2 - carWidth / 2) + carWidth * 1,
+            duration: 900,
+            useNativeDriver: false,
           }).start(() => {
             handleFeedback(answer);
           });
-        }, 2000);
-      });
-    } else if (answer === "Honk to alert pedestrians and proceed carefully") {
-      // Option 3: Slow down, show horn icon, then proceed
-      setShowHornIcon(true);
+        });
+      }, 3000);
 
-      const targetRow = 12;
-      const rowsToMove = targetRow - currentRow;
-      const nextTarget = currentScroll.current + rowsToMove * tileSize;
-
-      // Slower animation to represent careful/cautious driving
+} else if (answer === "Honk at the cyclist to move out of your way") {
+      // WRONG ANIMATION: Car moves aggressively
+      setCarPaused(false);
+      
       Animated.timing(scrollY, {
-        toValue: nextTarget,
-        duration: 6000, // Much slower speed for "careful" driving
+        toValue: currentScroll.current + tileSize * 1.7,
+        duration: 700,
         useNativeDriver: true,
       }).start(() => {
-        setShowHornIcon(false);
-        handleFeedback(answer);
+        // Then turn east
+        setCarDirection("EAST");
+        
+        Animated.timing(carXAnim, {
+          toValue: (width / 2 - carWidth / 2) + carWidth * 1,
+          duration: 900,
+          useNativeDriver: false,
+        }).start(() => {
+          handleFeedback(answer);
+        });
       });
     }
-  };
-
+  }
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
@@ -289,8 +307,8 @@ export default function DrivingGame() {
     setIsCorrectAnswer(null);
     setCarFrame(0);
     setCarPaused(false);
-    setShowHornIcon(false);
 
+    // Reset positions
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
     setCarDirection("NORTH");
@@ -299,35 +317,37 @@ export default function DrivingGame() {
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-    } else if (currentScenario >= 10) {
-              // Last scenario in phase - complete session
-              try {
-                const sessionResults = await completeSession();
-                router.push({
-                  pathname: '/result',
-                  params: {
-                    ...sessionResults,
-                    userAttempts: JSON.stringify(sessionResults.attempts)
-                  }
-                });
-              } catch (error) {
-                console.error('Error completing session:', error);
-                Alert.alert('Error', 'Failed to save session results');
-              }
-            } else {
-              moveToNextScenario();
-              const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
-              router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-            }
-      };
+    } else if (currentScenario === 10) {
+      // Last scenario in phase - complete session
+      try {
+        const sessionResults = await completeSession();
+        router.push({
+          pathname: '/result-page',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
+    } else {
+      router.push(`/scenarios/road-markings/phase3/S5P3`);
+    }
+  };
 
-  // Determine the feedback message
-  const currentQuestionData = questions[questionIndex];
-  const feedbackMessage = isCorrectAnswer
-    ? currentQuestionData.correctExplanation
-    : currentQuestionData.wrongExplanations[selectedAnswer] || "Wrong answer!";
+  // Feedback message
+  let feedbackMessage = "Wrong answer!";
+  
+  if (isCorrectAnswer) {
+    feedbackMessage = "Correct! You must always yield to cyclists in bike lanes. Wait for them to pass before making your turn.";
+  } else if (selectedAnswer === "Drive into the bike lane to make your turn") {
+    feedbackMessage = "Wrong! You are required to yield and let the bike pass before making your turn";
+  } else if (selectedAnswer === "Honk at the cyclist to move out of your way") {
+    feedbackMessage = "Wrong! Cyclists have the right of way in bike lanes; honking is inappropriate and potentially dangerous.";
+  }
 
-  // Main game rendering
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
       {/* Map */}
@@ -359,7 +379,7 @@ export default function DrivingGame() {
         )}
       </Animated.View>
 
-      {/* Responsive Car */}
+      {/* Blue Car (player car) */}
       {isCarVisible && (
         <Animated.Image
           source={carSprites[carDirection][carFrame]}
@@ -368,21 +388,13 @@ export default function DrivingGame() {
             height: carHeight,
             position: "absolute",
             bottom: height * 0.1,
-            left: carXAnim,
+            transform: [{ translateX: carXAnim }],
             zIndex: 5,
           }}
         />
       )}
 
-      {/* Horn Icon */}
-      {showHornIcon && (
-        <View style={styles.hornIconContainer}>
-          <Text style={styles.hornIcon}>📯</Text>
-          <Text style={styles.hornText}>HONK!</Text>
-        </View>
-      )}
-
-      {/* Responsive Question Overlay */}
+      {/* Question Overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -399,7 +411,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Responsive Answers */}
+      {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -414,19 +426,17 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Responsive Feedback */}
+      {/* Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
-        <View style={styles.feedbackOverlay}>
+        <Animated.View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
-            <Text style={[styles.feedbackText, { color: isCorrectAnswer ? '#ffffffff' : '#ffffffff' }]}>
-              {feedbackMessage}
-            </Text>
+            <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
-        </View>
+        </Animated.View>
       )}
 
-      {/* Responsive Next Button */}
+      {/* Next Button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
@@ -439,6 +449,7 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
+  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -450,6 +461,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 20,
   },
+
+  // ADDED: Intro styles (responsive)
   introContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -479,12 +492,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: height * 0.02,
   },
-  introSubtitle: {
-    color: "#aaa",
-    fontSize: Math.min(width * 0.05, 22),
-    textAlign: "center",
-    marginBottom: height * 0.02,
-  },
   introText: {
     color: "white",
     fontSize: Math.min(width * 0.045, 20),
@@ -511,19 +518,20 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
-  questionOverlay: {
+
+ questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
     paddingBottom: 0,
     zIndex: 10,
   },
-ltoImage: {
+  ltoImage: {
     width: ltoWidth,
     height: ltoHeight,
     resizeMode: "contain",
@@ -543,13 +551,13 @@ ltoImage: {
   questionText: {
     flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 22),
+    fontSize: Math.min(width * 0.045, 24),
     fontWeight: "bold",
     textAlign: "center",
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.175,
+    top: height * 0.15,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
@@ -573,7 +581,7 @@ ltoImage: {
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight,
+    height: overlayHeight, // Corrected line: use the variable directly
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",

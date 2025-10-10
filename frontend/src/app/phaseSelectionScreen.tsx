@@ -189,7 +189,7 @@ export default function PhaseSelectionScreen() {
     const categorySlugMap: { [key: string]: string } = {
       '1': 'road-markings',
       '2': 'traffic-signs',
-      '3': 'intersections'
+      '3': 'intersection'
     };
 
     let phaseNumber = 1; // Default
