@@ -50,8 +50,6 @@ const mapLayout = [
   ["road2", "road2", "road2", "road2", "road2"],
   ["road2", "road2", "road2", "road2", "road2"],
   ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
 ];
 
 const carSprites = {
@@ -119,7 +117,6 @@ const questions = [
       "Change to the middle lane immediately without signaling": "Accident prone!  Changing lanes without signaling is dangerous, especially near toll plazas where traffic patterns change."
     }
   },
-  // Add more questions here as needed
 ];
 
 export default function DrivingGame() {
@@ -160,36 +157,51 @@ export default function DrivingGame() {
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(null);
   const [carDirection, setCarDirection] = useState("NORTH");
 
-  // Car - start in rightmost lane
+  // Car - start in rightmost lane (lane 5)
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
   const rightmostLaneX = width * 0.9 - carWidth / 2;
   const carXAnim = useRef(new Animated.Value(rightmostLaneX)).current;
 
-  // NPC Cars - static traffic
-  const [npcCarFrames, setNpcCarFrames] = useState({
-    lane1: 0,
-    lane2: 0,
-    lane4: 0,
-    lane5: 0,
-  });
+  // NPC Cars - traffic animations
+  const [npcCarFrames, setNpcCarFrames] = useState({});
   
-  // Define NPC car positions (lanes 1, 2, 4, 5) with different colors and rows
+  // Define NPC car positions for traffic lanes (1, 2, 5) with more cars closer together
   const npcCars = [
-    { lane: 1, row: 4, color: 'red' },
-    { lane: 1, row: 9, color: 'black' },
-    { lane: 2, row: 3, color: 'blue' },
-    { lane: 2, row: 7, color: 'green' },
-    { lane: 2, row: 11, color: 'white' },
-    { lane: 4, row: 5, color: 'brown' },
-    { lane: 4, row: 10, color: 'red' },
-    { lane: 5, row: 4, color: 'black' },
-    { lane: 5, row: 8, color: 'blue' },
+    // Lane 1 - leftmost, heavy traffic
+    { id: 'l1-1', lane: 1, initialRow: 2, color: 'red' },
+    { id: 'l1-2', lane: 1, initialRow: 4, color: 'black' },
+    { id: 'l1-3', lane: 1, initialRow: 6, color: 'green' },
+    { id: 'l1-4', lane: 1, initialRow: 8, color: 'blue' },
+    { id: 'l1-5', lane: 1, initialRow: 10, color: 'white' },
+    
+    // Lane 2 - heavy traffic
+    { id: 'l2-1', lane: 2, initialRow: 1.5, color: 'blue' },
+    { id: 'l2-2', lane: 2, initialRow: 3.5, color: 'brown' },
+    { id: 'l2-3', lane: 2, initialRow: 5.5, color: 'red' },
+    { id: 'l2-4', lane: 2, initialRow: 7.5, color: 'white' },
+    { id: 'l2-5', lane: 2, initialRow: 9.5, color: 'black' },
+    { id: 'l2-6', lane: 2, initialRow: 11.5, color: 'green' },
+    
+    // Lane 5 - rightmost, heavy traffic (player starts here)
+    { id: 'l5-1', lane: 5, initialRow: 2.5, color: 'brown' },
+    { id: 'l5-2', lane: 5, initialRow: 4.5, color: 'white' },
+    { id: 'l5-3', lane: 5, initialRow: 6.5, color: 'red' },
+    { id: 'l5-4', lane: 5, initialRow: 8.5, color: 'black' },
+    { id: 'l5-5', lane: 5, initialRow: 10.5, color: 'blue' },
   ];
+
+  // NPC car positions with slow traffic animation
+  const [npcCarPositions, setNpcCarPositions] = useState(() => {
+    const positions = {};
+    npcCars.forEach(car => {
+      positions[car.id] = new Animated.Value(car.initialRow * tileSize);
+    });
+    return positions;
+  });
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      
       const scenarioId = 70 + currentScenario;  
       
       console.log('🔍 SCENARIO DEBUG:', {
@@ -224,7 +236,27 @@ export default function DrivingGame() {
   
   useEffect(() => {
     startScrollAnimation();
+    startTrafficAnimation();
   }, []);
+
+  // Start slow traffic animation for NPC cars
+  const startTrafficAnimation = () => {
+    npcCars.forEach(car => {
+      const animateTraffic = () => {
+        // Very slow movement - 0.3 tiles over 5 seconds
+        Animated.timing(npcCarPositions[car.id], {
+          toValue: car.initialRow * tileSize - tileSize * 0.3,
+          duration: 5000,
+          useNativeDriver: true,
+        }).start(() => {
+          // Reset and loop
+          npcCarPositions[car.id].setValue(car.initialRow * tileSize);
+          animateTraffic();
+        });
+      };
+      animateTraffic();
+    });
+  };
 
   // Car sprite frame loop (stops when carPaused=true)
   useEffect(() => {
@@ -240,13 +272,13 @@ export default function DrivingGame() {
   // NPC Car sprite frame loops
   useEffect(() => {
     const intervals = [];
-    Object.keys(npcCarFrames).forEach((key) => {
+    npcCars.forEach((car) => {
       const interval = setInterval(() => {
         setNpcCarFrames((prev) => ({
           ...prev,
-          [key]: (prev[key] + 1) % 2,
+          [car.id]: ((prev[car.id] || 0) + 1) % 2,
         }));
-      }, 200);
+      }, 300); // Slower animation for traffic effect
       intervals.push(interval);
     });
     return () => intervals.forEach(clearInterval);
@@ -311,7 +343,7 @@ export default function DrivingGame() {
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
     if (answer === "Change to the middle lane immediately without signaling") {
-      // Quickly move to middle lane without much forward progress
+      // Quickly move to middle lane (lane 3) with space between traffic
       const middleLaneX = width * 0.5 - carWidth / 2;
       
       // Quick diagonal movement using NORTHWEST sprite
@@ -353,7 +385,7 @@ export default function DrivingGame() {
       });
       return;
     } else if (answer === "Signal and carefully change to an RFID lane when safe") {
-      // Slowly move to middle lane with more forward progress
+      // Slowly move to middle lane (lane 3) with more forward progress
       const middleLaneX = width * 0.5 - carWidth / 2;
       
       // Slow diagonal movement using NORTHWEST sprite
@@ -396,9 +428,6 @@ export default function DrivingGame() {
       return;
     } else if (answer === "Stay in your current lane since you're already positioned") {
       // Stay stationary in rightmost lane (traffic scenario)
-      const initialScrollTarget = currentScroll.current;
-      
-      // Just wait in traffic - no movement
       setTimeout(() => {
         setIsCarVisible(false);
         handleFeedback(answer);
@@ -466,6 +495,15 @@ export default function DrivingGame() {
     ? carSprites[carDirection][carFrame] 
     : carSprites["NORTH"][0];
 
+  // Lane X positions
+  const lanePositions = [
+    width * 0.1 - carWidth / 2,  // lane 1
+    width * 0.3 - carWidth / 2,  // lane 2
+    width * 0.5 - carWidth / 2,  // lane 3 (middle - clear for player)
+    width * 0.7 - carWidth / 2,  // lane 4 (clear)
+    width * 0.9 - carWidth / 2,  // lane 5 (rightmost)
+  ];
+
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
       {/* Map */}
@@ -497,7 +535,7 @@ export default function DrivingGame() {
         )}
       </Animated.View>
 
-      {/* Car - fixed in rightmost lane */}
+      {/* Car - starts in rightmost lane */}
       {isCarVisible && (
         <Animated.Image
           source={currentCarSprite}
@@ -512,28 +550,24 @@ export default function DrivingGame() {
         />
       )}
 
-      {/* NPC Cars - static traffic in lanes 1, 2, 4, 5 */}
-      {npcCars.map((npc, index) => {
-        const lanePositions = [
-          width * 0.1 - carWidth / 2,  // lane 1
-          width * 0.3 - carWidth / 2,  // lane 2
-          width * 0.7 - carWidth / 2,  // lane 4
-          width * 0.9 - carWidth / 2,  // lane 5 (same as player start)
-        ];
-        const laneIndex = [1, 2, 4, 5].indexOf(npc.lane);
-        const laneKey = `lane${npc.lane}`;
+      {/* NPC Cars - slow moving traffic in lanes 1, 2, and 5 */}
+      {npcCars.map((npc) => {
+        const laneIndex = [1, 2, 5].indexOf(npc.lane);
+        const actualLaneIndex = npc.lane - 1; // Convert to 0-indexed
         
         return (
           <Animated.Image
-            key={`npc-${index}`}
-            source={npcCarSprites[npc.color][npcCarFrames[laneKey] || 0]}
+            key={npc.id}
+            source={npcCarSprites[npc.color][npcCarFrames[npc.id] || 0]}
             style={{
               width: carWidth,
               height: carHeight,
               position: "absolute",
-              top: npc.row * tileSize,
-              left: lanePositions[laneIndex],
-              transform: [{ translateY: scrollY }],
+              left: lanePositions[actualLaneIndex],
+              transform: [
+                { translateY: scrollY },
+                { translateY: npcCarPositions[npc.id] }
+              ],
               zIndex: 7,
             }}
           />

@@ -72,6 +72,34 @@ const carSprites = {
   ],
 };
 
+const npcCarSprites = {
+  red: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  black: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  blue: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  brown: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  green: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  white: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+};
+
+
 const trafficSign = {
     sign: require("../../../../../assets/signs/no_motorcycle.png"),
 };
@@ -133,6 +161,74 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const middleLaneX = width * 0.5 - carWidth / 2;
   const carXAnim = useRef(new Animated.Value(middleLaneX)).current;
+
+  // NPC Cars state
+  const [npcCars, setNpcCars] = useState([]);
+  const [npcFrames, setNpcFrames] = useState({});
+
+  // Initialize NPC cars
+  useEffect(() => {
+    const colors = ['red', 'black', 'brown'];
+    const columns = [0, 1, 4];
+    const initialCars = columns.map((col, idx) => ({
+      id: `npc-${col}`,
+      column: col,
+      color: colors[idx],
+      yAnim: new Animated.Value(carHeight * 2 + Math.random() * height),
+      visible: true,
+    }));
+    setNpcCars(initialCars);
+    
+    // Initialize frames for each NPC
+    const frames = {};
+    initialCars.forEach(car => {
+      frames[car.id] = 0;
+    });
+    setNpcFrames(frames);
+  }, []);
+
+  // Animate NPC cars
+  useEffect(() => {
+    if (npcCars.length === 0) return;
+
+    const animations = npcCars.map(car => {
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(car.yAnim, {
+            toValue: -800,
+            duration: 8000 ,
+            useNativeDriver: true,
+          }),
+          Animated.timing(car.yAnim, {
+            toValue: carHeight * 2,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+      return animation;
+    });
+
+    return () => {
+      animations.forEach(anim => anim.stop());
+    };
+  }, [npcCars]);
+
+  // Animate NPC car frames
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNpcFrames(prev => {
+        const updated = { ...prev };
+        npcCars.forEach(car => {
+          updated[car.id] = (updated[car.id] + 1) % 2;
+        });
+        return updated;
+      });
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [npcCars]);
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
@@ -444,6 +540,22 @@ export default function DrivingGame() {
             resizeMode="contain"
         />
       </Animated.View>
+
+      {/* NPC Cars */}
+      {npcCars.map(car => (
+        <Animated.Image
+          key={car.id}
+          source={npcCarSprites[car.color][npcFrames[car.id] || 0]}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            left: car.column * tileSize + (tileSize - carWidth) / 2,
+            transform: [{ translateY: car.yAnim }],
+            zIndex: 5,
+          }}
+        />
+      ))}
 
       {/* Car - fixed in middle lane */}
       {isCarVisible && (
