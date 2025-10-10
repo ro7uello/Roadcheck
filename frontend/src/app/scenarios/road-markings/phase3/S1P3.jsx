@@ -320,7 +320,7 @@ export default function DrivingGame() {
       startScrollAnimation();
     } else {
       // Navigate directly to S2P3
-      router.push(`/scenarios/road-markings/phase3/S10P3`);
+      router.push(`/scenarios/road-markings/phase3/S2P3`);
     }
   };
 
