@@ -757,6 +757,122 @@ app.get('/profiles/:userId', async (req, res) => {
   }
 });
 
+// DELETE ACCOUNT ENDPOINT
+app.delete('/user/delete-account/:userId', authenticate, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Verify the user is deleting their own account
+    if (req.user.id !== userId && req.user.sub !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only delete your own account'
+      });
+    }
+
+    console.log('🗑️ Starting account deletion for user:', userId);
+
+    // Delete in order due to foreign key constraints
+
+    // 1. Delete scenario progress - FIXED
+    // First get all session IDs for this user
+    const { data: userSessions, error: sessionsListError } = await supabase
+      .from('user_sessions')
+      .select('id')
+      .eq('user_id', userId);
+
+    if (!sessionsListError && userSessions && userSessions.length > 0) {
+      const sessionIds = userSessions.map(session => session.id);
+
+      const { error: progressError } = await supabase
+        .from('scenario_progress')
+        .delete()
+        .in('session_id', sessionIds);
+
+      if (progressError) {
+        console.error('Error deleting scenario progress:', progressError);
+      } else {
+        console.log('✅ Deleted scenario progress');
+      }
+    }
+
+    // 2. Delete user sessions
+    const { error: sessionsError } = await supabase
+      .from('user_sessions')
+      .delete()
+      .eq('user_id', userId);
+
+    if (sessionsError) {
+      console.error('Error deleting user sessions:', sessionsError);
+    } else {
+      console.log('✅ Deleted user sessions');
+    }
+
+    // 3. Delete user attempts
+    const { error: attemptsError } = await supabase
+      .from('user_attempts')
+      .delete()
+      .eq('user_id', userId);
+
+    if (attemptsError) {
+      console.error('Error deleting user attempts:', attemptsError);
+    } else {
+      console.log('✅ Deleted user attempts');
+    }
+
+    // 4. Delete user progress
+    const { error: userProgressError } = await supabase
+      .from('user_progress')
+      .delete()
+      .eq('user_id', userId);
+
+    if (userProgressError) {
+      console.error('Error deleting user progress:', userProgressError);
+    } else {
+      console.log('✅ Deleted user progress');
+    }
+
+    // 5. Delete profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    if (profileError) {
+      console.error('Error deleting profile:', profileError);
+    } else {
+      console.log('✅ Deleted profile');
+    }
+
+    // 6. Delete from Supabase Auth
+    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+
+    if (authError) {
+      console.error('Error deleting auth user:', authError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to delete account from authentication system',
+        error: authError.message
+      });
+    }
+
+    console.log('✅ Account deleted successfully for user:', userId);
+
+    res.json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete account',
+      error: error.message
+    });
+  }
+});
+
 // ===========================
 // USER PROGRESS ROUTES
 // ===========================

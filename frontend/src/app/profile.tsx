@@ -25,6 +25,8 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadProfileData();
@@ -108,7 +110,6 @@ export default function ProfileScreen() {
     return { text: "FAILED", color: "#ef4444" };
   };
 
-  // NEW: Calculate overall progress percentage
   const calculateOverallProgress = () => {
     if (!stats) return 0;
 
@@ -120,7 +121,6 @@ export default function ProfileScreen() {
     return Math.round(avgAccuracy);
   };
 
-  // NEW: Get dynamic driver status based on progress
   const getDriverStatus = () => {
     const progress = calculateOverallProgress();
 
@@ -136,7 +136,59 @@ export default function ProfileScreen() {
     return { title: "Learner's Permit", icon: "🚗", tier: 1 };
   };
 
-  // NEW: Status info modal content
+  const handleDeleteAccount = async () => {
+    try {
+      setDeleting(true);
+
+      const token = await AsyncStorage.getItem('access_token');
+      const storedUserId = await AsyncStorage.getItem('userId');
+
+      if (!token || !storedUserId) {
+        Alert.alert('Error', 'Session expired. Please login again.');
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/user/delete-account/${storedUserId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Clear all stored data
+        await AsyncStorage.multiRemove([
+          'access_token',
+          'refresh_token',
+          'userId',
+          'user_email'
+        ]);
+
+        setShowDeleteModal(false);
+        Alert.alert(
+          'Account Deleted',
+          'Your account has been permanently deleted.',
+          [
+            {
+              text: 'OK',
+              onPress: () => router.replace('/login')
+            }
+          ]
+        );
+      } else {
+        throw new Error(data.message || 'Failed to delete account');
+      }
+    } catch (error) {
+      console.error('Delete account error:', error);
+      Alert.alert('Error', 'Failed to delete account. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const StatusInfoModal = () => {
     const statusRanks = [
       { range: "0-10%", title: "Learner's Permit", icon: "🚗" },
@@ -332,7 +384,74 @@ export default function ProfileScreen() {
               </View>
             ))}
         </View>
+
+        {/* Delete Account Section - INSIDE ScrollView */}
+        <View style={[styles.card, { borderColor: '#ef4444', backgroundColor: '#fee2e2' }]}>
+          <Text style={[styles.sectionTitle, { color: '#ef4444' }]}>DANGER ZONE</Text>
+          <Text style={styles.deleteWarningText}>
+            Deleting your account is permanent and cannot be undone. All your progress and data will be lost.
+          </Text>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => setShowDeleteModal(true)}
+          >
+            <Text style={styles.deleteButtonText}>DELETE ACCOUNT</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDeleteModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.deleteModalContent}>
+            <Text style={styles.deleteModalTitle}>⚠️ DELETE ACCOUNT</Text>
+
+            <ScrollView
+              style={styles.deleteModalScroll}
+              contentContainerStyle={styles.deleteModalScrollContent}
+              showsVerticalScrollIndicator={true}
+            >
+              <Text style={styles.deleteModalText}>
+                Are you sure you want to delete your account?
+                {'\n\n'}
+                This action is permanent and cannot be undone.
+                {'\n\n'}
+                You will lose:
+                {'\n'}• All your progress
+                {'\n'}• All your statistics
+                {'\n'}• All your completed scenarios
+                {'\n\n'}
+                Your account cannot be retrieved once deleted.
+              </Text>
+
+              {/* Buttons INSIDE ScrollView */}
+              <View style={styles.deleteModalButtons}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setShowDeleteModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>CANCEL</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.confirmDeleteButton}
+                  onPress={handleDeleteAccount}
+                  disabled={deleting}
+                >
+                  <Text style={styles.confirmDeleteButtonText}>
+                    {deleting ? 'DELETING...' : 'DELETE'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Status Info Modal */}
       <StatusInfoModal />
@@ -369,7 +488,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
-    paddingLeft: 100, // Move content away from camera
+    paddingLeft: 100,
   },
   header: {
     alignItems: 'center',
@@ -391,7 +510,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 3,
     borderColor: '#000',
-    maxWidth: '85%', // Smaller container
+    maxWidth: '85%',
   },
   infoRow: {
     flexDirection: 'row',
@@ -412,7 +531,6 @@ const styles = StyleSheet.create({
   emailText: {
     fontSize: 12,
   },
-  // NEW: Status container with icon and info button
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -440,7 +558,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'pixel',
   },
-  // NEW: Progress bar styles
   progressBarContainer: {
     marginTop: 15,
   },
@@ -469,14 +586,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'right',
   },
-  // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 30,
-    paddingLeft: 100, // Avoid camera notch
+    paddingLeft: 100,
     paddingTop: 0,
     paddingBottom: 0,
   },
@@ -634,5 +750,94 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#fff',
     fontFamily: 'pixel',
+  },
+  deleteWarningText: {
+    fontSize: 10,
+    color: '#991b1b',
+    fontFamily: 'pixel',
+    marginBottom: 15,
+    lineHeight: 16,
+    textAlign: 'center',
+  },
+  deleteButton: {
+    backgroundColor: '#ef4444',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#991b1b',
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    color: '#fff',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+  },
+  deleteModalContent: {
+    backgroundColor: '#f5e6d3',
+    borderRadius: 15,
+    padding: 20,
+    width: '95%',
+    maxWidth: 550,
+    maxHeight: '60%',
+    borderWidth: 3,
+    borderColor: '#ef4444',
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    color: '#ef4444',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  deleteModalScroll: {
+    maxHeight: 250,
+  },
+  deleteModalScrollContent: {
+    paddingVertical: 5,
+  },
+  deleteModalText: {
+    fontSize: 11,
+    color: '#000',
+    fontFamily: 'pixel',
+    lineHeight: 18,
+    textAlign: 'center',
+    paddingHorizontal: 5,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 15,
+    paddingTop: 12,
+    borderTopWidth: 2,
+    borderTopColor: '#d1d5db',
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#6b7280',
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#4a5568',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    color: '#fff',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+  },
+  confirmDeleteButton: {
+    flex: 1,
+    backgroundColor: '#ef4444',
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#991b1b',
+  },
+  confirmDeleteButtonText: {
+    fontSize: 14,
+    color: '#fff',
+    fontFamily: 'pixel',
+    textAlign: 'center',
   },
 });
