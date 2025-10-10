@@ -15,9 +15,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@env';
 import { useSession } from '../../../../contexts/SessionManager';
 
-// Debug API_URL at module level
-console.log('S6P3 Module loaded. API_URL from env:', API_URL);
-
 const { width, height } = Dimensions.get("window");
 
 // Responsive calculations

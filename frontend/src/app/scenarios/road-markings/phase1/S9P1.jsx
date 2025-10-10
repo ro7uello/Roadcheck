@@ -442,14 +442,14 @@ export default function DrivingGame() {
     setShowAnswers(false);
 
     const currentQuestion = questions[questionIndex];
-    const isCorrect = answer === currentQuestion.correct;
-    updateProgress(answer, isCorrect);
+    const isCorrect = option === currentQuestion.correct;
+    updateProgress(option, isCorrect);
     
     // Stop continuous scroll and sprite animations immediately
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
     if (busAnimationRef.current) busAnimationRef.current.stop();
     setIsPlayerCarVisible(true);
-    setIsBusVisible(true); // Ensure both are visible before animating
+    setIsBusVisible(true);
     setPlayerCarFrame(0);
     setBusFrame(0);
 
@@ -465,10 +465,7 @@ export default function DrivingGame() {
       handleFeedback(option);
     } else if (option === "Overtake without additional precautions since lines are broken") {
       await animateSuddenOvertake();
-      handleFeedback(option);
     } else {
-        // Fallback for any other answer (e.g., the other wrong answer from the example)
-        // For now, just show feedback after a small delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         handleFeedback(option);
     }
@@ -488,48 +485,44 @@ export default function DrivingGame() {
     setIsPlayerCarVisible(true);
     setIsBusVisible(true);
 
-    if (questionIndex < questions.length - 1) {
-    setQuestionIndex(questionIndex + 1);
-    startScrollAnimation();
-  } else {
-    // Get current scenario number from file name
-    const currentFileScenario = 10; // For S1P1, this is 1; for S2P1 it would be 2, etc.
-    
-    if (currentFileScenario >= 10) {
-      // Last scenario of phase 1 - complete session and go to results
-      try {
-        const sessionResults = await completeSession();
-        if (sessionResults) {
-          router.push({
-            pathname: '/result',
-            params: {
-              ...sessionResults,
-              userAttempts: JSON.stringify(sessionResults.attempts),
-              scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Error completing session:', error);
-        Alert.alert('Error', 'Failed to save session results');
-      }
-    } else {
-      // Move to next scenario in phase 1
-      moveToNextScenario();
-      
-      const nextScenarioNumber = currentFileScenario + 1;
-      const nextScreen = `S${nextScenarioNumber}P1`;
-      router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
-    }
+  if (questionIndex < questions.length - 1) {
+        setQuestionIndex(questionIndex + 1);
+        startScrollAnimation();
+      } else {
+        const currentFileScenario = 9;
 
-    setShowQuestion(false);
-    if (scrollAnimationRef.current) {
-      scrollAnimationRef.current.stop();
-    }
-    if (busAnimationRef.current) {
-      busAnimationRef.current.stop();
-    }
-    npcCarAnimationsRef.current.forEach(anim => anim.stop());
+        if (currentFileScenario >= 10) {
+          try {
+            const sessionResults = await completeSession();
+            if (sessionResults) {
+              router.push({
+                pathname: '/result',
+                params: {
+                  ...sessionResults,
+                  userAttempts: JSON.stringify(sessionResults.attempts),
+                  scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+                }
+              });
+            }
+          } catch (error) {
+            console.error('Error completing session:', error);
+            Alert.alert('Error', 'Failed to save session results');
+          }
+        } else {
+          moveToNextScenario();
+
+          const nextScenarioNumber = currentFileScenario + 1;
+          const nextScreen = `S${nextScenarioNumber}P1`;
+          router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
+        }
+
+        setShowQuestion(false);
+        if (scrollAnimationRef.current) {
+          scrollAnimationRef.current.stop();
+        }
+        if (busAnimationRef.current) {
+          busAnimationRef.current.stop();
+        }
   }
 };
 

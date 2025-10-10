@@ -243,7 +243,6 @@ app.post('/auth/signup', [
         id: data.user.id,
         username: usernameLower,
         full_name: `${firstName.trim()} ${lastName.trim()}`,
-        avatar_url: null
       });
 
     if (profileError) {
