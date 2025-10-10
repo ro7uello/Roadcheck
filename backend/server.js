@@ -689,13 +689,17 @@ app.get('/profiles/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
 
+    console.log('Fetching profile for userId:', userId);
+
+    // First, check if profile exists
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, full_name, avatar_url, created_at')
+      .select('id, username, full_name, created_at')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
+      console.error('Profile fetch error:', error);
       return res.status(400).json({
         success: false,
         message: 'Error fetching profile',
@@ -703,9 +707,45 @@ app.get('/profiles/:userId', async (req, res) => {
       });
     }
 
+    if (!data) {
+      console.log('❌ No profile found for userId:', userId);
+
+      // Try to get email from auth.users
+      const { data: { user }, error: authError } = await supabase.auth.admin.getUserById(userId);
+
+      if (authError || !user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Profile and user not found',
+          error: 'No profile or user exists'
+        });
+      }
+
+      // User exists in auth but no profile - return minimal info
+      console.log('⚠️ User exists in auth but no profile. Email:', user.email);
+      return res.json({
+        success: true,
+        data: {
+          id: userId,
+          username: user.email?.split('@')[0] || 'user',
+          email: user.email,
+          missing_profile: true
+        },
+        warning: 'Profile not found in database, using auth data'
+      });
+    }
+
+    console.log('✅ Profile found:', data);
+
+    // Get email from auth
+    const { data: { user }, error: authError } = await supabase.auth.admin.getUserById(userId);
+
     res.json({
       success: true,
-      data: data
+      data: {
+        ...data,
+        email: user?.email || null
+      }
     });
   } catch (error) {
     console.error('Error in /profiles/:userId:', error);

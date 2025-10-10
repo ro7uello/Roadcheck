@@ -418,7 +418,7 @@ export default function DrivingGame() {
   // Determine the feedback message based on whether the answer was correct or wrong (from S9P1)
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! You made the right choice."
+    ? "Solid white lines discourage crossing, you may even get a violation ticket if you did this near an intersection. It is safer to just continue and find another route towards your destination"
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
 
   // Main game rendering
