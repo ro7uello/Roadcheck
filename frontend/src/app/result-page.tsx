@@ -420,7 +420,7 @@ export default function ResultPage() {
       <View style={styles.topRightIcons}>
         <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
           <Image
-            source={require('../../assets/icon/Settings.png')}
+            source={require('../../assets/icon/c-trans.png')}
             style={styles.topIcon}
             resizeMode="contain"
           />
