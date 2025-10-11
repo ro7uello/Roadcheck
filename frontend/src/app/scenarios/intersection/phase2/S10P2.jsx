@@ -71,6 +71,33 @@ const carSprites = {
   ],
 };
 
+const npcCarSprites = {
+  red: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  black: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  blue: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  brown: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  green: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  white: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+};
+
 const trafficSign = {
     sign: require("../../../../../assets/signs/dir_sign_6.png"),
 };
@@ -85,7 +112,6 @@ const questions = [
       "Stop and ask for directions from other drivers": "Wrong! Stopping to ask directions on or near expressways is dangerous and illegal except in emergencies."
     }
   },
-  // Add more questions here as needed
 ];
 
 export default function DrivingGame() {
@@ -111,6 +137,10 @@ export default function DrivingGame() {
   const trafficSignRowIndex = 14;
   const trafficSignColIndex = 3.8;
   const trafficSignXOffset = 20;
+
+  // NPC Cars State
+  const [npcCars, setNpcCars] = useState([]);
+  const [npcFrames, setNpcFrames] = useState({});
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -150,6 +180,94 @@ export default function DrivingGame() {
       console.error('Error updating scenario progress:', error);
     }
   };
+
+  // Initialize NPC cars
+  useEffect(() => {
+    const colors = ['red', 'black', 'brown', 'green', 'white'];
+    const lanes = [0.25, 0.35, 0.65]; // Left, center-left, center-right lanes
+    
+    const initialNpcCars = [
+      {
+        id: 1,
+        color: colors[0],
+        lane: lanes[0],
+        startRow: 20,
+        yAnim: new Animated.Value(20 * tileSize),
+      },
+      {
+        id: 2,
+        color: colors[1],
+        lane: lanes[1],
+        startRow: 18,
+        yAnim: new Animated.Value(18 * tileSize),
+      },
+      {
+        id: 3,
+        color: colors[2],
+        lane: lanes[2],
+        startRow: 22,
+        yAnim: new Animated.Value(22 * tileSize),
+      },
+      {
+        id: 4,
+        color: colors[3],
+        lane: lanes[0],
+        startRow: 15,
+        yAnim: new Animated.Value(15 * tileSize),
+      },
+      {
+        id: 5,
+        color: colors[4],
+        lane: lanes[2],
+        startRow: 12,
+        yAnim: new Animated.Value(12 * tileSize),
+      },
+    ];
+
+    setNpcCars(initialNpcCars);
+    
+    const initialFrames = {};
+    initialNpcCars.forEach(car => {
+      initialFrames[car.id] = 0;
+    });
+    setNpcFrames(initialFrames);
+  }, []);
+
+  // Animate NPC cars
+  useEffect(() => {
+    if (npcCars.length === 0) return;
+
+    const animations = npcCars.map(car => 
+      Animated.loop(
+        Animated.timing(car.yAnim, {
+          toValue: -tileSize * 5,
+          duration: 8000,
+          useNativeDriver: true,
+        })
+      )
+    );
+
+    animations.forEach(anim => anim.start());
+
+    return () => {
+      animations.forEach(anim => anim.stop());
+    };
+  }, [npcCars]);
+
+  // NPC sprite animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNpcFrames(prev => {
+        const updated = { ...prev };
+        npcCars.forEach(car => {
+          updated[car.id] = (prev[car.id] + 1) % 2;
+        });
+        return updated;
+      });
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [npcCars]);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -216,14 +334,11 @@ export default function DrivingGame() {
     await updateProgress(answer, isCorrect);
 
     if (answer === "Exit immediately at the next available ramp") {
-      // Lane change to right side
       const rightLaneX = width * 0.7 - carWidth / 2;
       
-      // Start with NORTHEAST direction
       setCarDirection("NORTHEAST");
       setCarFrame(0);
       
-      // Animate lane change and scroll simultaneously
       Animated.parallel([
         Animated.timing(carXAnim, {
           toValue: rightLaneX,
@@ -237,12 +352,10 @@ export default function DrivingGame() {
         })
       ]).start();
       
-      // Change to NORTH direction halfway through lane change
       setTimeout(() => {
         setCarDirection("NORTH");
       }, 600);
       
-      // Hide car at the end
       setTimeout(() => {
         setIsCarVisible(false);
         handleFeedback(answer);
@@ -250,13 +363,12 @@ export default function DrivingGame() {
       
       return;
     } else if (answer === "Continue to the expressway end and follow directional signs for your destination") {
-      // Drive straight at reduced speed (slower animation)
       setCarDirection("NORTH");
       setCarFrame(0);
       
       Animated.timing(scrollY, {
         toValue: currentScroll.current + tileSize * 5,
-        duration: 4000, // Slower duration = reduced speed
+        duration: 4000,
         useNativeDriver: true,
       }).start(() => {
         setIsCarVisible(false);
@@ -264,17 +376,14 @@ export default function DrivingGame() {
       });
       return;
     } else if (answer === "Stop and ask for directions from other drivers") {
-      // Drive straight then brake (quick stop)
       setCarDirection("NORTH");
       setCarFrame(0);
       
-      // Move forward briefly
       Animated.timing(scrollY, {
         toValue: currentScroll.current + tileSize * 1.5,
         duration: 800,
         useNativeDriver: true,
       }).start(() => {
-        // Sudden stop - pause briefly to simulate braking
         setCarPaused(true);
         setTimeout(() => {
           setIsCarVisible(false);
@@ -292,7 +401,6 @@ export default function DrivingGame() {
     setCarFrame(0);
     setIsCorrectAnswer(null);
     
-    // Reset car position and visibility to middle lane
     const middleLaneX = width * 0.5 - carWidth / 2;
     carXAnim.setValue(middleLaneX);
     setCarDirection("NORTH");
@@ -324,7 +432,6 @@ export default function DrivingGame() {
         Alert.alert('Error', 'Failed to save session results');
       }
     } else {
-      // Move to next scenario
       moveToNextScenario();
       const nextScreen = `S${currentScenario + 1}P2`;  
       router.push(`/scenarios/intersection/phase2/${nextScreen}`); 
@@ -334,13 +441,11 @@ export default function DrivingGame() {
   const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;  
   const trafficSignTop = trafficSignRowIndex * tileSize;
 
-  // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
     ? "Correct! Expressway ends are designed with directional signage to guide traffic to connecting roads. Follow the system as designed."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
-  // Ensure car sprite exists for current direction
   const currentCarSprite = carSprites[carDirection] && carSprites[carDirection][carFrame] 
     ? carSprites[carDirection][carFrame] 
     : carSprites["NORTH"][0];
@@ -386,9 +491,25 @@ export default function DrivingGame() {
                 }}
             resizeMode="contain"
         />
+
+        {/* NPC Cars */}
+        {npcCars.map(car => (
+          <Animated.Image
+            key={car.id}
+            source={npcCarSprites[car.color][npcFrames[car.id] || 0]}
+            style={{
+              width: carWidth,
+              height: carHeight,
+              position: "absolute",
+              left: width * car.lane - carWidth / 2,
+              transform: [{ translateY: car.yAnim }],
+              zIndex: 7,
+            }}
+          />
+        ))}
       </Animated.View>
 
-      {/* Car - fixed in middle lane */}
+      {/* Player Car */}
       {isCarVisible && (
         <Animated.Image
           source={currentCarSprite}
@@ -403,7 +524,7 @@ export default function DrivingGame() {
         />
       )}
 
-      {/* Question overlay - moved to bottom */}
+      {/* Question overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -420,7 +541,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Answers - moved above bottom overlay */}
+      {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -435,7 +556,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Feedback - moved to bottom */}
+      {/* Feedback */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -456,7 +577,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Next button - positioned above bottom overlay */}
+      {/* Next button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity onPress={handleNext} style={styles.nextButton}>

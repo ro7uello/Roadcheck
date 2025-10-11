@@ -71,6 +71,33 @@ const carSprites = {
   ],
 };
 
+const npcCarSprites = {
+  red: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  black: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  blue: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  brown: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  green: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  white: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+};
+
 const trafficSign = {
     sign: require("../../../../../assets/signs/dir_sign_5.png"),
 };
@@ -81,7 +108,7 @@ const questions = [
     options: ["Take the exit since Olongapo is mentioned", "Continue to the next exit to be safe", "Slow down dangerously to read the sign again"],
     correct: "Take the exit since Olongapo is mentioned",
     wrongExplanation: {
-      "Maintain your current speed since you're within the speed limit": "Wrong! Ignoring clear directional signage can lead to longer travel times and missing your destination.",
+      "Continue to the next exit to be safe": "Wrong! Ignoring clear directional signage can lead to longer travel times and missing your destination.",
       "Slow down dangerously to read the sign again": "Wrong! Slowing down dangerously to re-read signs creates traffic hazards. Trust the information provided by the advance warning system."
     }
   },
@@ -112,12 +139,78 @@ export default function DrivingGame() {
   const trafficSignColIndex = 3.8;
   const trafficSignXOffset = 20;
 
+  // NPC Cars state
+  const [npcCars, setNpcCars] = useState([]);
+  const [npcFrames, setNpcFrames] = useState({});
+
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
       currentScroll.current = value;
     });
     return () => scrollY.removeListener(id);
   }, [scrollY]);
+
+  // Initialize NPC cars
+  useEffect(() => {
+    const colors = ['red', 'black', 'green'];
+    const columns = [0, 1, 3];
+    const initialCars = columns.map((col, idx) => ({
+      id: `npc-${idx}`,
+      color: colors[idx],
+      column: col,
+      yAnim: new Animated.Value(-(Math.random() * 200)),
+    }));
+    setNpcCars(initialCars);
+
+    const initialFrames = {};
+    initialCars.forEach(car => {
+      initialFrames[car.id] = 0;
+    });
+    setNpcFrames(initialFrames);
+  }, []);
+
+  // Animate NPC cars
+  useEffect(() => {
+    if (npcCars.length === 0) return;
+
+    const animations = npcCars.map(car => {
+      return Animated.loop(
+        Animated.sequence([
+          Animated.timing(car.yAnim, {
+            toValue: - 500,
+            duration: 10000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(car.yAnim, {
+            toValue: height + Math.random() * 500 + 800,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+    });
+
+    animations.forEach(anim => anim.start());
+
+    return () => {
+      animations.forEach(anim => anim.stop());
+    };
+  }, [npcCars]);
+
+  // NPC sprite animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNpcFrames(prev => {
+        const updated = {};
+        npcCars.forEach(car => {
+          updated[car.id] = (prev[car.id] + 1) % 2;
+        });
+        return updated;
+      });
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [npcCars]);
 
   // UI/game states
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -388,6 +481,25 @@ export default function DrivingGame() {
             resizeMode="contain"
         />
       </Animated.View>
+
+      {/* NPC Cars */}
+      {npcCars.map(car => {
+        const laneX = (car.column * tileSize) + (tileSize / 2) - (carWidth / 2);
+        return (
+          <Animated.Image
+            key={car.id}
+            source={npcCarSprites[car.color][npcFrames[car.id] || 0]}
+            style={{
+              width: carWidth,
+              height: carHeight,
+              position: "absolute",
+              left: laneX,
+              transform: [{ translateY: car.yAnim }],
+              zIndex: 7,
+            }}
+          />
+        );
+      })}
 
       {/* Car - fixed in middle lane */}
       {isCarVisible && (

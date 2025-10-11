@@ -71,6 +71,33 @@ const carSprites = {
   ],
 };
 
+const npcCarSprites = {
+  red: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  black: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  blue: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  brown: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  green: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  white: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+};
+
 const trafficSign = {
     sign: require("../../../../../assets/signs/warning_sign2.png"),
 };
@@ -112,6 +139,13 @@ export default function DrivingGame() {
   const trafficSignColIndex = 3.8;
   const trafficSignXOffset = 20;
 
+  // NPC cars state
+  const [npcCars, setNpcCars] = useState([
+    { id: 1, color: 'red', column: 0, frame: 0, yAnim: new Animated.Value(carHeight * 3) },
+    { id: 2, color: 'black', column: 1, frame: 0, yAnim: new Animated.Value(carHeight * 5) },
+    { id: 3, color: 'green', column: 3, frame: 0, yAnim: new Animated.Value(carHeight * 4) },
+  ]);
+
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
       currentScroll.current = value;
@@ -132,6 +166,42 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const middleLaneX = width * 0.5 - carWidth / 2;
   const carXAnim = useRef(new Animated.Value(middleLaneX)).current;
+
+  // NPC car animation
+  useEffect(() => {
+    const animateNpcCars = () => {
+      npcCars.forEach((car) => {
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(car.yAnim, {
+              toValue: -height - carHeight,
+              duration: 3000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(car.yAnim, {
+              toValue: carHeight * (3 + Math.random() * 3),
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ])
+        ).start();
+      });
+    };
+
+    animateNpcCars();
+  }, []);
+
+  // NPC car sprite animation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNpcCars(prev => prev.map(car => ({
+        ...car,
+        frame: (car.frame + 1) % npcCarSprites[car.color].length
+      })));
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
@@ -367,6 +437,22 @@ export default function DrivingGame() {
             resizeMode="contain"
         />
       </Animated.View>
+
+      {/* NPC Cars */}
+      {npcCars.map((car) => (
+        <Animated.Image
+          key={car.id}
+          source={npcCarSprites[car.color][car.frame]}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            left: car.column * tileSize + (tileSize - carWidth) / 2,
+            zIndex: 7,
+            transform: [{ translateY: car.yAnim }],
+          }}
+        />
+      ))}
 
       {/* Car - fixed in middle lane */}
       {isCarVisible && (

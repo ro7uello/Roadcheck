@@ -102,7 +102,7 @@ const questions = [
 ];
 
 const trafficSign = {
-  sign: require("../../../../../assets/signs/dir_sign_3.png"),
+  sign: require("../../../../../assets/signs/dir_sign_7.png"),
 };
 const trafficSign2 = {
   sign: require("../../../../../assets/signs/t_junction4.png"),

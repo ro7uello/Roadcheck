@@ -159,7 +159,7 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 8;
+    const stopRow = 6;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -278,7 +278,7 @@ export default function DrivingGame() {
 
     if (answer === "Proceed to a cash lane and explain your situation to the toll operator") {
       // Move forward first
-      const moveToRow = 8;
+      const moveToRow = 7;
       const initialScrollTarget = currentScroll.current + (moveToRow - currentRow) * tileSize;
 
       Animated.timing(scrollY, {

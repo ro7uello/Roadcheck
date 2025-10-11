@@ -312,7 +312,7 @@ export default function DrivingGame() {
             useNativeDriver: true,
           }),
           Animated.timing(truckYAnim, { // Move up while merging
-            toValue: 7.5 * tileSize, // Intermediate position
+            toValue: 5 * tileSize, // Intermediate position
             duration: 1500,
             useNativeDriver: true,
           }),
@@ -322,14 +322,14 @@ export default function DrivingGame() {
           
           // 2. Continue moving straight up (NORTH)
           Animated.timing(truckYAnim, {
-            toValue: 9 * tileSize, // Final stop position at row 9
+            toValue: 4 * tileSize, // Final stop position at row 9
             duration: 1000,
             useNativeDriver: true,
           }).start(() => {
             // Truck animation complete, now move the user's car
             setCarPaused(false); // Allow user's car to resume animation
 
-            const targetRow = 10; // Row past where the truck stopped
+            const targetRow = 8; // Row past where the truck stopped
             const rowsToMove = targetRow - currentRow;
             const nextTarget = currentScroll.current + rowsToMove * tileSize;
 

@@ -15,33 +15,34 @@ const sideMargin = width * 0.05;
 
 const roadTiles = {
     road2: require("../../../../../assets/road/road2.png"),
+    road80: require("../../../../../assets/road/road80.png")
 
 };
 
 const mapLayout = [
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
-  ["road2", "road2", "road2", "road2", "road2"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
+  ["road2", "road2", "road2", "road2", "road80"],
 ];
 
 const carSprites = {
@@ -86,6 +87,10 @@ const npcCarSprites = {
   ],
 };
 
+const trafficSign = {
+    sign: require("../../../../../assets/signs/dir_sign_8.png"),
+};
+
 
 const questions = [
   {
@@ -123,6 +128,10 @@ export default function DrivingGame() {
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
+  const trafficSignRowIndex = 14;
+  const trafficSignColIndex = 3.8;
+  const trafficSignXOffset = 20;
+
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
       currentScroll.current = value;
@@ -159,9 +168,19 @@ export default function DrivingGame() {
     { lane: 2, row: 7, color: 'green' },
     { lane: 2, row: 11, color: 'white' },
     { lane: 4, row: 5, color: 'brown' },
-    { lane: 4, row: 10, color: 'red' },
-    { lane: 5, row: 4, color: 'black' },
-    { lane: 5, row: 8, color: 'blue' },
+    { lane: 4, row: 8, color: 'red' },
+    { lane: 4, row: 4, color: 'black' },
+    { lane: 4, row: 8, color: 'blue' },
+
+    { lane: 2, row: 10, color: 'red' },
+    { lane: 1, row: 9, color: 'black' },
+    { lane: 2, row: 15, color: 'blue' },
+    { lane: 2, row: 14, color: 'green' },
+    { lane: 2, row: 11, color: 'white' },
+    { lane: 4, row: 5, color: 'brown' },
+    { lane: 3, row: 11, color: 'red' },
+    { lane: 3, row: 11, color: 'black' },
+    { lane: 4, row: 14, color: 'blue' },
   ];
 
   const updateProgress = async (selectedOption, isCorrect) => {
@@ -289,7 +308,7 @@ export default function DrivingGame() {
 
     if (answer === "Cut across all lanes quickly to reach the exit") {
       // Quickly move to middle lane without much forward progress
-      const rightmostLaneX = width * 0.9 - carWidth / 2;
+      const rightmostLaneX = width * .7 - carWidth / 2;
       
       // Quick diagonal movement using NORTHWEST sprite
       setCarDirection("NORTHEAST");
@@ -331,7 +350,7 @@ export default function DrivingGame() {
       return;
     } else if (answer === "Signal right and gradually move to the exit lane") {
       // Slowly move to middle lane with more forward progress
-      const rightmostLaneX = width * 0.9 - carWidth / 2;
+      const rightmostLaneX = width * 0.7 - carWidth / 2;
       
       // Slow diagonal movement using NORTHWEST sprite
       setCarDirection("NORTHEAST");
@@ -429,6 +448,8 @@ export default function DrivingGame() {
       router.push(`/scenarios/intersection/phase2/${nextScreen}`); 
     }
   };
+  const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;  
+  const trafficSignTop = trafficSignRowIndex * tileSize;
 
   // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
@@ -470,6 +491,18 @@ export default function DrivingGame() {
             />
           ))
         )}
+        <Image
+          source={trafficSign.sign}
+          style={{
+          width: tileSize * 1,
+          height: tileSize *1,
+          position: "absolute",
+          top: trafficSignTop,
+          left: trafficSignLeft,
+          zIndex: 11,
+              }}
+          resizeMode="contain"
+        />
       </Animated.View>
 
       {/* Car - fixed in rightmost lane */}

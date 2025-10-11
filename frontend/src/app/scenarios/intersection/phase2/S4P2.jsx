@@ -435,7 +435,7 @@ export default function DrivingGame() {
   // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! The advance warning gives you time to position yourself in the appropriate lane type (RFID/cash) safely with proper signaling."
+    ? "Correct! Service centers are strategically placed for driver convenience and safety. The advance warning allows proper lane positioning."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction

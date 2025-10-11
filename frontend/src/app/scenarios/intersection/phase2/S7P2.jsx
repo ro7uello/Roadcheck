@@ -246,7 +246,7 @@ export default function DrivingGame() {
         setCarPaused(true);
         setTimeout(() => {
           // Change to SOUTH direction for backing up
-          setCarDirection("SOUTH");
+          setCarDirection("NORTH");
           setCarPaused(false);
           
           // Reverse back 2 rows
