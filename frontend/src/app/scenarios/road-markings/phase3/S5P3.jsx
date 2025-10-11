@@ -117,14 +117,7 @@ export default function DrivingGame() {
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      const scenarioId = 10 + currentScenario;
-      console.log('🔍 SCENARIO DEBUG:', {
-        currentScenario,
-        calculatedScenarioId: scenarioId,
-        selectedOption,
-        isCorrect
-      });
-
+      const scenarioId = 20 + currentScenario;
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -374,30 +367,19 @@ export default function DrivingGame() {
     setIsCarVisible(true);
 
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else if (currentScenario >= 10) {
-              // Last scenario in phase - complete session
-              try {
-                const sessionResults = await completeSession();
-                router.push({
-                  pathname: '/result',
-                  params: {
-                    ...sessionResults,
-                    userAttempts: JSON.stringify(sessionResults.attempts)
-                  }
-                });
-              } catch (error) {
-                console.error('Error completing session:', error);
-                Alert.alert('Error', 'Failed to save session results');
-              }
-            } else {
-             // moveToNextScenario();
-             //const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
-              //router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-              router.push(`/scenarios/road-markings/phase3/S6P3`);
-            }
-      };
+         setQuestionIndex(questionIndex + 1);
+       } else if (currentScenario >= 10) {
+         const sessionResults = await completeSession();
+         navigation.navigate('/result-page', {
+           ...sessionResults,
+           userAttempts: JSON.stringify(sessionResults.attempts)
+         });
+       } else {
+         moveToNextScenario();
+         const nextScreen = `S${currentScenario + 1}P3`;
+         navigation.navigate(nextScreen);
+       }
+    };
 
   // Determine the feedback message
   const currentQuestionData = questions[questionIndex];

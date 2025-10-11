@@ -99,28 +99,7 @@ export default function DrivingGame() {
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      const phaseId = sessionData?.phase_id || 3;
-      const categoryId = sessionData?.category?.id || 1;
-      
-      let baseId;
-      if (categoryId === 1) {
-        baseId = (phaseId - 1) * 10;
-      } else {
-        baseId = 30 + ((phaseId - 1) * 10);
-      }
-      
-      const scenarioId = baseId + currentScenario;
-
-      console.log('🔍 SCENARIO DEBUG:', {
-        categoryId,
-        phaseId,
-        currentScenario,
-        baseId,
-        calculatedScenarioId: scenarioId,
-        selectedOption,
-        isCorrect
-      });
-
+      const scenarioId = 20 + currentScenario;
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -316,13 +295,19 @@ export default function DrivingGame() {
     trafficCarY.setValue(-350);
 
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else {
-      // Navigate directly to S2P3
-      router.push(`/scenarios/road-markings/phase3/S2P3`);
-    }
-  };
+         setQuestionIndex(questionIndex + 1);
+       } else if (currentScenario >= 10) {
+         const sessionResults = await completeSession();
+         navigation.navigate('/result-page', {
+           ...sessionResults,
+           userAttempts: JSON.stringify(sessionResults.attempts)
+         });
+       } else {
+         moveToNextScenario();
+         const nextScreen = `S${currentScenario + 1}P3`;
+         navigation.navigate(nextScreen);
+       }
+    };
 
   const handleStartGame = () => {
     setShowIntro(false);

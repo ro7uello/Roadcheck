@@ -402,9 +402,8 @@ export default function DrivingGame() {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else {
-      const currentFileScenario = 7;
-      
-      if (currentFileScenario >= 10) {
+      // FIXED: Use the actual currentScenario from useSession instead of hardcoded value
+      if (currentScenario >= 10) {
         try {
           const sessionResults = await completeSession();
           if (sessionResults) {
@@ -422,7 +421,9 @@ export default function DrivingGame() {
           Alert.alert('Error', 'Failed to save session results');
         }
       } else {
-        router.push(`/scenarios/road-markings/phase1/S7P1`);
+        // FIXED: Navigate to the NEXT scenario (S8P1) instead of current (S7P1)
+        const nextScenario = currentScenario + 1;
+        router.push(`/scenarios/road-markings/phase1/S${nextScenario}P1`);
       }
 
       setShowQuestion(false);

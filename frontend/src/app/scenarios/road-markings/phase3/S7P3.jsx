@@ -124,9 +124,17 @@ export default function DrivingGame() {
       moveToNextScenario,
       completeSession,
       currentScenario,
-      getScenarioProgress,
       sessionData
     } = useSession();
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      const scenarioId = 20 + currentScenario;
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
 
   const [questions, setQuestions] = useState(fallbackQuestions);
   const [error, setError] = useState(null);
@@ -226,22 +234,6 @@ export default function DrivingGame() {
 
     fetchScenarioData();
   }, []);
-
-  const updateProgress = async (selectedOption, isCorrect) => {
-    try {
-      if (!sessionData) {
-        console.log('No session data available');
-        return;
-      }
-
-      const scenarioId = 73; // S7P3 = Scenario 73
-
-      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
-      console.log(`Scenario ${scenarioId} progress updated successfully`);
-    } catch (error) {
-      console.log('Error updating progress:', error.message);
-    }
-  };
 
   // Animation for player's car sprite
   useEffect(() => {
@@ -439,12 +431,6 @@ export default function DrivingGame() {
   };
 
   const handleNext = async () => {
-    console.log('=== S7P3 HANDLE NEXT DEBUG ===');
-    console.log('Current scenario from session:', currentScenario);
-    console.log('Question index:', questionIndex);
-    console.log('Questions length:', questions.length);
-    console.log('Session data:', sessionData);
-    console.log('================================');
 
     setAnimationType(null);
     setShowNext(false);
@@ -458,30 +444,19 @@ export default function DrivingGame() {
     setIsPlayerCarVisible(true);
 
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else if (currentScenario >= 10) {
-      // Last scenario in phase - complete session
-      try {
-        const sessionResults = await completeSession();
-        router.push({
-          pathname: '/ResultPage',
-          params: {
-            ...sessionResults,
-            userAttempts: JSON.stringify(sessionResults.attempts)
-          }
-        });
-      } catch (error) {
-        console.error('Error completing session:', error);
-        Alert.alert('Error', 'Failed to save session results');
-      }
-    } else {
-      // Navigate to next scenario
-      router.push('scenarios/road-markings/phase3/S8P3');
-    }
-
-    setShowQuestion(false);
-  };
+         setQuestionIndex(questionIndex + 1);
+       } else if (currentScenario >= 10) {
+         const sessionResults = await completeSession();
+         navigation.navigate('/result-page', {
+           ...sessionResults,
+           userAttempts: JSON.stringify(sessionResults.attempts)
+         });
+       } else {
+         moveToNextScenario();
+         const nextScreen = `S${currentScenario + 1}P3`;
+         navigation.navigate(nextScreen);
+       }
+    };
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer

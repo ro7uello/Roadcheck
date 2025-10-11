@@ -109,19 +109,7 @@ export default function DrivingGame() {
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      // Traffic Signs Phase 1: scenarios 31-40
-      // Traffic Signs Phase 2: scenarios 41-50
-      const phaseId = sessionData?.phase_id || 1;
-      const baseId = phaseId === 1 ? 40 : 50; // Adjust based on phase
-      const scenarioId = baseId + currentScenario;
-
-      console.log('🔍 SCENARIO DEBUG:', {
-        currentScenario,
-        calculatedScenarioId: scenarioId,
-        selectedOption,
-        isCorrect
-      });
-
+      const scenarioId = 20 + currentScenario;
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -223,7 +211,6 @@ export default function DrivingGame() {
         });
       }
     };
-  
 
   const handleAnswer = async (answer) => {
     setSelectedAnswer(answer);
@@ -280,33 +267,19 @@ export default function DrivingGame() {
     carXAnim.setValue(width / 2 - (280 / 2));
     
     if (questionIndex < questions.length - 1) {
-        setQuestionIndex(questionIndex + 1);
-        startScrollAnimation();
-      } else if (currentScenario >= 10) {
-        // Last scenario - complete session
-        try {
-          const sessionResults = await completeSession();
-          router.push({
-            pathname: '/result',
-            params: {
-              ...sessionResults,
-              userAttempts: JSON.stringify(sessionResults.attempts)
-            }
-          });
-        } catch (error) {
-          console.error('Error completing session:', error);
-          Alert.alert('Error', 'Failed to save session results');
-        }
-      } else {
-        // Move to next scenario
-       // moveToNextScenario();
-        //const phaseNumber = sessionData?.phase_id || 1;
-        //const nextScreen = `S${currentScenario + 1}P${phaseNumber}`;
-       // router.push(`/scenarios/traffic-signs/phase${phaseNumber}/${nextScreen}`);
-           router.push(`/scenarios/road-markings/phase3/S4P3`);
-
-      }
-  };
+         setQuestionIndex(questionIndex + 1);
+       } else if (currentScenario >= 10) {
+         const sessionResults = await completeSession();
+         navigation.navigate('/result-page', {
+           ...sessionResults,
+           userAttempts: JSON.stringify(sessionResults.attempts)
+         });
+       } else {
+         moveToNextScenario();
+         const nextScreen = `S${currentScenario + 1}P3`;
+         navigation.navigate(nextScreen);
+       }
+    };
 
   const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;  
   const trafficSignTop = trafficSignRowIndex * tileSize;

@@ -104,37 +104,14 @@ export default function DrivingGame() {
     sessionData
   } = useSession();
 
-  const updateProgress = async (selectedOption, isCorrect) => {
-    try {
-      const phaseId = sessionData?.phase_id || 3;
-      const categoryId = sessionData?.category?.id || 2; // Road Markings category
-      
-      let baseId;
-      if (categoryId === 1) {
-        // Traffic Signs
-        baseId = (phaseId - 1) * 10;
-      } else {
-        // Road Markings (categoryId === 2)
-        baseId = 30 + ((phaseId - 1) * 10);
+    const updateProgress = async (selectedOption, isCorrect) => {
+      try {
+        const scenarioId = 20 + currentScenario;
+        await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+      } catch (error) {
+        console.error('Error updating scenario progress:', error);
       }
-      
-      const scenarioId = baseId + currentScenario;
-
-      console.log('🔍 SCENARIO DEBUG:', {
-        categoryId,
-        phaseId,
-        currentScenario,
-        baseId,
-        calculatedScenarioId: scenarioId,
-        selectedOption,
-        isCorrect
-      });
-
-      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
-    } catch (error) {
-      console.error('Error updating scenario progress:', error);
-    }
-  };
+    };
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
@@ -419,46 +396,19 @@ export default function DrivingGame() {
     BusXAnim.setValue(busLaneX);
 
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else {
-      // Get current scenario number from this file
-      const currentFileScenario = getCurrentScenarioNumber();
-
-      if (currentFileScenario >= 10) {
-        // Last scenario - complete session
-        try {
-          const sessionResults = await completeSession();
-          if (!sessionResults) {
-            Alert.alert('Error', 'Failed to complete session. Please try again.');
-            return;
-          }
-
-          router.push({
-            pathname: '/result',
-            params: {
-              ...sessionResults,
-              userAttempts: JSON.stringify(sessionResults.attempts)
-            }
-          });
-        } catch (error) {
-          console.error('Error completing session:', error);
-          Alert.alert('Error', 'Failed to save session results');
-        }
-      } else {
-        // Move to next scenario
-       // moveToNextScenario();
-
-        // Navigate to next scenario
-       // const nextScenarioNumber = currentFileScenario + 1;
-       // const phaseId = sessionData?.phase_id || 3;
-        //const nextScreen = `S${nextScenarioNumber}P${phaseId}`;
-
-        //router.replace(`/scenarios/road-markings/phase${phaseId}/${nextScreen}`);
-         router.replace(`/scenarios/road-markings/phase3/S3P3`);
-      }
-    }
-  };
+         setQuestionIndex(questionIndex + 1);
+       } else if (currentScenario >= 10) {
+         const sessionResults = await completeSession();
+         navigation.navigate('/result-page', {
+           ...sessionResults,
+           userAttempts: JSON.stringify(sessionResults.attempts)
+         });
+       } else {
+         moveToNextScenario();
+         const nextScreen = `S${currentScenario + 1}P3`;
+         navigation.navigate(nextScreen);
+       }
+    };
 
   // Helper function to return the scenario number based on the current file
   const getCurrentScenarioNumber = () => {
