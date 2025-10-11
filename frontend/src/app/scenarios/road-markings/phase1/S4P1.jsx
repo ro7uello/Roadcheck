@@ -272,93 +272,96 @@ export default function DrivingGame() {
     }
   };
 
-  // NEW ANIMATION: Player stays in lane, jeepney remains in front
+  // FIXED: Player stays in lane - properly restart the loop animation
   const animateStayInLane = async () => {
-    if (scrollAnimationRef.current) scrollAnimationRef.current.stop(); // Stop for a moment
-    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
+      // Stop all existing animations first (just like sudden/careful overtake)
+      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+      if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
 
-    setPlayerCarDirection("NORTH");
-    setPlayerCarFrame(0);
-    setJeepneyFrame(0);
-    setIsPlayerCarVisible(true);
-    setIsJeepneyVisible(true); // Ensure jeepney remains visible
+      setPlayerCarDirection("NORTH");
+      setPlayerCarFrame(0);
+      setJeepneyFrame(0);
+      setIsPlayerCarVisible(true);
+      setIsJeepneyVisible(true);
 
-    // Simply restart the continuous scroll for a short duration
-    // Both cars will appear to scroll forward together
-    await new Promise(resolve => {
-        Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 2), // Move forward slightly more
-            duration: 1500,
-            easing: Easing.linear,
-            useNativeDriver: true,
-        }).start(resolve);
-    });
+      // Create and start new scroll animation
+      await new Promise(resolve => {
+          Animated.timing(scrollY, {
+              toValue: scrollY._value - (tileSize * 10), // Move forward
+              duration: 3000,
+              easing: Easing.linear,
+              useNativeDriver: true,
+          }).start(resolve);
+      });
 
-    // Optionally, pause briefly before showing feedback
-    await new Promise(resolve => setTimeout(resolve, 500));
+      // Pause briefly before showing feedback
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Then handle feedback
-    handleFeedback(selectedAnswer);
+      handleFeedback(selectedAnswer);
   };
 
   // NEW ANIMATION: Sudden Overtake (for "Change lanes without signaling")
+  // FIXED: Sudden Overtake - No drifting effect
   const animateSuddenOvertake = async () => {
-    if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
+      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+      if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
 
-    setPlayerCarFrame(0);
-    setJeepneyFrame(0);
-    setIsPlayerCarVisible(true);
-    setIsJeepneyVisible(true); // Start with jeepney visible
+      setPlayerCarFrame(0);
+      setJeepneyFrame(0);
+      setIsPlayerCarVisible(true);
+      setIsJeepneyVisible(true);
 
-    const targetXLeftLane = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2); // Left lane (index 1)
+      const targetXLeftLane = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2); // Left lane (index 1)
 
-    // 1. Car faces Northwest and moves quickly left
-    await new Promise(resolve => {
-        setPlayerCarDirection("NORTHWEST");
-        Animated.parallel([
-            Animated.timing(playerCarXAnim, {
-                toValue: targetXLeftLane, // Move to left lane
-                duration: 400, // Fast
-                easing: Easing.easeOut,
-                useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-                toValue: scrollY._value - (tileSize * 0.8), // Move forward a bit
-                duration: 400,
-                easing: Easing.easeOut,
-                useNativeDriver: true,
-            })
-        ]).start(resolve);
-    });
+      // 1. Car faces Northwest and moves quickly left
+      await new Promise(resolve => {
+          setPlayerCarDirection("NORTHWEST");
+          Animated.parallel([
+              Animated.timing(playerCarXAnim, {
+                  toValue: targetXLeftLane, // Move to left lane
+                  duration: 400, // Fast
+                  easing: Easing.easeOut,
+                  useNativeDriver: false,
+              }),
+              Animated.timing(scrollY, {
+                  toValue: scrollY._value - (tileSize * 0.8), // Move forward a bit
+                  duration: 400,
+                  easing: Easing.easeOut,
+                  useNativeDriver: true,
+              })
+          ]).start(resolve);
+      });
 
-    // 2. Car faces North, continues forward rapidly, and jeepney falls behind
-    await new Promise(resolve => {
-        setPlayerCarDirection("NORTH"); // Face North
-        Animated.parallel([
-            Animated.timing(jeepneyYAnim, {
-                toValue: height + jeepHeight, // Move the jeepney off-screen bottom
-                duration: 800, // Quickly disappear
-                easing: Easing.easeIn, // Faster exit
-                useNativeDriver: true,
-            }),
-            Animated.timing(scrollY, { // Player car moves significantly forward
-                toValue: scrollY._value - (tileSize * 4), // More forward movement
-                duration: 800,
-                easing: Easing.easeOut,
-                useNativeDriver: true,
-            }),
-        ]).start(resolve);
-    });
-    setIsJeepneyVisible(false); // Hide jeepney after it's out of view
+      // 🔧 FIX: Immediately face NORTH after lane change is complete
+      setPlayerCarDirection("NORTH");
 
-    // Player car stays in the left lane
-    setPlayerCarDirection("NORTH"); // Keep facing North in new lane
+      // Small pause to show the car is now facing forward in the new lane
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Pause briefly before showing feedback
-    await new Promise(resolve => setTimeout(resolve, 1000));
+      // 2. Car (now facing North) continues forward rapidly, and jeepney falls behind
+      await new Promise(resolve => {
+          Animated.parallel([
+              Animated.timing(jeepneyYAnim, {
+                  toValue: height + jeepHeight, // Move the jeepney off-screen bottom
+                  duration: 800, // Quickly disappear
+                  easing: Easing.easeIn, // Faster exit
+                  useNativeDriver: true,
+              }),
+              Animated.timing(scrollY, { // Player car moves significantly forward
+                  toValue: scrollY._value - (tileSize * 4), // More forward movement
+                  duration: 800,
+                  easing: Easing.easeOut,
+                  useNativeDriver: true,
+              }),
+          ]).start(resolve);
+      });
 
-    handleFeedback(selectedAnswer); // Pass the selected wrong answer to feedback
+      setIsJeepneyVisible(false); // Hide jeepney after it's out of view
+
+      // Pause briefly before showing feedback
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      handleFeedback(selectedAnswer);
   };
 
   // NEW ANIMATION: Careful Overtake (for "Signal, check mirrors...")
@@ -433,41 +436,54 @@ export default function DrivingGame() {
 
 
   const handleAnswer = async (option) => {
-    setSelectedAnswer(option);
-    setShowQuestion(false);
-    setShowAnswers(false);
+      setSelectedAnswer(option);
+      setShowQuestion(false);
+      setShowAnswers(false);
 
-    const currentQuestion = questions[questionIndex];
-    const isCorrect = option === currentQuestion.correct;
-    updateProgress(option, isCorrect);
+      const currentQuestion = questions[questionIndex];
+      const isCorrect = option === currentQuestion.correct;
+      updateProgress(option, isCorrect);
 
-    // Stop continuous scroll and sprite animations immediately
-    if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
-    setIsPlayerCarVisible(true);
-    setIsJeepneyVisible(true); // Ensure both are visible before animating
-    setPlayerCarFrame(0);
-    setJeepneyFrame(0);
+      setIsPlayerCarVisible(true);
+      setIsJeepneyVisible(true);
+      setPlayerCarFrame(0);
+      setJeepneyFrame(0);
 
-    // Determine which animation to play based on the selected answer
-    const actualCorrectAnswer = questions[questionIndex].correct;
+      const actualCorrectAnswer = questions[questionIndex].correct;
 
-    if (option === actualCorrectAnswer) {
-      if (option === "Signal, check mirrors and blind spots, then change lanes when safe") {
-        await animateCarefulOvertake();
-      } else if (option === "Stay in your current lane to avoid any violations") {
-        await animateStayInLane();
+      if (option === actualCorrectAnswer) {
+        if (option === "Signal, check mirrors and blind spots, then change lanes when safe") {
+          await animateCarefulOvertake();
+        } else if (option === "Stay in your current lane to avoid any violations") {
+          // Recreate the loop animation like in startScrollAnimation
+          scrollAnimationRef.current = Animated.loop(
+            Animated.timing(scrollY, {
+              toValue: scrollY._value - mapHeight,
+              duration: mapHeight * 10,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            })
+          );
+          scrollAnimationRef.current.start();
+
+          // Let it run for 3 seconds, then stop and show feedback
+          setTimeout(() => {
+            if (scrollAnimationRef.current) {
+              scrollAnimationRef.current.stop();
+            }
+            handleFeedback(option);
+          }, 3000);
+        }
+      } else if (option === "Change lanes without signaling since the lines are broken") {
+        await animateSuddenOvertake();
+      } else {
+        // Other wrong answers
+        if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+        if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
+        setTimeout(() => {
+          handleFeedback(option);
+        }, 1000);
       }
-      handleFeedback(option);
-    } else if (option === "Change lanes without signaling since the lines are broken") {
-      await animateSuddenOvertake();
-      handleFeedback(option);
-    } else {
-        // Fallback for any other answer (e.g., the other wrong answer from the example)
-        // For now, just show feedback after a small delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        handleFeedback(option);
-    }
   };
 
   const handleNext = async () => {

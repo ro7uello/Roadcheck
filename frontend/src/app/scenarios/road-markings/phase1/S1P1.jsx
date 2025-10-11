@@ -381,29 +381,37 @@ const startNpcCarAnimation = (npcCar, shouldLoop = false) => {
     }
   };
 
-const animateOvertake = async (targetX) => {
+// Modified animateOvertake function with speed control
+const animateOvertake = async (targetX, speed = 'normal') => {
     // Stop continuous scroll and sprite animations for a moment
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-    // Stop all NPC car animations during the overtake
     npcCarAnimationsRef.current.forEach(anim => anim.stop());
 
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
+
+    // Speed configurations
+    const speedConfig = {
+        reckless: { lane: 300, main: 1000, return: 400 },  // Fast/immediate
+        cautious: { lane: 800, main: 2500, return: 800 }   // Slower/gradual
+    };
+
+    const durations = speedConfig[speed] || speedConfig.cautious;
 
     // 1. Car faces Northwest and moves slightly to the left (initial lane change)
     await new Promise(resolve => {
         setPlayerCarDirection("NORTHWEST");
         Animated.parallel([
             Animated.timing(playerCarXAnim, {
-                toValue: targetX, // Move left towards the target lane
-                duration: 300,
-                easing: Easing.easeOut,
+                toValue: targetX,
+                duration: durations.lane,
+                easing: speed === 'reckless' ? Easing.easeOut : Easing.ease,
                 useNativeDriver: false,
             }),
             Animated.timing(scrollY, {
-                toValue: scrollY._value - (tileSize * 0.5), // Move forward slightly
-                duration: 300,
-                easing: Easing.easeOut,
+                toValue: scrollY._value - (tileSize * 0.5),
+                duration: durations.lane,
+                easing: speed === 'reckless' ? Easing.easeOut : Easing.ease,
                 useNativeDriver: true,
             })
         ]).start(resolve);
@@ -411,38 +419,38 @@ const animateOvertake = async (targetX) => {
 
     // 2. Car faces North and moves further forward (main overtaking acceleration)
     await new Promise(resolve => {
-        setPlayerCarDirection("NORTH"); // Face North
+        setPlayerCarDirection("NORTH");
         Animated.parallel([
-            Animated.timing(jeepneyYAnim, { // <--- ADD THIS ANIMATION FOR JEEPNEY
-                toValue: height + jeepHeight, // Move the jeepney off-screen bottom
-                duration: 1000, // Duration for jeepney to disappear
+            Animated.timing(jeepneyYAnim, {
+                toValue: height + jeepHeight,
+                duration: durations.main,
                 easing: Easing.linear,
                 useNativeDriver: true,
             }),
-            Animated.timing(scrollY, { // Player car continues to move significantly forward
-                toValue: scrollY._value - (tileSize * 3), // More forward movement
-                duration: 1000,
-                easing: Easing.easeOut,
+            Animated.timing(scrollY, {
+                toValue: scrollY._value - (tileSize * 3),
+                duration: durations.main,
+                easing: speed === 'reckless' ? Easing.easeOut : Easing.ease,
                 useNativeDriver: true,
             }),
         ]).start(resolve);
     });
-    setIsJeepneyVisible(false); // Hide jeepney after it's out of view
+    setIsJeepneyVisible(false);
 
     // 3. Car faces Northeast and moves back towards the right (returning to lane)
     await new Promise(resolve => {
         setPlayerCarDirection("NORTHEAST");
         Animated.parallel([
             Animated.timing(playerCarXAnim, {
-                toValue: width / 2 - playerCarWidth / 2, // Move back to center X
-                duration: 400,
-                easing: Easing.easeOut,
+                toValue: width / 2 - playerCarWidth / 2,
+                duration: durations.return,
+                easing: speed === 'reckless' ? Easing.easeOut : Easing.ease,
                 useNativeDriver: false,
             }),
-            Animated.timing(scrollY, { // Still moving forward slightly during lane change
+            Animated.timing(scrollY, {
                 toValue: scrollY._value - (tileSize * 0.5),
-                duration: 400,
-                easing: Easing.easeOut,
+                duration: durations.return,
+                easing: speed === 'reckless' ? Easing.easeOut : Easing.ease,
                 useNativeDriver: true,
             })
         ]).start(resolve);
@@ -451,17 +459,16 @@ const animateOvertake = async (targetX) => {
     // 4. Car faces North again
     setPlayerCarDirection("NORTH");
 
-    // Restart continuous scroll and sprite animations
+    // Restart animations
     if (scrollAnimationRef.current) scrollAnimationRef.current.start();
-    // Restart NPC car animations after overtake
     npcCarAnimationsRef.current = npcCars.map(car => {
       const animation = startNpcCarAnimation(car);
       animation.start();
       return animation;
     });
     setIsPlayerCarVisible(true);
-    setIsJeepneyVisible(false); // Reset for next scenario, if needed
-  };
+    setIsJeepneyVisible(false);
+};
   // Adjust handleAnswer to call animateOvertake without turnDirection parameters
   const handleAnswer = (option) => {
     setSelectedAnswer(option);
@@ -491,19 +498,18 @@ const animateOvertake = async (targetX) => {
       // Correct answer, no overtake action if it's "Don't overtake at all"
       handleFeedback(option); // Call feedback directly
     } else if (option === "Overtake immediately since there's only one solid line") {
-      // Overtake to the left lane (column 1) if this was a wrong answer
-      const targetX = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2);
-      animateOvertake(targetX); // Call without turn directions, as they are now internal
-      handleFeedback(option); // Call feedback here, or after animateOvertake completes
+        // RECKLESS overtake - fast and immediate
+        const targetX = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2);
+        animateOvertake(targetX, 'reckless'); // Pass 'reckless' speed
+        handleFeedback(option);
     } else if (option === "Wait for a safe opportunity, then overtake if the opposite lane is clear") {
         setTimeout(() => {
-            // Once the delay is over, initiate the overtake animation.
-            // animateOvertake will handle stopping and restarting the scroll as part of its internal logic.
-            const targetX = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2); // Lane 1 for left
-            animateOvertake(targetX);
-            handleFeedback(option); // Provide feedback once the overtake animation has started
+            // CAUTIOUS overtake - slower and more gradual (but still wrong!)
+            const targetX = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2);
+            animateOvertake(targetX, 'cautious'); // Pass 'cautious' speed
+            handleFeedback(option);
         }, 3000);
-      }
+    }
   };
 
   const handleNext = async () => {
