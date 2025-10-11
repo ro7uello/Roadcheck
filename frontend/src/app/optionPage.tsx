@@ -27,6 +27,8 @@ export default function OptionPage() {
   const pedestrianScale = useRef(new Animated.Value(1)).current;
   const modalScale = useRef(new Animated.Value(0)).current;
   const libraryModalScale = useRef(new Animated.Value(0)).current;
+  const [showDriverCategories, setShowDriverCategories] = useState(false);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
       console.log('=== Environment Check ===');
@@ -69,6 +71,23 @@ export default function OptionPage() {
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/categories`);
+      const data = await response.json();
+      if (data.success) {
+        const driverCategories = data.data.filter(cat => cat.id <= 3);
+        setCategories(driverCategories);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
     }
   };
 
@@ -219,14 +238,8 @@ const testBasicConnection = async () => {
         duration: 100,
         useNativeDriver: true,
       }),
-    ]).start(async () => {
-      console.log('Animation finished, calling saveUserProgress...');
-      const success = await saveUserProgress('driver');
-      console.log('saveUserProgress result:', success);
-      if (success) {
-          console.log('Navigating to categorySelectionScreen...');
-        router.push('/categorySelectionScreen');
-      }
+    ]).start(() => {
+      setShowDriverCategories(true);
     });
   };
 
@@ -245,9 +258,51 @@ const testBasicConnection = async () => {
         useNativeDriver: true,
       }),
     ]).start(async () => {
-      const success = await saveUserProgress('pedestrian');
-      if (success) {
-        router.push('/categorySelectionScreen');
+      try {
+        setIsLoading(true);
+        const userId = await AsyncStorage.getItem('userId');
+        const token = await AsyncStorage.getItem('access_token');
+
+        if (!userId || !token) {
+          Alert.alert('Error', 'Please log in again');
+          router.replace('/login');
+          return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/progress/select-category`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            category_id: 4
+          }),
+        });
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const errorText = await response.text();
+          console.error('Response is not JSON:', errorText);
+          Alert.alert('Error', 'Server error. Please try again.');
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log('Pedestrian mode tracked');
+          // FIXED PATH - removed ../ and .jsx
+          router.push('/scenarios/pedestrian/phase1/S1P1');
+        } else {
+          Alert.alert('Error', 'Failed to start pedestrian mode');
+        }
+      } catch (error) {
+        console.error('Error starting pedestrian:', error);
+        Alert.alert('Error', 'Failed to start pedestrian mode');
+      } finally {
+        setIsLoading(false);
       }
     });
   };
@@ -403,6 +458,32 @@ const testBasicConnection = async () => {
           </TouchableOpacity>
         </Animated.View>
       </View>
+
+      {showDriverCategories && (
+        <View style={styles.categoriesOverlay}>
+          <View style={styles.categoriesPanel}>
+            <Text style={styles.categoriesTitle}>SELECT CATEGORY</Text>
+
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={styles.categoryButton}
+                onPress={() => handleDriverCategorySelect(category)}
+                disabled={isLoading}
+              >
+                <Text style={styles.categoryButtonText}>{category.name}</Text>
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setShowDriverCategories(false)}
+            >
+              <Text style={styles.cancelButtonText}>CANCEL</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {libraryVisible && (
               <Animated.View
@@ -737,5 +818,64 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 5,
     textDecorationLine: 'underline',
+  },
+  categoriesOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  categoriesPanel: {
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    borderRadius: 12,
+    padding: 30,
+    width: width * 0.8,
+    maxWidth: 400,
+    borderWidth: 3,
+    borderColor: '#666',
+  },
+  categoriesTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+    marginBottom: 20,
+    textShadowColor: '#000',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+  },
+  categoryButton: {
+    backgroundColor: 'rgba(135, 206, 235, 0.3)',
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#87CEEB',
+  },
+  categoryButtonText: {
+    fontSize: 16,
+    color: 'white',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+  },
+  cancelButton: {
+    backgroundColor: 'rgba(255, 0, 0, 0.3)',
+    borderRadius: 8,
+    padding: 15,
+    marginTop: 10,
+    borderWidth: 2,
+    borderColor: '#FF0000',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: 'white',
+    fontFamily: 'pixel',
+    textAlign: 'center',
   },
 });

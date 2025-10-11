@@ -1,4 +1,4 @@
-// profile.tsx - WITH DYNAMIC STATUS SYSTEM
+// profile.tsx - WITH PEDESTRIAN SUPPORT
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -81,11 +81,12 @@ export default function ProfileScreen() {
         setStats(statsData.data);
       } else {
         console.warn("Failed to fetch stats:", statsData);
-        // Set empty stats as fallback
+        // Set empty stats as fallback with pedestrian
         setStats({
           road_markings: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
           traffic_signs: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
-          intersection_and_others: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 }
+          intersection_and_others: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
+          pedestrian: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 }
         });
       }
 
@@ -100,8 +101,11 @@ export default function ProfileScreen() {
   const calculateAccuracy = (categoryKey) => {
     if (!stats || !stats[categoryKey]) return 0;
     const { correct_answers } = stats[categoryKey];
-    // Calculate percentage out of 30
-    return Math.round((correct_answers / 30) * 100);
+
+    // Pedestrian has 10 scenarios, others have 30
+    const totalScenarios = categoryKey === 'pedestrian' ? 10 : 30;
+
+    return Math.round((correct_answers / totalScenarios) * 100);
   };
 
   const getStatusBadge = (accuracy) => {
@@ -116,8 +120,10 @@ export default function ProfileScreen() {
     const roadMarkingsAcc = calculateAccuracy("road_markings");
     const trafficSignsAcc = calculateAccuracy("traffic_signs");
     const intersectionAcc = calculateAccuracy("intersection_and_others");
+    const pedestrianAcc = calculateAccuracy("pedestrian");
 
-    const avgAccuracy = (roadMarkingsAcc + trafficSignsAcc + intersectionAcc) / 3;
+    // Average of all 4 categories
+    const avgAccuracy = (roadMarkingsAcc + trafficSignsAcc + intersectionAcc + pedestrianAcc) / 4;
     return Math.round(avgAccuracy);
   };
 
@@ -159,7 +165,6 @@ export default function ProfileScreen() {
       const data = await response.json();
 
       if (response.ok) {
-        // Clear all stored data
         await AsyncStorage.multiRemove([
           'access_token',
           'refresh_token',
@@ -213,9 +218,9 @@ export default function ProfileScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>🎯 DRIVER STATUS RANKS</Text>
+            <Text style={styles.modalTitle}>🎯 ROAD SAFETY STATUS</Text>
             <Text style={styles.modalSubtitle}>
-              Your status updates automatically as you complete scenarios!
+              Your status updates based on all categories including Pedestrian!
             </Text>
 
             <ScrollView style={styles.modalScroll}>
@@ -274,7 +279,6 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Close Button */}
       <TouchableOpacity
         style={styles.closeButton}
         onPress={() => router.back()}
@@ -284,12 +288,11 @@ export default function ProfileScreen() {
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>PROFILE</Text>
         </View>
 
-        {/* User Info Card - WITH DYNAMIC STATUS */}
+        {/* User Info Card */}
         <View style={styles.card}>
           <View style={styles.infoRow}>
             <Text style={styles.label}>USERNAME:</Text>
@@ -301,7 +304,6 @@ export default function ProfileScreen() {
             <Text style={[styles.value, styles.emailText]}>{profile.email}</Text>
           </View>
 
-          {/* NEW: Dynamic Status with Icon and Info Button */}
           <View style={styles.infoRow}>
             <Text style={styles.label}>STATUS:</Text>
             <View style={styles.statusContainer}>
@@ -316,7 +318,6 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {/* NEW: Progress Bar */}
           <View style={styles.progressBarContainer}>
             <Text style={styles.progressLabel}>OVERALL PROGRESS: {overallProgress}%</Text>
             <View style={styles.progressBarBg}>
@@ -326,13 +327,14 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Driver Progression */}
+        {/* Road Safety Progression - NOW WITH 4 CATEGORIES */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>DRIVER PROGRESSION:</Text>
+          <Text style={styles.sectionTitle}>ROAD SAFETY PROGRESSION:</Text>
 
+          {/* Driver Categories */}
           <View style={styles.progressItem}>
             <View style={styles.progressRow}>
-              <Text style={styles.categoryName}>ROAD MARKINGS:</Text>
+              <Text style={styles.categoryName}>🛣️ ROAD MARKINGS:</Text>
               <Text style={styles.accuracy}>{calculateAccuracy("road_markings")}% ACCURACY</Text>
             </View>
             {(() => {
@@ -343,7 +345,7 @@ export default function ProfileScreen() {
 
           <View style={styles.progressItem}>
             <View style={styles.progressRow}>
-              <Text style={styles.categoryName}>TRAFFIC SIGNS:</Text>
+              <Text style={styles.categoryName}>🚦 TRAFFIC SIGNS:</Text>
               <Text style={styles.accuracy}>{calculateAccuracy("traffic_signs")}% ACCURACY</Text>
             </View>
             {(() => {
@@ -354,11 +356,23 @@ export default function ProfileScreen() {
 
           <View style={styles.progressItem}>
             <View style={styles.progressRow}>
-              <Text style={styles.categoryName}>INTERSECTION & OTHERS:</Text>
+              <Text style={styles.categoryName}>🔄 INTERSECTION & OTHERS:</Text>
               <Text style={styles.accuracy}>{calculateAccuracy("intersection_and_others")}% ACCURACY</Text>
             </View>
             {(() => {
               const status = getStatusBadge(calculateAccuracy("intersection_and_others"));
+              return <Text style={[styles.statusLabel, { color: status.color }]}>{status.text}</Text>;
+            })()}
+          </View>
+
+          {/* NEW: Pedestrian Category */}
+          <View style={styles.progressItem}>
+            <View style={styles.progressRow}>
+              <Text style={styles.categoryName}>PEDESTRIAN:</Text>
+              <Text style={styles.accuracy}>{calculateAccuracy("pedestrian")}% ACCURACY</Text>
+            </View>
+            {(() => {
+              const status = getStatusBadge(calculateAccuracy("pedestrian"));
               return <Text style={[styles.statusLabel, { color: status.color }]}>{status.text}</Text>;
             })()}
           </View>
@@ -370,22 +384,22 @@ export default function ProfileScreen() {
 
           {stats && Object.entries(stats)
             .sort(([keyA], [keyB]) => {
-              const order = ['road_markings', 'traffic_signs', 'intersection_and_others'];
+              const order = ['road_markings', 'traffic_signs', 'intersection_and_others', 'pedestrian'];
               return order.indexOf(keyA) - order.indexOf(keyB);
             })
             .map(([key, data]) => (
               <View key={key} style={styles.statRow}>
                 <Text style={styles.statLabel}>
-                  {key.replace(/_/g, " ").toUpperCase()}:
+                  {key === 'pedestrian' ? 'PEDESTRIAN' : key.replace(/_/g, " ").toUpperCase()}:
                 </Text>
                 <Text style={styles.statValue}>
-                  {data.correct_answers || 0}/30 correct
+                  {data.correct_answers || 0}/10 correct
                 </Text>
               </View>
             ))}
         </View>
 
-        {/* Delete Account Section - INSIDE ScrollView */}
+        {/* Delete Account Section */}
         <View style={[styles.card, { borderColor: '#ef4444', backgroundColor: '#fee2e2' }]}>
           <Text style={[styles.sectionTitle, { color: '#ef4444' }]}>DANGER ZONE</Text>
           <Text style={styles.deleteWarningText}>
@@ -429,7 +443,6 @@ export default function ProfileScreen() {
                 Your account cannot be retrieved once deleted.
               </Text>
 
-              {/* Buttons INSIDE ScrollView */}
               <View style={styles.deleteModalButtons}>
                 <TouchableOpacity
                   style={styles.cancelButton}
@@ -453,13 +466,14 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Status Info Modal */}
       <StatusInfoModal />
     </SafeAreaView>
   );
 }
 
+// Styles remain the same as your original
 const styles = StyleSheet.create({
+  // ... (copy all your existing styles here - they remain unchanged)
   container: {
     flex: 1,
     backgroundColor: '#87CEEB',

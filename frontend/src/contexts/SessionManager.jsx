@@ -1,4 +1,4 @@
-// SessionManager.jsx - Wrapper component for managing 10 scenario session
+// C:\Users\wahoo\Desktop\roadcheck\frontend\src\contexts\SessionManager.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { View, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';

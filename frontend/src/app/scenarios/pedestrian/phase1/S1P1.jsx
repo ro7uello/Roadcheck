@@ -1,14 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
@@ -82,6 +75,22 @@ const questions = [
 ];
 
 export default function DrivingGame() {
+  const {
+    currentScenario,
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+  } = useSession();
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      const scenarioId = currentScenario;
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
+
   const [showIntro, setShowIntro] = useState(true);
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
 
@@ -208,6 +217,10 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    updateProgress(answer, isCorrect);
+
     if (answer === "Wait for a gap in traffic and quickly run across the street") {
       // Face west and run to the left (west)
       setPlayerDirection("WEST");
@@ -273,7 +286,7 @@ export default function DrivingGame() {
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
@@ -288,16 +301,38 @@ export default function DrivingGame() {
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
+    } else if (currentScenario >= 5) {
+
+      try {
+        const sessionResults = await completeSession();
+
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session');
+          return;
+        }
+
+        router.push({
+          pathname: '/result-page',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
     } else {
-      router.push('/driver-game/intersections/phase-2/S7P2');
-      setQuestionIndex(0);
-      setShowQuestion(false);
+      // Move to next scenario
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P1`;
+      router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
     }
   };
 
   const handleStartGame = () => {
-    setShowIntro(false);
-  };
+      setShowIntro(false);
+    };
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
@@ -420,13 +455,13 @@ export default function DrivingGame() {
       {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
-          {questions[questionIndex].options.map((option) => (
+          {questions[questionIndex].options.map((answer) => (
             <TouchableOpacity
-              key={option}
+              key={answer}
               style={styles.answerButton}
-              onPress={() => handleAnswer(option)}
+              onPress={() => handleAnswer(answer)}
             >
-              <Text style={styles.answerText}>{option}</Text>
+              <Text style={styles.answerText}>{answer}</Text>
             </TouchableOpacity>
           ))}
         </View>

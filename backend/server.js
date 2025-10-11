@@ -966,6 +966,85 @@ app.put('/user-progress', async (req, res) => {
   }
 });
 
+// Track category selection (for both Driver and Pedestrian)
+app.post('/progress/select-category', async (req, res) => {
+  try {
+    const { user_id, category_id } = req.body;
+
+    console.log('Category selected:', { user_id, category_id });
+
+    const { data, error } = await supabase
+      .from('user_progress')
+      .upsert({
+        user_id,
+        current_category_id: parseInt(category_id),
+        current_phase: 1,
+        current_scenario_index: 0,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error tracking category:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Error tracking category selection',
+        error: error.message
+      });
+    }
+
+    res.json({
+      success: true,
+      data: data,
+      message: 'Category tracked successfully'
+    });
+  } catch (error) {
+    console.error('Error in /progress/select-category:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+// Get progress for specific category
+app.get('/progress/category/:userId/:categoryId', async (req, res) => {
+  try {
+    const { userId, categoryId } = req.params;
+
+    const { data, error } = await supabase
+      .from('user_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('current_category_id', categoryId)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      return res.status(400).json({
+        success: false,
+        message: 'Error fetching category progress',
+        error: error.message
+      });
+    }
+
+    res.json({
+      success: true,
+      data: data || null
+    });
+  } catch (error) {
+    console.error('Error in /progress/category:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
 app.post('/progress/category', authenticate, async (req, res) => {
   try {
     const { category_id } = req.body;
@@ -1156,6 +1235,7 @@ app.get('/user-stats/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
 
+    // ✅ Make sure this gets ALL 4 categories including Pedestrian
     const { data: categories, error: categoriesError } = await supabase
       .from('categories')
       .select('id, name');
@@ -1181,7 +1261,7 @@ app.get('/user-stats/:userId', async (req, res) => {
 
         if (!phases || phases.length === 0) {
           stats[categoryKey] = {
-            total_scenarios: 30,
+            total_scenarios: category.id === 4 ? 10 : 30, // ✅ 10 for pedestrian
             completed_scenarios: 0,
             correct_answers: 0
           };
@@ -1243,18 +1323,18 @@ app.get('/user-stats/:userId', async (req, res) => {
     }
 
     res.json({
-      success: true,
-      data: stats
+          success: true,
+          data: stats
+        });
+      } catch (error) {
+        console.error('Error in /user-stats/:userId:', error);
+        res.status(500).json({
+          success: false,
+          message: 'Internal server error',
+          error: error.message
+        });
+      }
     });
-  } catch (error) {
-    console.error('Error in /user-stats/:userId:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error.message
-    });
-  }
-});
 
 app.post('/sessions/start', async (req, res) => {
   try {
