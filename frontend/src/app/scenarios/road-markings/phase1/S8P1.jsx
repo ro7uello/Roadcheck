@@ -225,26 +225,40 @@ export default function DrivingGame() {
 
   // NEW: Animation for NPC car sprites
   useEffect(() => {
-    const npc1Interval = setInterval(() => {
-      if (!showQuestion && isNpcCar1Visible) setNpcCar1Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
-    }, 280); // Slightly different speed
-    const npc2Interval = setInterval(() => {
-        if (!showQuestion && isNpcCar2Visible) setNpcCar2Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
-    }, 220);
-    const npc3Interval = setInterval(() => {
-        if (!showQuestion && isNpcCar3Visible) setNpcCar3Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
-    }, 270);
-    const npc4Interval = setInterval(() => {
-        if (!showQuestion && isNpcCar4Visible) setNpcCar4Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
-    }, 230);
+    if (!showQuestion && isNpcCar1Visible) {
+      const npc1Interval = setInterval(() => {
+        setNpcCar1Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
+      }, 280);
+      return () => clearInterval(npc1Interval);
+    }
+  }, [showQuestion, isNpcCar1Visible]);
 
-    return () => {
-      clearInterval(npc1Interval);
-      clearInterval(npc2Interval);
-      clearInterval(npc3Interval);
-      clearInterval(npc4Interval);
-    };
-  }, [showQuestion, isNpcCar1Visible, isNpcCar2Visible, isNpcCar3Visible, isNpcCar4Visible]);
+  useEffect(() => {
+    if (!showQuestion && isNpcCar2Visible) {
+      const npc2Interval = setInterval(() => {
+        setNpcCar2Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
+      }, 220);
+      return () => clearInterval(npc2Interval);
+    }
+  }, [showQuestion, isNpcCar2Visible]);
+
+  useEffect(() => {
+    if (!showQuestion && isNpcCar3Visible) {
+      const npc3Interval = setInterval(() => {
+        setNpcCar3Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
+      }, 270);
+      return () => clearInterval(npc3Interval);
+    }
+  }, [showQuestion, isNpcCar3Visible]);
+
+  useEffect(() => {
+    if (!showQuestion && isNpcCar4Visible) {
+      const npc4Interval = setInterval(() => {
+        setNpcCar4Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
+      }, 230);
+      return () => clearInterval(npc4Interval);
+    }
+  }, [showQuestion, isNpcCar4Visible]);
 
 
   const scrollAnimationRef = useRef(null);

@@ -238,8 +238,13 @@ const testBasicConnection = async () => {
         duration: 100,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      setShowDriverCategories(true);
+    ]).start(async () => {
+      console.log('Driver button pressed');
+      const success = await saveUserProgress('driver');
+      if (success) {
+        console.log('Navigating to categorySelectionScreen...');
+        router.push('/categorySelectionScreen');  // ✅ Go to existing category screen
+      }
     });
   };
 
