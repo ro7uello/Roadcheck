@@ -49,6 +49,25 @@ const carSprites = {
   ],
 };
 
+const npcCarSpritesSouth = {
+  blue: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTH/SEPARATED/Blue_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTH/SEPARATED/Blue_CIVIC_CLEAN_SOUTH_001.png"),
+  ],
+  red: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/SOUTH/SEPARATED/Red_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/SOUTH/SEPARATED/Red_CIVIC_CLEAN_SOUTH_001.png"),
+  ],
+  green: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_CIVIC_CLEAN_SOUTH_001.png"),
+  ],
+  yellow: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/SOUTH/SEPARATED/Yellow_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/SOUTH/SEPARATED/Yellow_CIVIC_CLEAN_SOUTH_001.png"),
+  ],
+};
+
 const questions = [
   {
     question: "You are driving along a major highway during rush hour. You noticed that the traffic light turned RED and the cars from the other lanes are slowing down to a stop. You can clearly see the marked pedestrian lane in front of you because there is no cars in front of you.",
@@ -67,6 +86,18 @@ const trafficLightSprites = {
   normal: require("../../../../../assets/traffic light/Traffic_Light.png"),
   red: require("../../../../../assets/traffic light/traffic_light_red2.png"),
 };
+
+// NPC Cars configuration
+const npcCarsConfig = [
+  { row: 4.5, color: 'blue' },
+  { row: 5.5, color: 'red' },
+  { row: 6.5, color: 'green' },
+  { row: 7.5, color: 'yellow' },
+  { row: 10, color: 'blue' },
+  { row: 11, color: 'red' },
+  { row: 12, color: 'green' },
+  { row: 13, color: 'yellow' },
+];
 
 export default function DrivingGame() {
 
@@ -126,6 +157,11 @@ export default function DrivingGame() {
   const trafficLightColIndex = 2; // Left side of the road
   const trafficLightXOffset = -30;
 
+  // NPC car states
+  const [npcCarFrames, setNpcCarFrames] = useState(
+    npcCarsConfig.reduce((acc, _, idx) => ({ ...acc, [idx]: 0 }), {})
+  );
+
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
       currentScroll.current = value;
@@ -147,7 +183,6 @@ export default function DrivingGame() {
 
   // Traffic light
   const [trafficLightState, setTrafficLightState] = useState('red');
-  // Removed isBlinking state as blinking is commented out
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -180,6 +215,21 @@ export default function DrivingGame() {
     }
     return () => clearInterval(iv);
   }, [carPaused]);
+
+  // NPC car animation loop
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNpcCarFrames(prev => {
+        const newFrames = {};
+        npcCarsConfig.forEach((_, idx) => {
+          newFrames[idx] = (prev[idx] + 1) % 2;
+        });
+        return newFrames;
+      });
+    }, 200);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // feedback anims
   const correctAnim = useRef(new Animated.Value(0)).current;
@@ -375,23 +425,22 @@ export default function DrivingGame() {
           resizeMode="contain"
         />
 
-        {/* Pedestrian (REMOVED) */}
-        {/*
-        {pedestrianVisible && (
-          <Animated.Image
-            source={isCrossing ? maleWalkSprites[maleFrame] : maleStandingSprite}
+        {/* NPC Cars at Column 1 */}
+        {npcCarsConfig.map((npcConfig, idx) => (
+          <Image
+            key={`npc-${idx}`}
+            source={npcCarSpritesSouth[npcConfig.color][npcCarFrames[idx]]}
             style={{
-              width: FRAME_WIDTH,
-              height: FRAME_HEIGHT,
+              width: 280,
+              height: 350,
               position: "absolute",
-              top: pedestrianRowIndex * tileSize + maleVerticalOffset,
-              left: isCrossing ? maleCrossingXAnim : maleFixedLeft,
-              zIndex: 6,
+              top: npcConfig.row * tileSize,
+              left: 1 * tileSize - 40, // Column 1 with slight offset for centering
+              zIndex: 5,
             }}
             resizeMode="contain"
           />
-        )}
-        */}
+        ))}
       </Animated.View>
 
       {/* Car - fixed */}

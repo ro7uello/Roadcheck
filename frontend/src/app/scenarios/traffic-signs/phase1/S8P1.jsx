@@ -36,8 +36,6 @@ const roadTiles = {
   int13: require("../../../../../assets/road/int13.png"),
   int14: require("../../../../../assets/road/int14.png"),
   int15: require("../../../../../assets/road/int15.png"),
-
-
 };
 
 const mapLayout = [
@@ -65,6 +63,13 @@ const carSprites = {
   NORTH: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+};
+
+const npcCarSprite = {
+  NORTH: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
   ],
 };
 
@@ -163,6 +168,11 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - (280 / 2))).current;
 
+  // NPC Car
+  const [npcCarFrame, setNpcCarFrame] = useState(0);
+  const [npcCarVisible, setNpcCarVisible] = useState(false);
+  const npcCarYAnim = useRef(new Animated.Value(-200)).current; // Start below screen (off-screen at bottom)
+
   // Traffic light
   const [trafficLightState, setTrafficLightState] = useState('yellow');
   const [isBlinking, setIsBlinking] = useState(true);
@@ -195,6 +205,17 @@ export default function DrivingGame() {
       setTimeout(() => {
         setShowAnswers(true);
       }, 1000);
+      
+      // Trigger NPC car appearance after player car stops
+      setTimeout(() => {
+        setNpcCarVisible(true);
+        // Animate from below screen (off-screen) to behind player car
+        Animated.timing(npcCarYAnim, {
+          toValue: -150, // Position behind player car (player is at bottom: 80, so 150 puts NPC behind)
+          duration: 3000, // Smooth animation for realistic effect
+          useNativeDriver: true,
+        }).start();
+      }, 500); // Small delay before NPC appears
     });
   }
   
@@ -212,6 +233,17 @@ export default function DrivingGame() {
     }
     return () => clearInterval(iv);
   }, [carPaused]);
+
+  // NPC Car sprite frame loop
+  useEffect(() => {
+    let iv;
+    if (npcCarVisible) {
+      iv = setInterval(() => {
+        setNpcCarFrame((p) => (p + 1) % npcCarSprite["NORTH"].length);
+      }, 200);
+    }
+    return () => clearInterval(iv);
+  }, [npcCarVisible]);
 
   // feedback anims
   const correctAnim = useRef(new Animated.Value(0)).current;
@@ -309,6 +341,10 @@ export default function DrivingGame() {
     setCarFrame(0);
     carXAnim.setValue(width / 2 - (280 / 2));
     
+    // Reset NPC car to starting position below screen
+    setNpcCarVisible(false);
+    npcCarYAnim.setValue(-200);
+    
     setTrafficLightState('yellow');
     setIsBlinking(true);
     
@@ -405,24 +441,6 @@ export default function DrivingGame() {
           }}
           resizeMode="contain"
         />
-
-        {/* Pedestrian (REMOVED) */}
-        {/*
-        {pedestrianVisible && (
-          <Animated.Image
-            source={isCrossing ? maleWalkSprites[maleFrame] : maleStandingSprite}
-            style={{
-              width: FRAME_WIDTH,
-              height: FRAME_HEIGHT,
-              position: "absolute",
-              top: pedestrianRowIndex * tileSize + maleVerticalOffset,
-              left: isCrossing ? maleCrossingXAnim : maleFixedLeft,
-              zIndex: 6,
-            }}
-            resizeMode="contain"
-          />
-        )}
-        */}
       </Animated.View>
 
       {/* Car - fixed */}
@@ -437,6 +455,21 @@ export default function DrivingGame() {
           zIndex: 8,
         }}
       />
+
+      {/* NPC Car - appears behind player car */}
+      {npcCarVisible && (
+        <Animated.Image
+          source={npcCarSprite["NORTH"][npcCarFrame]}
+          style={{
+            width: 280,
+            height: 350,
+            position: "absolute",
+            bottom: npcCarYAnim,
+            left: carXAnim,
+            zIndex: 7, // Behind player car
+          }}
+        />
+      )}
 
       {/* Question overlay - moved to bottom */}
       {showQuestion && (
@@ -522,7 +555,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -579,7 +612,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",

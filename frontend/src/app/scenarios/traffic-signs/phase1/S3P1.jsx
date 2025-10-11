@@ -545,13 +545,13 @@ const styles = StyleSheet.create({
   },
   questionBox: {
     flex: 1,
-    bottom: height * 0.1,
+    bottom: height * 0.05,
     alignItems: "center",
     justifyContent: "center",
   },
   questionTextContainer: {
-    padding: -height * 0.04,
-    maxWidth: width * 0.7,
+    padding: -height * 0.8,
+    maxWidth: width * 1,
   },
   questionText: {
     flexWrap: "wrap",
@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.2,
+    top: height * 0.25,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
@@ -595,18 +595,15 @@ const styles = StyleSheet.create({
   },
   feedbackBox: {
     flex: 1,
-    bottom: height * 0.1,
+    bottom: height * 0.02,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 20,
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 18),
+    fontSize: Math.min(width * 0.06, 20),
     fontWeight: "bold",
     textAlign: "center",
-    paddingHorizontal: 10,
-    lineHeight: 22,
   },
   nextButtonContainer: {
     position: "absolute",

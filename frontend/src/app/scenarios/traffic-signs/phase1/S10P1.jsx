@@ -34,7 +34,6 @@ const roadTiles = {
   int2: require("../../../../../assets/road/int2.png"),
   int3: require("../../../../../assets/road/int3.png"),
   int4: require("../../../../../assets/road/int4.png"),
-
 };
 
 const mapLayout = [
@@ -60,15 +59,51 @@ const mapLayout = [
 
 const treeSprites = {
   tree1: require("../../../../../assets/tree/Tree3_idle_s.png"),
-  // Add more tree variations if you have them
-  // tree2: require("../assets/tree/Tree2_idle_s"),
-  // tree3: require("../assets/tree/Tree1_idle_s"),
 };
 
 const carSprites = {
   NORTH: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+};
+
+const npcCarSprites = {
+  blue: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  red: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  green: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  yellow: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+};
+
+// South facing cars
+const npcCarSpritesSouth = {
+  blue: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTH/SEPARATED/Blue_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTH/SEPARATED/Blue_CIVIC_CLEAN_SOUTH_001.png"),
+  ],
+  red: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/SOUTH/SEPARATED/Red_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/SOUTH/SEPARATED/Red_CIVIC_CLEAN_SOUTH_001.png"),
+  ],
+  green: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_CIVIC_CLEAN_SOUTH_001.png"),
+  ],
+  yellow: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/SOUTH/SEPARATED/Yellow_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/SOUTH/SEPARATED/Yellow_CIVIC_CLEAN_SOUTH_001.png"),
   ],
 };
 
@@ -144,13 +179,12 @@ const questions = [
       "Back up to clear the intersection.": "Accident prone! Backing up an intersection is dangerous if you are alread in the middle of it.",
     }
   },
-  // Add more questions here as needed
 ];
 
 // Traffic light sprites
 const trafficLightSprites = {
   normal: require("../../../../../assets/traffic light/traffic_light_green2.png"),
-  yellow: require("../../../../../assets/traffic light/traffic_light_yellow2.png"), // You may want to add a yellow sprite
+  yellow: require("../../../../../assets/traffic light/traffic_light_yellow2.png"),
   red: require("../../../../../assets/traffic light/traffic_light_red2.png"),
 };
 
@@ -166,18 +200,13 @@ export default function DrivingGame() {
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      // Get phase from sessionData
       const phaseId = sessionData?.phase_id;
 
-      // Traffic Signs Phase 1 (phaseId = 4): scenarios 31-40
-      // Traffic Signs Phase 2 (phaseId = 5): scenarios 41-50
       let scenarioId;
 
       if (phaseId === 4) {
-        // Phase 1: scenarios 31-40
         scenarioId = 30 + currentScenario;
       } else if (phaseId === 5) {
-        // Phase 2: scenarios 41-50
         scenarioId = 40 + currentScenario;
       } else {
         console.error('Unknown phase ID:', phaseId);
@@ -206,9 +235,8 @@ export default function DrivingGame() {
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  // Traffic light position (place it before the pedestrian crossing)
-  const trafficLightRowIndex = 9.3; // One row before the 'crossing' point
-  const trafficLightColIndex = 2; // Left side of the road
+  const trafficLightRowIndex = 9.3;
+  const trafficLightColIndex = 2;
   const trafficLightXOffset = -30;
 
   useEffect(() => {
@@ -217,6 +245,26 @@ export default function DrivingGame() {
     });
     return () => scrollY.removeListener(id);
   }, [scrollY]);
+
+  // NPC cars configuration
+  const npcCars = [
+    // Column 1 - South facing cars (rows 1-5)
+    { row: 1, col: .8, color: 'blue', direction: 'south' },
+    { row: 2, col: .8, color: 'red', direction: 'south' },
+    { row: 3, col: .8, color: 'green', direction: 'south' },
+    { row: 4, col: .8, color: 'yellow', direction: 'south' },
+    { row: 5, col: .8, color: 'blue', direction: 'south' },
+    
+    // Column 1 - South facing cars (rows 8-10)
+    { row: 8, col: .8, color: 'red', direction: 'south' },
+    { row: 9, col: .8, color: 'green', direction: 'south' },
+    { row: 10, col: .8, color: 'yellow', direction: 'south' },
+    
+    // Column 2 - North facing cars (rows 1-5)
+    { row: 1, col: 1.8, color: 'green', direction: 'north' },
+    { row: 2, col: 1.8, color: 'yellow', direction: 'north' },
+    { row: 3, col: 1.8, color: 'blue', direction: 'north' },
+  ];
 
   // UI/game states
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -230,42 +278,37 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - (280 / 2))).current;
 
-  // Traffic light - Updated states
+  // Traffic light
   const [trafficLightState, setTrafficLightState] = useState('normal');
   const [lightChangeTriggered, setLightChangeTriggered] = useState(false);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    setTrafficLightState('green'); // Start with green/normal light
+    setTrafficLightState('green');
     setLightChangeTriggered(false);
     
-    const stopRow = 9; // Adjusted to match the visual stop point
+    const stopRow = 9;
     const stopOffset = startOffset + stopRow * tileSize;
 
-    // Calculate when to trigger yellow light (about 2/3 of the way through animation)
-    const yellowTriggerTime = 1000; // 2 seconds into the 3-second animation
-    const redTriggerTime = 2000; // 2.5 seconds into animation
+    const yellowTriggerTime = 1000;
+    const redTriggerTime = 2000;
 
-    // Start the scroll animation
     Animated.timing(scrollY, {
       toValue: stopOffset,
       duration: 3000,
       useNativeDriver: true,
     }).start(() => {
-      // Animation complete - show question after light turns red
     });
 
-    // Trigger traffic light changes during animation
     setTimeout(() => {
       if (!lightChangeTriggered) {
-        setTrafficLightState('yellow'); // Yellow light (using normal sprite as placeholder)
+        setTrafficLightState('yellow');
         setLightChangeTriggered(true);
       }
     }, yellowTriggerTime);
 
     setTimeout(() => {
-      setTrafficLightState('red'); // Red light
-      // Show question when light turns red
+      setTrafficLightState('red');
       setTimeout(() => {
         setShowQuestion(true);
         setTimeout(() => {
@@ -279,7 +322,6 @@ export default function DrivingGame() {
     startScrollAnimation();
   }, []);
 
-  // Car sprite frame loop (stops when carPaused=true)
   useEffect(() => {
     let iv;
     if (!carPaused) {
@@ -299,7 +341,7 @@ export default function DrivingGame() {
   const handleFeedback = (answerGiven) => {
       const currentQuestion = questions[questionIndex];
       if (answerGiven === currentQuestion.correct) {
-        setIsCorrectAnswer(true); // Set to true for correct feedback
+        setIsCorrectAnswer(true);
         setAnimationType("correct");
         Animated.timing(correctAnim, {
           toValue: 1,
@@ -310,7 +352,7 @@ export default function DrivingGame() {
           setShowNext(true);
         });
       } else {
-        setIsCorrectAnswer(false); // Set to false for wrong feedback
+        setIsCorrectAnswer(false);
         setAnimationType("wrong");
         Animated.timing(wrongAnim, {
           toValue: 1,
@@ -385,10 +427,8 @@ export default function DrivingGame() {
     setIsCorrectAnswer(null);
     setCarFrame(0);
     carXAnim.setValue(width / 2 - (280 / 2));
-    //setPedestrianVisible(true);
 
     setTrafficLightState('green');
-    //setIsBlinking(false);
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
@@ -418,20 +458,16 @@ export default function DrivingGame() {
         Alert.alert('Error', `Failed to save session results: ${error.message}`);
       }
     } else {
-      // Move to next scenario
       moveToNextScenario();
       let phaseNumber;
       const categoryId = sessionData?.category_id;
       const phaseId = sessionData?.phase_id;
 
       if (categoryId === 1) {
-        // Road Markings: phase IDs 1,2,3 → phase numbers 1,2,3
         phaseNumber = phaseId;
       } else if (categoryId === 2) {
-        // Traffic Signs: phase IDs 4,5,6 → phase numbers 1,2,3
         phaseNumber = phaseId - 3;
       } else if (categoryId === 3) {
-        // Intersection: phase IDs 7,8,9 → phase numbers 1,2,3
         phaseNumber = phaseId - 6;
       }
 
@@ -440,7 +476,6 @@ export default function DrivingGame() {
     }
   };
 
-  // Calculate traffic light position
   const trafficLightLeft = trafficLightColIndex * tileSize + trafficLightXOffset;
   const trafficLightTop = trafficLightRowIndex * tileSize;
 
@@ -481,23 +516,43 @@ export default function DrivingGame() {
         )}
         
         {/* Trees */}
-                {treePositions.map((tree, index) => (
-                  <Image
-                    key={`tree-${index}`}
-                    source={treeSprites[tree.type]}
-                    style={{
-                      position: "absolute",
-                      width: tileSize * 0.8,
-                      height: tileSize * 1.2,
-                      left: tree.col * tileSize,
-                      top: tree.row * tileSize,
-                      zIndex: 2,
-                    }}
-                    resizeMode="contain"
-                  />
-                ))}
+        {treePositions.map((tree, index) => (
+          <Image
+            key={`tree-${index}`}
+            source={treeSprites[tree.type]}
+            style={{
+              position: "absolute",
+              width: tileSize * 0.8,
+              height: tileSize * 1.2,
+              left: tree.col * tileSize,
+              top: tree.row * tileSize,
+              zIndex: 2,
+            }}
+            resizeMode="contain"
+          />
+        ))}
+
+        {/* NPC Cars */}
+        {npcCars.map((npc, index) => {
+          const sprites = npc.direction === 'south' ? npcCarSpritesSouth : npcCarSprites;
+          return (
+            <Image
+              key={`npc-${index}`}
+              source={sprites[npc.color][0]}
+              style={{
+                position: "absolute",
+                width: tileSize * 1.8,
+                height: tileSize * 1.8,
+                left: npc.col * tileSize - (tileSize * 0.1),
+                top: npc.row * tileSize - (tileSize * 0.25),
+                zIndex: 5,
+              }}
+              resizeMode="contain"
+            />
+          );
+        })}
         
-        {/* Traffic Light - Now with animated states */}
+        {/* Traffic Light */}
         <Image
           source={trafficLightSprites[trafficLightState]}
           style={{
@@ -525,7 +580,7 @@ export default function DrivingGame() {
         }}
       />
 
-      {/* Question overlay - moved to bottom */}
+      {/* Question overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -542,7 +597,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Answers - moved above bottom overlay */}
+      {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -557,7 +612,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Feedback - moved to bottom */}
+      {/* Feedback */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -578,7 +633,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Next button - positioned above bottom overlay */}
+      {/* Next button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
@@ -591,7 +646,6 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -602,14 +656,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  // No intro styles (responsive)
-  // In-game responsive styles
  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -666,7 +718,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",

@@ -307,8 +307,8 @@ export default function DrivingGame() {
       Animated.parallel([
         // Car speeds forward
         Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 12,
-          duration: 3000,
+          toValue: currentScroll.current + tileSize * 8,
+          duration: 1000,
           easing: Easing.linear,
           useNativeDriver: true,
         }),
