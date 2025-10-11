@@ -439,49 +439,25 @@ export default function DrivingGame() {
 } // <-- ADD THIS CLOSING BRACE
 
 else if (answer === "Honk at the vehicle ahead to move forward") {
-  // Animation: Show honking effect, wait for green light, then proceed
-  setCarPaused(true);
-  showHonkEffect();
+   // Animation: Show honking effect, wait for green light, then proceed
+   setCarPaused(true);
+   showHonkEffect();
 
-  setTimeout(() => {
-    setTrafficLightState('green');
-    setTimeout(() => {
-      setCarPaused(false);
-      setOtherCarPaused(false);
+   setTimeout(() => {
+     setTrafficLightState('green');
+     setTimeout(() => {
+       setCarPaused(false);
+       setOtherCarPaused(false);
 
-      // Get current positions to move relative from where they are
-      const currentBlueCarY = carYAnim._value;
-      const currentRedCarY = otherCarYAnim._value;
-
-      // Move both car and map forward together
-      Animated.parallel([
-        // Move the blue car forward smoothly
-        Animated.timing(carYAnim, {
-          toValue: currentBlueCarY - tileSize * 4, // Move 4 tiles from current position
-          duration: 3000,
-          easing: Easing.inOut(Easing.ease), // Smooth easing
-          useNativeDriver: false,
-        }),
-        // Move the red car forward smoothly
-        Animated.timing(otherCarYAnim, {
-          toValue: currentRedCarY - tileSize * 4, // Move 4 tiles from current position
-          duration: 3000,
-          easing: Easing.inOut(Easing.ease), // Smooth easing
-          useNativeDriver: false,
-        }),
-        // Move map forward with same timing
-        Animated.timing(scrollY, {
-          toValue: startOffset - tileSize * 4,
-          duration: 3000,
-          easing: Easing.inOut(Easing.ease), // Smooth easing
-          useNativeDriver: true,
-        })
-      ]).start(() => {
-        handleFeedback(answer);
-      });
-    }, 1000);
-  }, 1500);
-}
+       // Just wait a moment with cars animating in place, then show feedback
+       setTimeout(() => {
+         setCarPaused(true);
+         setOtherCarPaused(true);
+         handleFeedback(answer);
+       }, 1500);
+     }, 1000);
+   }, 1500);
+ }
 
 }
 
