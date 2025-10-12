@@ -43,6 +43,7 @@ export default function Register() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Modal states for legal documents
   const [showTerms, setShowTerms] = useState(false);
@@ -487,17 +488,22 @@ export default function Register() {
           />
 
           {/* Password */}
-          <TextInput
-            value={password}
-            onChangeText={handlePasswordChange}
-            placeholder="Password"
-            placeholderTextColor="#ccc"
-            secureTextEntry
-            style={[
-              styles.input,
-              password.length > 0 && passwordErrors.length === 0 ? styles.inputSuccess : null
-            ]}
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              value={password}
+              onChangeText={handlePasswordChange}
+              placeholder="Password"
+              placeholderTextColor="#ccc"
+              secureTextEntry={!showPassword}
+              style={styles.passwordInput}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
+              <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Password Requirements */}
           {showPasswordRequirements && (
@@ -1089,5 +1095,31 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 5,
     fontStyle: 'italic', // Make it italic for emphasis
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: "#fff",
+    borderRadius: 6,
+    marginBottom: 4,
+    backgroundColor: 'transparent',
+    height: 28,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    color: "white",
+    fontFamily: "pixel",
+    fontSize: 11,
+  },
+  eyeIcon: {
+    padding: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eyeText: {
+    fontSize: 14,
   },
 });
