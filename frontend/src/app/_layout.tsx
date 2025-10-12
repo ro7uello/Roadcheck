@@ -37,6 +37,8 @@ export default function RootLayout() {
       <Stack.Screen name="categorySelectionScreen" />
       <Stack.Screen name="profile" />
       <Stack.Screen name="scenarios" />
+      <Stack.Screen name="resetPassword" />
+      <Stack.Screen name="forgotpassword" />
     </Stack>
   );
 }

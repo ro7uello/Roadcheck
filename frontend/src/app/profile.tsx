@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
   rankTitle: {
     fontSize: 12,
     color: '#000',
-    fontFamily: 'pixel',
+    fontFamily: 'spaceMono',
     flex: 1,
   },
   rankRange: {
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: 14,
-    fontFamily: 'pixel',
+    fontFamily: 'spaceMono',
   },
   statRow: {
     flexDirection: 'row',
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     color: '#000',
-    fontFamily: 'pixel',
+    fontFamily: 'spaceMono',
   },
   statValue: {
     fontSize: 12,

@@ -27,6 +27,7 @@ const BACKGROUND_SPEED = 12000;
 export default function ResultPage() {
   const [fontsLoaded] = useFonts({
     pixel: require('../../assets/fonts/pixel3.ttf'),
+    'space-mono': require('../../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   const params = useLocalSearchParams();
@@ -842,7 +843,7 @@ const styles = StyleSheet.create({
   scenarioDetailText: {
     fontSize: 9,
     color: '#333',
-    fontFamily: 'pixel',
+    fontFamily: 'spaceMono',
     marginBottom: 2,
   },
   scenarioDetailAnswer: {
@@ -914,7 +915,7 @@ const styles = StyleSheet.create({
       referenceText: {
         fontSize: 9,
         color: 'black',
-        fontFamily: "pixel",
+        fontFamily: 'spaceMono',
         lineHeight: 14,
         textAlign: 'justify',
       },

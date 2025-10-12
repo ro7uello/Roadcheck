@@ -92,6 +92,7 @@ export default function DrivingGame() {
   };
 
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
+  const [isPlayerCrossing, setIsPlayerCrossing] = useState(false);
 
   const startOffset = -(scaledMapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
@@ -128,10 +129,19 @@ export default function DrivingGame() {
 
   const [npcCars, setNpcCars] = useState(carsRef.current);
 
-  // Animate NPC cars moving EAST (to the right)
+  // Animate NPC cars moving EAST (to the right) - stops when player is crossing
   useEffect(() => {
     const carUpdateInterval = setInterval(() => {
       carsRef.current = carsRef.current.map(car => {
+        // Only move cars if player is NOT crossing
+        if (isPlayerCrossing) {
+          // Keep the same position, just update frame for idle animation
+          return {
+            ...car,
+            frame: (car.frame + 1) % 2
+          };
+        }
+        
         // Move cars to the right (EAST)
         let newXOffset = car.xOffset + 3; // Move right
         
@@ -151,7 +161,7 @@ export default function DrivingGame() {
     }, 50); // Update every 50ms for smooth movement
 
     return () => clearInterval(carUpdateInterval);
-  }, []);
+  }, [isPlayerCrossing]);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -218,6 +228,7 @@ export default function DrivingGame() {
       // Cross the pedestrian immediately - walk straight north
       setPlayerDirection("NORTH");
       setPlayerFrame(0);
+      setIsPlayerCrossing(true); // Stop cars when crossing
       
       Animated.timing(scrollY, {
         toValue: currentScroll.current + scaledMapHeight * 0.25,
@@ -225,6 +236,7 @@ export default function DrivingGame() {
         useNativeDriver: true,
       }).start(() => {
         setIsPlayerVisible(false);
+        setIsPlayerCrossing(false); // Resume cars after crossing
         handleFeedback(answer);
       });
       
@@ -238,12 +250,15 @@ export default function DrivingGame() {
       // Wait 2 seconds, then cross
       setTimeout(() => {
         setPlayerPaused(false);
+        setIsPlayerCrossing(true); // Stop cars when crossing
+        
         Animated.timing(scrollY, {
           toValue: currentScroll.current + scaledMapHeight * 0.25,
           duration: 3500,
           useNativeDriver: true,
         }).start(() => {
           setIsPlayerVisible(false);
+          setIsPlayerCrossing(false); // Resume cars after crossing
           handleFeedback(answer);
         });
       }, 2000);
@@ -270,6 +285,7 @@ export default function DrivingGame() {
     setShowNext(false);
     setSelectedAnswer(null);
     setPlayerFrame(0);
+    setIsPlayerCrossing(false); // Reset crossing state
     
     const centerX = width * 0.5 - spriteWidth / 2;
     playerXAnim.setValue(centerX);
