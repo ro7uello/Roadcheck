@@ -152,6 +152,7 @@ export default function DrivingGame() {
   const [jeepneyFrame, setJeepneyFrame] = useState(0);
 
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+  const carYAnim = useRef(new Animated.Value(height * 0.1)).current;
 
   // Jeepney's X position
   const jeepneyLane = 2;
@@ -276,7 +277,7 @@ export default function DrivingGame() {
 
       // 1. Show curve warning first
       setShowCurveWarning(true);
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // 2. Player car starts aggressive overtaking maneuver
       await new Promise(resolve => {
@@ -308,8 +309,8 @@ export default function DrivingGame() {
                   useNativeDriver: true,
               }),
               Animated.timing(jeepneyYAnim, {
-                  toValue: height * 0.6,
-                  duration: 500,
+                  toValue: height * 1,
+                  duration: 800,
                   easing: Easing.linear,
                   useNativeDriver: true,
               })
@@ -351,6 +352,7 @@ export default function DrivingGame() {
   const animateCollision = async () => {
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
 
+    // First animation: Move to side lane
     await new Promise(resolve => {
         setPlayerCarDirection("NORTH");
         Animated.parallel([
@@ -369,6 +371,25 @@ export default function DrivingGame() {
         ]).start(resolve);
     });
 
+    // Second animation: Move forward to close distance with jeepney
+    await new Promise(resolve => {
+        const moveDistance = tileSize * 0.1;
+        Animated.parallel([
+            Animated.timing(carYAnim, {
+                toValue: carYAnim._value + moveDistance, // Move car up (closing distance)
+                duration: 800,
+                easing: Easing.easeInOut,
+                useNativeDriver: false,
+            }),
+            Animated.timing(scrollY, {
+                toValue: scrollY._value - moveDistance,
+                duration: 800,
+                easing: Easing.easeInOut,
+                useNativeDriver: true,
+            })
+        ]).start(resolve);
+    });
+
     setPlayerCarDirection("NORTH");
 
     // Show tailgating warning
@@ -376,18 +397,21 @@ export default function DrivingGame() {
     setTimeout(() => setShowTailgatingWarning(false), 2000);
 
     // Shake player car to simulate dangerous tailgating
+    const currentCarX = carXAnim._value;
     const shakePlayer = Animated.sequence([
-      Animated.timing(carXAnim, { toValue: carXAnim._value + 20, duration: 50, useNativeDriver: false }),
-      Animated.timing(carXAnim, { toValue: carXAnim._value - 40, duration: 50, useNativeDriver: false }),
-      Animated.timing(carXAnim, { toValue: carXAnim._value + 40, duration: 50, useNativeDriver: false }),
-      Animated.timing(carXAnim, { toValue: carXAnim._value - 20, duration: 50, useNativeDriver: false }),
+      Animated.timing(carXAnim, { toValue: currentCarX + 20, duration: 50, useNativeDriver: false }),
+      Animated.timing(carXAnim, { toValue: currentCarX - 20, duration: 50, useNativeDriver: false }),
+      Animated.timing(carXAnim, { toValue: currentCarX + 20, duration: 50, useNativeDriver: false }),
+      Animated.timing(carXAnim, { toValue: currentCarX, duration: 50, useNativeDriver: false }),
     ]);
 
     await new Promise(resolve => shakePlayer.start(resolve));
     await new Promise(resolve => setTimeout(resolve, 1000));
 
+    // Reset positions
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
+    carYAnim.setValue(height * 0.1);
   };
 
   const animateSafeOvertake = async () => {
@@ -425,7 +449,7 @@ export default function DrivingGame() {
 
       // Show "Clear Road Ahead" indicator
       setShowClearVisibility(true);
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       setShowClearVisibility(false);
 
       // 4. Signal and move to passing lane safely
@@ -534,6 +558,7 @@ const handleNext = async () => {
 
   const centerX = width / 2 - carWidth / 2;
   carXAnim.setValue(centerX);
+  carYAnim.setValue(height * 0.1);
   setPlayerCarDirection("NORTH");
   setIsPlayerCarVisible(true);
   setIsJeepneyVisible(true);
@@ -559,10 +584,11 @@ const handleNext = async () => {
     }
   } else {
       // Go to next scenario
-      moveToNextScenario();
+     // moveToNextScenario();
       // Don't add 1 here - moveToNextScenario() already incremented currentScenario
       const nextScreen = `S${currentScenario +1  }P2`;
-      router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+     // router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+      router.push(`/scenarios/road-markings/phase2/S2P2`);
     }
 
   setShowQuestion(false);
@@ -769,7 +795,7 @@ const handleNext = async () => {
             width: carWidth,
             height: carHeight,
             position: "absolute",
-            bottom: height * 0.1,
+            bottom: carYAnim,
             left: carXAnim,
             zIndex: 5,
           }}

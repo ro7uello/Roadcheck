@@ -151,10 +151,10 @@ const trafficSign = {
 
 // NPC car configuration
 const initialNpcCars = [
-  { id: 1, row: 2.5, color: 'red', startDelay: 0, speed: 5500 },
-  { id: 2, row: 2.5, color: 'green', startDelay: 1500, speed: 6500 },
-  { id: 3, row: 3.5, color: 'yellow', startDelay: 800, speed: 7500 },
-  { id: 4, row: 3.5, color: 'blue', startDelay: 2200, speed: 7000 },
+  { id: 1, row: 2.5, color: 'red', startDelay: 0, speed: 9800 },
+  { id: 2, row: 2.5, color: 'green', startDelay: 1500, speed: 10000 },
+  { id: 3, row: 3.5, color: 'yellow', startDelay: 0, speed: 10000 },
+  { id: 4, row: 3.5, color: 'blue', startDelay: 1500, speed: 9000 },
 ];
 
 export default function DrivingGame() {
@@ -185,6 +185,10 @@ export default function DrivingGame() {
   const [npcCars, setNpcCars] = useState(initialNpcCars);
   const npcCarAnims = useRef({});
   const [npcCarFrames, setNpcCarFrames] = useState({});
+  
+  // Store animation timeouts and running animations
+  const npcAnimationTimeouts = useRef({});
+  const npcRunningAnimations = useRef({});
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -215,35 +219,100 @@ export default function DrivingGame() {
     });
   }, [npcCars]);
 
-  // Animate NPC cars
-  useEffect(() => {
-    const animations = npcCars.map(car => {
-      const anim = npcCarAnims.current[car.id];
+  // Function to completely stop an NPC animation
+  const stopNPCAnimation = (carId) => {
+    // Clear timeout if exists
+    if (npcAnimationTimeouts.current[carId]) {
+      clearTimeout(npcAnimationTimeouts.current[carId]);
+      npcAnimationTimeouts.current[carId] = null;
+    }
+    
+    // Stop the running animation if exists
+    if (npcRunningAnimations.current[carId]) {
+      npcCarAnims.current[carId]?.stopAnimation();
+      npcRunningAnimations.current[carId] = false;
+    }
+  };
+
+  // Function to start a single NPC animation
+  const startNPCAnimation = (car) => {
+    const anim = npcCarAnims.current[car.id];
+    
+    const timeout = setTimeout(() => {
+      npcRunningAnimations.current[car.id] = true;
       
-      return new Promise(resolve => {
-        setTimeout(() => {
-          const loopAnimation = () => {
-            anim.setValue(-carWidth);
-            Animated.timing(anim, {
-              toValue: width + carWidth,
-              duration: car.speed,
-              useNativeDriver: false,
-            }).start(() => {
-              loopAnimation();
-            });
-          };
-          loopAnimation();
-          resolve();
-        }, car.startDelay);
-      });
+      const loopAnimation = () => {
+        // Check if animation should still be running
+        if (!npcRunningAnimations.current[car.id]) {
+          return;
+        }
+        
+        anim.setValue(-carWidth);
+        Animated.timing(anim, {
+          toValue: width + carWidth,
+          duration: car.speed,
+          useNativeDriver: false,
+        }).start(({ finished }) => {
+          // Only continue loop if animation finished naturally and should still be running
+          if (finished && npcRunningAnimations.current[car.id]) {
+            loopAnimation();
+          }
+        });
+      };
+      
+      loopAnimation();
+    }, car.startDelay);
+    
+    npcAnimationTimeouts.current[car.id] = timeout;
+  };
+
+  // Function to start all NPC animations
+  const startNPCAnimations = () => {
+    console.log('Starting NPC animations...');
+    npcCars.forEach(car => {
+      startNPCAnimation(car);
     });
+  };
+
+  // Function to reset NPC animations
+  const resetNPCAnimations = () => {
+    console.log('Resetting NPC animations...');
+    
+    // Stop all animations first
+    npcCars.forEach(car => {
+      stopNPCAnimation(car.id);
+    });
+    
+    // Wait for all animations to stop, then reset positions
+    setTimeout(() => {
+      npcCars.forEach(car => {
+        npcCarAnims.current[car.id]?.setValue(-carWidth);
+      });
+      
+      // Reset frames
+      setNpcCarFrames({});
+      
+      console.log('NPC positions reset, restarting...');
+      
+      // Restart animations after positions are reset
+      setTimeout(() => {
+        startNPCAnimations();
+        console.log('NPC animations restarted');
+      }, 50);
+    }, 100);
+  };
+
+  // Animate NPC cars on mount
+  useEffect(() => {
+    startNPCAnimations();
 
     return () => {
+      // Cleanup on unmount
       npcCars.forEach(car => {
-        npcCarAnims.current[car.id]?.stopAnimation();
+        stopNPCAnimation(car.id);
       });
     };
-  }, [npcCars]);
+  }, []);
 
   // Animate NPC car sprite frames
   useEffect(() => {
@@ -280,7 +349,7 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 8;
+    const stopRow = 8.5;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -346,6 +415,9 @@ export default function DrivingGame() {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
+
+    // Reset NPC animations when answer is selected
+    resetNPCAnimations();
 
     const currentQuestion = questions[questionIndex];
     const isCorrect = answer === currentQuestion.correct;
@@ -415,7 +487,7 @@ export default function DrivingGame() {
       });
       return;
     } else if (answer === "Stop and wait for the roundabout to be completely empty") {
-        const targetRow = 8;
+        const targetRow = 8.5;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
