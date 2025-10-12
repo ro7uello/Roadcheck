@@ -76,15 +76,18 @@ const questions = [
 
 export default function DrivingGame() {
   const {
-    currentScenario,
     updateScenarioProgress,
     moveToNextScenario,
     completeSession,
+    currentScenario:
+    sessionData
   } = useSession();
+
+  const currentScenario = 1;
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      const scenarioId = currentScenario;
+      const scenarioId = 90 + currentScenario;
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -301,7 +304,7 @@ export default function DrivingGame() {
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-    } else if (currentScenario >= 5) {
+    } else if (currentScenario >= 10) {
 
       try {
         const sessionResults = await completeSession();

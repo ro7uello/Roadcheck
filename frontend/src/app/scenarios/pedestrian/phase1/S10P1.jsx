@@ -1,29 +1,20 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
 // Responsive calculations
 const spriteWidth = Math.min(width * 0.08, 64);
 const spriteHeight = spriteWidth * 1.5;
-const carWidth = spriteWidth * 5;
-const carHeight = spriteHeight * 5;
 const overlayHeight = height * 0.35;
 const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 // Map setup
-const mapImage = require("../../../../../assets/map/map1.png");
+const mapImage = require("../../../../../assets/map/map2.png");
 const mapWidth = 320;
 const mapHeight = 768;
 const mapScale = width / mapWidth;
@@ -45,59 +36,65 @@ const maleSprites = {
   ],
 };
 
-// Sober friend sprites (same as male sprites)
-const friendSprites = {
-  WEST: [
-    require("../../../../../assets/character/sprites/west/west_walk1.png"),
-    require("../../../../../assets/character/sprites/west/west_walk2.png"),
-    require("../../../../../assets/character/sprites/west/west_walk3.png"),
-    require("../../../../../assets/character/sprites/west/west_walk4.png"),
-  ],
+const trafficSign = {
+  west: require("../../../../../assets/traffic light/street_light2.png"),
+  east: require("../../../../../assets/traffic light/street_light3.png"),
 };
 
-// Multiple car colors
-const npcCarSprites = {
-  blue: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
-  ],
-  red: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
-  ],
-  green: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
-  ],
-  yellow: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_001.png"),
-  ],
-};
+// Multiple streetlight positions (row, column, xOffset, direction)
+const streetLights = [
+  { row: 3, col: 4, xOffset: -50, direction: 'west' },
+  { row: 6, col: 4, xOffset: -50, direction: 'west' },
+  { row: 9, col: 4, xOffset: -50, direction: 'west' },
+  { row: 12, col: 4, xOffset: -50, direction: 'west' },
+  { row: 15, col: 4, xOffset: -50, direction: 'west' },
+  { row: 4, col: 2, xOffset: -50, direction: 'east' },
+  { row: 5, col: 2, xOffset: -50, direction: 'east' },
+  { row: 8, col: 2, xOffset: -50, direction: 'east' },
+  { row: 11, col: 2, xOffset: -50, direction: 'east' },
+  { row: 14, col: 2, xOffset: -50, direction: 'east' },
+];
 
 const questions = [
   {
-    question: "You've been drinking at a friend's birthday party and feel slightly dizzy as you went outside. You are planning to cross the street. The designated crossing is 50 meters away.",
+    question: "You need to walk about 100 meters to reach the jeepney terminal. There are no sidewalks available but the street is well lit. You are currently on the side of the road where you are not facing traffic.",
     options: [
-      "Cross immediately while you still feel okay",
-      "Wait to sober up completely before attempting to cross",
-      "Ask a sober friend to help guide you to the proper crossing"
+      "Walk on the right side of the road facing the same direction as traffic",
+      "Check if the road is clear and cross the street to walk on the left side facing oncoming traffic.",
+      "Walk in the middle of the road where street lights are brightest"
     ],
-    correct: "Ask a sober friend to help guide you to the proper crossing",
+    correct: "Check if the road is clear and cross the street to walk on the left side facing oncoming traffic.",
     wrongExplanation: {
-      "Cross immediately while you still feel okay": "Wrong! Any alcohol impairment affects judgment and reaction time and might get you to unexpected accidents.",
-      "Wait to sober up completely before attempting to cross": "Not practical! While not crossing impaired is good, waiting outside is not safe nor is practical."
+      "Walk on the right side of the road facing the same direction as traffic": "Accident prone! Walking with traffic means you can't see approaching vehicles. You won't know if a car is coming too close until it's too late.",
+      "Walk in the middle of the road where street lights are brightest": "Accident Prone! Walking in the roadway is extremely dangerous."
     }
   },
 ];
 
 export default function DrivingGame() {
+  const {
+    currentScenario,
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+  } = useSession();
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      const scenarioId = 90 + currentScenario;
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
+
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
-  const [isFriendVisible, setIsFriendVisible] = useState(false);
 
   const startOffset = -(scaledMapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
+  const numColumns = 10;
+  const tileSize = width / numColumns;
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -117,48 +114,8 @@ export default function DrivingGame() {
   // Player
   const [playerFrame, setPlayerFrame] = useState(0);
   const [playerPaused, setPlayerPaused] = useState(false);
-  const centerX = width * 0.5 - spriteWidth / 2;
-  const playerXAnim = useRef(new Animated.Value(centerX)).current;
-
-  // Friend
-  const [friendFrame, setFriendFrame] = useState(0);
-  const [friendDirection, setFriendDirection] = useState("WEST");
-  const friendXAnim = useRef(new Animated.Value(centerX + spriteWidth * 2)).current;
-
-  // NPC Cars - Initial state with refs
-  const carsRef = useRef([
-    { id: 1, color: 'blue', column: 1, yOffset: 0, frame: 0 },
-    { id: 2, color: 'red', column: 1, yOffset: -300, frame: 0 },
-    { id: 3, color: 'green', column: 1, yOffset: -600, frame: 0 },
-    { id: 4, color: 'yellow', column: 2, yOffset: -150, frame: 0 },
-    { id: 5, color: 'blue', column: 2, yOffset: -450, frame: 0 },
-    { id: 6, color: 'red', column: 2, yOffset: -750, frame: 0 },
-  ]);
-
-  const [npcCars, setNpcCars] = useState(carsRef.current);
-
-  // Animate NPC cars
-  useEffect(() => {
-    const carUpdateInterval = setInterval(() => {
-      carsRef.current = carsRef.current.map(car => {
-        let newYOffset = car.yOffset - 2;
-        
-        if (newYOffset > height + 200) {
-          newYOffset = -200;
-        }
-        
-        return {
-          ...car,
-          yOffset: newYOffset,
-          frame: (car.frame + 1) % 2
-        };
-      });
-      
-      setNpcCars([...carsRef.current]);
-    }, 50);
-
-    return () => clearInterval(carUpdateInterval);
-  }, []);
+  const rightX = width * 0.56 - spriteWidth / 2; // Adjusted to right side by half
+  const playerXAnim = useRef(new Animated.Value(rightX)).current;
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -176,7 +133,7 @@ export default function DrivingGame() {
       }, 1000);
     });
   }
-  
+
   useEffect(() => {
     startScrollAnimation();
   }, []);
@@ -191,17 +148,6 @@ export default function DrivingGame() {
     }
     return () => clearInterval(iv);
   }, [playerPaused, playerDirection]);
-
-  // Friend sprite frame loop
-  useEffect(() => {
-    let iv;
-    if (isFriendVisible && friendSprites[friendDirection]) {
-      iv = setInterval(() => {
-        setFriendFrame((p) => (p + 1) % friendSprites[friendDirection].length);
-      }, 200);
-    }
-    return () => clearInterval(iv);
-  }, [isFriendVisible, friendDirection]);
 
   const [animationType, setAnimationType] = useState(null);
   const [showNext, setShowNext] = useState(false);
@@ -223,126 +169,138 @@ export default function DrivingGame() {
     }
   };
 
-  const handleAnswer = (answer) => {
+ const handleAnswer = (answer) => {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
 
-    if (answer === "Cross immediately while you still feel okay") {
-      // Player runs west alone and gets hit
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    updateProgress(answer, isCorrect);
+
+    if (answer === "Walk in the middle of the road where street lights are brightest") {
+      // Face west and walk to middle
       setPlayerDirection("WEST");
       setPlayerFrame(0);
-      
-      const leftX = width * 0.15 - spriteWidth / 2;
-      
-      Animated.parallel([
-        Animated.timing(playerXAnim, {
-          toValue: leftX,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.05,
-          duration: 1200,
-          useNativeDriver: true,
-        })
-      ]).start(() => {
-        setIsPlayerVisible(false);
-        handleFeedback(answer);
-      });
-      
-      return;
-    } else if (answer === "Wait to sober up completely before attempting to cross") {
-      // Player just waits (minimal animation)
-      setPlayerPaused(true);
-      
-      setTimeout(() => {
-        handleFeedback(answer);
-      }, 1500);
-      
-      return;
-    } else if (answer === "Ask a sober friend to help guide you to the proper crossing") {
-      // Sober friend appears and both walk west together safely
-      setIsFriendVisible(true);
-      setPlayerDirection("WEST");
-      setFriendDirection("WEST");
-      setPlayerFrame(0);
-      setFriendFrame(0);
-      
-D
-      
-      
-      Animated.parallel([
-        Animated.timing(playerXAnim, {
-          toValue: playerLeftX,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(friendXAnim, {
-          toValue: friendLeftX,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
+
+      const middleX = width * 0.35 - spriteWidth / 2;
+
+      Animated.timing(playerXAnim, {
+        toValue: middleX,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start(() => {
+        // After reaching middle, face north and walk
+        setPlayerDirection("NORTH");
+        setPlayerFrame(0);
+
         Animated.timing(scrollY, {
           toValue: currentScroll.current + scaledMapHeight * 0.15,
           duration: 3000,
           useNativeDriver: true,
-        })
-      ]).start(() => {
+        }).start(() => {
+          setIsPlayerVisible(false);
+          handleFeedback(answer);
+        });
+      });
+
+      return;
+    } else if (answer === "Walk on the right side of the road facing the same direction as traffic") {
+      // Just walk straight north
+      setPlayerDirection("NORTH");
+      setPlayerFrame(0);
+
+      Animated.timing(scrollY, {
+        toValue: currentScroll.current + scaledMapHeight * 0.25,
+        duration: 4500,
+        useNativeDriver: true,
+      }).start(() => {
         setIsPlayerVisible(false);
-        setIsFriendVisible(false);
         handleFeedback(answer);
       });
-      
+      return;
+    } else if (answer === "Check if the road is clear and cross the street to walk on the left side facing oncoming traffic.") {
+      // Face west and walk to cross the road
+      setPlayerDirection("WEST");
+      setPlayerFrame(0);
+
+      const leftX = width * 0.20 - spriteWidth / 2;
+
+      Animated.timing(playerXAnim, {
+        toValue: leftX,
+        duration: 2500,
+        useNativeDriver: true,
+      }).start(() => {
+        // After crossing, face north and walk
+        setPlayerDirection("NORTH");
+        setPlayerFrame(0);
+
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + scaledMapHeight * 0.2,
+          duration: 3500,
+          useNativeDriver: true,
+        }).start(() => {
+          setIsPlayerVisible(false);
+          handleFeedback(answer);
+        });
+      });
+
       return;
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setPlayerFrame(0);
-    
-    const centerX = width * 0.5 - spriteWidth / 2;
-    playerXAnim.setValue(centerX);
-    friendXAnim.setValue(centerX + spriteWidth * 2);
+
+    const rightX = width * 0.65 - spriteWidth / 2;
+    playerXAnim.setValue(rightX);
     setPlayerDirection("NORTH");
-    setFriendDirection("WEST");
     setIsPlayerVisible(true);
-    setIsFriendVisible(false);
     setPlayerPaused(false);
-    
+
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else {
-      router.push('/scenarios/pedestrian/phase-1/S9P1');
-      setQuestionIndex(0);
-      setShowQuestion(false);
-    }
-  };
+          setQuestionIndex(questionIndex + 1);
+          startScrollAnimation();
+        } else if (currentScenario >= 10) {
+
+          try {
+            const sessionResults = await completeSession();
+
+            if (!sessionResults) {
+              Alert.alert('Error', 'Failed to complete session');
+              return;
+            }
+
+            router.push({
+              pathname: '/result-page',
+              params: {
+                ...sessionResults,
+                userAttempts: JSON.stringify(sessionResults.attempts)
+              }
+            });
+          } catch (error) {
+            console.error('Error completing session:', error);
+            Alert.alert('Error', 'Failed to save session results');
+          }
+        } else {
+          // Move to next scenario
+          moveToNextScenario();
+          const nextScreen = `S${currentScenario + 1}P1`;
+          router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+        }
+      };
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Always ask for help from a sober friend when you're impaired. They can guide you to a safe crossing and ensure your safety."
+    ? "Correct! Always walk facing traffic when there are no sidewalks. This allows you to see vehicles approaching and react accordingly for your safety."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
-  const currentPlayerSprite = maleSprites[playerDirection] && maleSprites[playerDirection][playerFrame] 
-    ? maleSprites[playerDirection][playerFrame] 
+  const currentPlayerSprite = maleSprites[playerDirection] && maleSprites[playerDirection][playerFrame]
+    ? maleSprites[playerDirection][playerFrame]
     : maleSprites["NORTH"][0];
-
-  const currentFriendSprite = friendSprites[friendDirection] && friendSprites[friendDirection][friendFrame]
-    ? friendSprites[friendDirection][friendFrame]
-    : friendSprites["WEST"][0];
-
-  const getCarXPosition = (column) => {
-    if (column === 1) {
-      return width * 0.25;
-    } else {
-      return width * 0.45;
-    }
-  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -365,31 +323,29 @@ D
           }}
           resizeMode="stretch"
         />
-      </Animated.View>
 
-      {/* NPC Cars */}
-      {npcCars.map(car => (
-        <View
-          key={car.id}
-          style={{
-            position: "absolute",
-            left: getCarXPosition(car.column) - (carWidth / 1),
-            top: car.yOffset,
-            width: carWidth,
-            height: carHeight,
-            zIndex: 5,
-          }}
-        >
-          <Image
-            source={npcCarSprites[car.color][car.frame]}
-            style={{
-              width: carWidth,
-              height: carHeight,
-            }}
-            resizeMode="contain"
-          />
-        </View>
-      ))}
+        {/* Render multiple streetlights with correct directions */}
+        {streetLights.map((light, index) => {
+          const lightLeft = light.col * tileSize + light.xOffset;
+          const lightTop = light.row * tileSize;
+
+          return (
+            <Image
+              key={`streetlight-${index}`}
+              source={light.direction === 'west' ? trafficSign.west : trafficSign.east}
+              style={{
+                width: tileSize * 3,
+                height: tileSize * 3,
+                position: "absolute",
+                top: lightTop,
+                left: lightLeft,
+                zIndex: 11,
+              }}
+              resizeMode="contain"
+            />
+          );
+        })}
+      </Animated.View>
 
       {/* Player sprite */}
       {isPlayerVisible && (
@@ -401,21 +357,6 @@ D
             position: "absolute",
             bottom: 80,
             transform: [{ translateX: playerXAnim }],
-            zIndex: 8,
-          }}
-        />
-      )}
-
-      {/* Friend sprite */}
-      {isFriendVisible && (
-        <Animated.Image
-          source={currentFriendSprite}
-          style={{
-            width: spriteWidth * 1.5,
-            height: spriteHeight * 1.5,
-            position: "absolute",
-            bottom: 80,
-            transform: [{ translateX: friendXAnim }],
             zIndex: 8,
           }}
         />
@@ -441,15 +382,13 @@ D
       {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
-          {questions[questionIndex].options.map((option, index) => (
+          {questions[questionIndex].options.map((answer) => (
             <TouchableOpacity
-              key={option}
+              key={answer}
               style={styles.answerButton}
-              onPress={() => handleAnswer(option)}
+              onPress={() => handleAnswer(answer)}
             >
-              <Text style={styles.answerText}>
-                {String.fromCharCode(65 + index)}. {option}
-              </Text>
+              <Text style={styles.answerText}>{answer}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -529,13 +468,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: height * 0.16,
     right: sideMargin,
-    width: width * 0.4,
-    height: height * 0.3,
+    width: width * 0.35,
+    height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
-    padding: height * 0.018,
+    padding: height * 0.015,
     borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
@@ -543,9 +482,8 @@ const styles = StyleSheet.create({
   },
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.035, 14),
-    textAlign: "left",
-    lineHeight: Math.min(width * 0.045, 18),
+    fontSize: Math.min(width * 0.04, 16),
+    textAlign: "center",
   },
   feedbackOverlay: {
     position: "absolute",
@@ -567,10 +505,9 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     color: "white",
-    fontSize: Math.min(width * 0.05, 22),
+    fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
     textAlign: "center",
-    paddingHorizontal: width * 0.05,
   },
   nextButtonContainer: {
     position: "absolute",

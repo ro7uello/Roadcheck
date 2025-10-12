@@ -1,14 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
-import {
-  View,
-  Image,
-  Animated,
-  Dimensions,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../../contexts/SessionManager';
 
 
 const { width, height } = Dimensions.get("window");
@@ -119,6 +112,22 @@ const questions = [
 
 
 export default function DrivingGame() {
+  const {
+    currentScenario,
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+  } = useSession();
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+    try {
+      const scenarioId = 90 + currentScenario;
+      await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+    } catch (error) {
+      console.error('Error updating scenario progress:', error);
+    }
+  };
+
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
 
 
@@ -280,6 +289,9 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    updateProgress(answer, isCorrect);
 
     if (answer === "Cross anywhere since there's an event and rules are relaxed") {
       // Option A: NPCs walk north, player goes east (right)
@@ -348,7 +360,7 @@ export default function DrivingGame() {
   };
 
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
@@ -363,15 +375,36 @@ export default function DrivingGame() {
     setPlayerPaused(false);
    
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else {
-      router.push('/scenarios/pedestrian/phase-1/S7P1');
-      setQuestionIndex(0);
-      setShowQuestion(false);
-    }
-  };
+          setQuestionIndex(questionIndex + 1);
+          startScrollAnimation();
+        } else if (currentScenario >= 10) {
 
+          try {
+            const sessionResults = await completeSession();
+
+            if (!sessionResults) {
+              Alert.alert('Error', 'Failed to complete session');
+              return;
+            }
+
+            router.push({
+              pathname: '/result-page',
+              params: {
+                ...sessionResults,
+                userAttempts: JSON.stringify(sessionResults.attempts)
+              }
+            });
+          } catch (error) {
+            console.error('Error completing session:', error);
+            Alert.alert('Error', 'Failed to save session results');
+          }
+        } else {
+          // Move to next scenario
+          moveToNextScenario();
+          const nextScreen = `S${currentScenario + 1}P1`;
+          router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+        }
+      };
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
@@ -516,13 +549,13 @@ export default function DrivingGame() {
       {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
-          {questions[questionIndex].options.map((option) => (
+          {questions[questionIndex].options.map((answer) => (
             <TouchableOpacity
-              key={option}
+              key={answer}
               style={styles.answerButton}
-              onPress={() => handleAnswer(option)}
+              onPress={() => handleAnswer(answer)}
             >
-              <Text style={styles.answerText}>{option}</Text>
+              <Text style={styles.answerText}>{answer}</Text>
             </TouchableOpacity>
           ))}
         </View>

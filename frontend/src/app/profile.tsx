@@ -393,7 +393,8 @@ export default function ProfileScreen() {
                   {key === 'pedestrian' ? 'PEDESTRIAN' : key.replace(/_/g, " ").toUpperCase()}:
                 </Text>
                 <Text style={styles.statValue}>
-                  {data.correct_answers || 0}/10 correct
+                  {/* ✅ Show /10 for pedestrian, /30 for driver categories */}
+                  {data.correct_answers || 0}/{key === 'pedestrian' ? 10 : 30} correct
                 </Text>
               </View>
             ))}

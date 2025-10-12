@@ -284,7 +284,7 @@ export default function DrivingGame() {
     if (questionIndex < questions.length - 1) {
           setQuestionIndex(questionIndex + 1);
           startScrollAnimation();
-        } else if (currentScenario >= 5) {
+        } else if (currentScenario >= 10) {
 
           try {
             const sessionResults = await completeSession();
