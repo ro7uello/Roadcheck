@@ -141,22 +141,31 @@ export default function DrivingGame() {
   // NPC Cars - Initial state with refs
   const carsRef = useRef([
     // Column 1 cars (SOUTH facing - moving down)
-    { id: 1, color: 'blue', column: 1, direction: 'SOUTH', yOffset: 100, frame: 0 },
-    { id: 2, color: 'red', column: 1, direction: 'SOUTH', yOffset: -200, frame: 0 },
-    { id: 3, color: 'green', column: 1, direction: 'SOUTH', yOffset: -500, frame: 0 },
+    { id: 1, color: 'blue', column: 1, direction: 'SOUTH', yOffset: 200, frame: 0 },
+    { id: 2, color: 'red', column: 1, direction: 'SOUTH', yOffset: -50, frame: 0 },
+    { id: 3, color: 'green', column: 1, direction: 'SOUTH', yOffset: -600, frame: 0 },
     // Column 2 cars (NORTH facing - moving up)
-    { id: 4, color: 'yellow', column: 2, direction: 'NORTH', yOffset: -150, frame: 0 },
-    { id: 5, color: 'blue', column: 2, direction: 'NORTH', yOffset: -450, frame: 0 },
-    { id: 6, color: 'red', column: 2, direction: 'NORTH', yOffset: -750, frame: 0 },
+    { id: 4, color: 'yellow', column: 2, direction: 'NORTH', yOffset: 0, frame: 0 },
+    { id: 5, color: 'blue', column: 2, direction: 'NORTH', yOffset: -350, frame: 0 },
+    { id: 6, color: 'red', column: 2, direction: 'NORTH', yOffset: -550, frame: 0 },
   ]);
 
   const [npcCars, setNpcCars] = useState(carsRef.current);
+  const [carsShouldStop, setCarsShouldStop] = useState(false);
 
   // Animate NPC cars moving forward slowly with the map
   useEffect(() => {
     const carUpdateInterval = setInterval(() => {
       carsRef.current = carsRef.current.map(car => {
         let newYOffset;
+        
+        // Stop cars if player is crossing
+        if (carsShouldStop) {
+          return {
+            ...car,
+            frame: (car.frame + 1) % 2
+          };
+        }
         
         if (car.direction === 'NORTH') {
           // North facing cars move up (negative Y)
@@ -185,7 +194,7 @@ export default function DrivingGame() {
     }, 50); // Update every 50ms for smooth movement
 
     return () => clearInterval(carUpdateInterval);
-  }, []);
+  }, [carsShouldStop]);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -239,10 +248,11 @@ export default function DrivingGame() {
     }
   };
 
- const handleAnswer = (answer) => {
+  const handleAnswer = (answer) => {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
+    setCarsShouldStop(true); // Stop all cars when player starts crossing
 
     const currentQuestion = questions[questionIndex];
     const isCorrect = answer === currentQuestion.correct;
@@ -255,18 +265,11 @@ export default function DrivingGame() {
       
       const leftX = width * 0.05 - spriteWidth / 2;
       
-      Animated.parallel([
-        Animated.timing(playerXAnim, {
-          toValue: leftX,
-          duration: 1500, // Faster for running
-          useNativeDriver: true,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.08,
-          duration: 1500,
-          useNativeDriver: true,
-        })
-      ]).start(() => {
+      Animated.timing(playerXAnim, {
+        toValue: leftX,
+        duration: 1500, // Faster for running
+        useNativeDriver: true,
+      }).start(() => {
         setIsPlayerVisible(false);
         handleFeedback(answer);
       });
@@ -279,18 +282,11 @@ export default function DrivingGame() {
       
       const leftX = width * 0.1 - spriteWidth / 2;
       
-      Animated.parallel([
-        Animated.timing(playerXAnim, {
-          toValue: leftX,
-          duration: 2000, // Walking speed
-          useNativeDriver: true,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.06,
-          duration: 2000,
-          useNativeDriver: true,
-        })
-      ]).start(() => {
+      Animated.timing(playerXAnim, {
+        toValue: leftX,
+        duration: 2000, // Walking speed
+        useNativeDriver: true,
+      }).start(() => {
         setIsPlayerVisible(false);
         handleFeedback(answer);
       });
@@ -303,18 +299,11 @@ export default function DrivingGame() {
       
       const leftX = width * 0.1 - spriteWidth / 2;
       
-      Animated.parallel([
-        Animated.timing(playerXAnim, {
-          toValue: leftX,
-          duration: 2000, // Walking speed
-          useNativeDriver: true,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.06,
-          duration: 2000,
-          useNativeDriver: true,
-        })
-      ]).start(() => {
+      Animated.timing(playerXAnim, {
+        toValue: leftX,
+        duration: 2000, // Walking speed
+        useNativeDriver: true,
+      }).start(() => {
         setIsPlayerVisible(false);
         handleFeedback(answer);
       });
@@ -328,6 +317,7 @@ export default function DrivingGame() {
     setShowNext(false);
     setSelectedAnswer(null);
     setPlayerFrame(0);
+    setCarsShouldStop(false); // Resume car movement
     
     const centerX = width * 0.5 - spriteWidth / 2;
     playerXAnim.setValue(centerX);
@@ -336,36 +326,35 @@ export default function DrivingGame() {
     setPlayerPaused(false);
     
     if (questionIndex < questions.length - 1) {
-          setQuestionIndex(questionIndex + 1);
-          startScrollAnimation();
-        } else if (currentScenario >= 10) {
+      setQuestionIndex(questionIndex + 1);
+      startScrollAnimation();
+    } else if (currentScenario >= 10) {
+      try {
+        const sessionResults = await completeSession();
 
-          try {
-            const sessionResults = await completeSession();
-
-            if (!sessionResults) {
-              Alert.alert('Error', 'Failed to complete session');
-              return;
-            }
-
-            router.push({
-              pathname: '/result-page',
-              params: {
-                ...sessionResults,
-                userAttempts: JSON.stringify(sessionResults.attempts)
-              }
-            });
-          } catch (error) {
-            console.error('Error completing session:', error);
-            Alert.alert('Error', 'Failed to save session results');
-          }
-        } else {
-          // Move to next scenario
-          moveToNextScenario();
-          const nextScreen = `S${currentScenario + 1}P1`;
-          router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session');
+          return;
         }
-      };
+
+        router.push({
+          pathname: '/result-page',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
+    } else {
+      // Move to next scenario
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P1`;
+      router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+    }
+  };
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
