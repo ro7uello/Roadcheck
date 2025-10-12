@@ -10,7 +10,7 @@ const { width, height } = Dimensions.get('window');
 const BACKGROUND_SPEED = 12000;
 
 // Backend API configuration
-const API_BASE_URL = process.env.API_URL;
+import { API_URL as API_BASE_URL } from '../../config/api';
 
 export default function OptionPage() {
   const [fontsLoaded] = useFonts({
@@ -405,7 +405,7 @@ const testBasicConnection = async () => {
       <View style={styles.topRightIcons}>
         <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
           <Image
-            source={require('../../assets/icon/profile-icon.png')}
+            source={require('../../assets/icon/c-trans.png')}
             style={styles.topIcon}
             resizeMode="contain"
           />

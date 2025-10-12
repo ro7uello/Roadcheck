@@ -160,6 +160,7 @@ export default function DrivingGame() {
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   // Brown car state (oncoming traffic)
   const [brownCarFrame, setBrownCarFrame] = useState(0);
@@ -222,13 +223,13 @@ export default function DrivingGame() {
   // Car animation frame cycling
   useEffect(() => {
     let iv;
-    if (!carPaused) {
+    if (!carPaused && !isAnimating) {
       iv = setInterval(() => {
         setCarFrame((p) => (p + 1) % carSprites[carDirection].length);
       }, 200);
     }
     return () => clearInterval(iv);
-  }, [carPaused, carDirection]);
+  }, [carPaused, carDirection, isAnimating]);
 
   // Brown car animation frame cycling
   useEffect(() => {
@@ -265,11 +266,12 @@ export default function DrivingGame() {
       duration: animationSpeed,
       useNativeDriver: true,
     }).start(() => {
-      setShowQuestion(true);
-      setTimeout(() => {
-        setShowAnswers(true);
-      }, 1000);
-    });
+        setCarPaused(true);
+        setShowQuestion(true);
+        setTimeout(() => {
+          setShowAnswers(true);
+        }, 1000);
+      });
   }
 
   useEffect(() => {
@@ -307,6 +309,7 @@ export default function DrivingGame() {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
+    setIsAnimating(true);
 
     const currentQuestion = questions[questionIndex];
     const isCorrect = answer === currentQuestion.correct;
@@ -322,7 +325,8 @@ export default function DrivingGame() {
       Animated.parallel([
         Animated.timing(carXAnim, {
           toValue: 1.7 * tileSize + tileSize/2 - carWidth/2,
-          duration: 900,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.timing(scrollY, {
@@ -331,7 +335,8 @@ export default function DrivingGame() {
           useNativeDriver: true,
         })
       ]).start(() => {
-        setTimeout(() => {
+          setIsAnimating(false);
+        setTimeout(() => {setIsAnimating(false);
           handleFeedback(answer);
         }, 500);
       });
@@ -425,6 +430,7 @@ export default function DrivingGame() {
 
   // Flood areas - positioned on the right shoulder areas and 1st column
   const renderFloodAreas = () => {
+      if (isAnimating) return null
     const floodAreas = [];
 
     // Right shoulder flood areas (column 3)

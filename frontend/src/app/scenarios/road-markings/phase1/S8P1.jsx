@@ -6,12 +6,12 @@ import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
 
-// Responsive calculations (keep these as they are)
+// Responsive calculations
 const playerCarWidth = Math.min(width * 0.25, 280);
 const playerCarHeight = playerCarWidth * (350/280);
 const jeepWidth = Math.min(width * 0.28, 300);
 const jeepHeight = jeepWidth * (350/280);
-const npcCarWidth = Math.min(width * 0.25, 280); // Assuming similar size to player car
+const npcCarWidth = Math.min(width * 0.25, 280);
 const npcCarHeight = npcCarWidth * (350/280);
 const overlayTop = height * 0.4;
 const overlayHeight = height * 0.35;
@@ -19,7 +19,7 @@ const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
-// Road tiles and map layout (keep these as they are)
+// Road tiles and map layout
 const roadTiles = {
     road2: require("../../../../../assets/road/road2.png"),
     road5: require("../../../../../assets/road/road5.png"),
@@ -52,7 +52,7 @@ const mapLayout = [
   ["road2", "road7", "road5", "road2", "road2"],
 ];
 
-// Separated sprites (keep these as they are, but note the NPC car additions)
+// Separated sprites
 const playerCarSprites = {
   NORTH: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
@@ -83,25 +83,25 @@ const jeepneySprites = {
   ],
 };
 
-const npcCar1 = { // Brown Sport Car (Northbound, Leftmost Lane)
+const npcCar1 = {
     NORTH: [
         require("../../../../../assets/car/SPORT TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_SPORT_CLEAN_NORTH_000.png"),
         require("../../../../../assets/car/SPORT TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_SPORT_CLEAN_NORTH_001.png"),
     ],
 };
-const npcCar2 = { // Red SUV (Northbound, Lane 3)
+const npcCar2 = {
     NORTH: [
         require("../../../../../assets/car/SUV TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_SUV_CLEAN_NORTH_000.png"),
         require("../../../../../assets/car/SUV TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_SUV_CLEAN_NORTH_001.png"),
     ],
 };
-const npcCar3 = { // Green Sport Car (Southbound, Rightmost Lane)
+const npcCar3 = {
     SOUTH: [
         require("../../../../../assets/car/SPORT TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_SPORT_CLEAN_SOUTH_000.png"),
         require("../../../../../assets/car/SPORT TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_SPORT_CLEAN_SOUTH_001.png"),
     ],
 };
-const npcCar4 = { // Magenta SUV (Southbound, Lane 4)
+const npcCar4 = {
     SOUTH: [
         require("../../../../../assets/car/SUV TOPDOWN/Magenta/MOVE/SOUTH/SEPARATED/Magenta_SUV_CLEAN_SOUTH_000.png"),
         require("../../../../../assets/car/SUV TOPDOWN/Magenta/MOVE/SOUTH/SEPARATED/Magenta_SUV_CLEAN_SOUTH_001.png"),
@@ -131,11 +131,11 @@ export default function DrivingGame() {
     sessionData
   } = useSession();
 
-    const currentScenario = 8; 
+  const currentScenario = 8;
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      const scenarioId = currentScenario; 
+      const scenarioId = currentScenario;
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -148,7 +148,6 @@ export default function DrivingGame() {
 
   const [isPlayerCarVisible, setIsPlayerCarVisible] = useState(true);
   const [isJeepneyVisible, setIsJeepneyVisible] = useState(true);
-  // NEW: State for NPC cars visibility
   const [isNpcCar1Visible, setIsNpcCar1Visible] = useState(true);
   const [isNpcCar2Visible, setIsNpcCar2Visible] = useState(true);
   const [isNpcCar3Visible, setIsNpcCar3Visible] = useState(true);
@@ -174,31 +173,27 @@ export default function DrivingGame() {
   const [playerCarDirection, setPlayerCarDirection] = useState("NORTH");
   const [playerCarFrame, setPlayerCarFrame] = useState(0);
   const [jeepneyFrame, setJeepneyFrame] = useState(0);
-  // NEW: State for NPC car frames
   const [npcCar1Frame, setNpcCar1Frame] = useState(0);
   const [npcCar2Frame, setNpcCar2Frame] = useState(0);
   const [npcCar3Frame, setNpcCar3Frame] = useState(0);
   const [npcCar4Frame, setNpcCar4Frame] = useState(0);
-
 
   const playerCarXAnim = useRef(new Animated.Value(width / 2 - playerCarWidth / 2)).current;
 
   const jeepneyInitialX = 2 * tileSize + (tileSize / 2 - jeepWidth / 2);
   const jeepneyYAnim = useRef(new Animated.Value(-jeepHeight)).current;
 
-  // NEW: NPC Car initial X positions (center of their respective lanes)
+  // NPC Car initial X positions (center of their respective lanes)
   const npcCar1InitialX = 0 * tileSize + (tileSize / 2 - npcCarWidth / 2); // Lane 0
   const npcCar2InitialX = 3 * tileSize + (tileSize / 2 - npcCarWidth / 2); // Lane 3
   const npcCar3InitialX = 4 * tileSize + (tileSize / 2 - npcCarWidth / 2); // Lane 4
   const npcCar4InitialX = 1 * tileSize + (tileSize / 2 - npcCarWidth / 2); // Lane 1
 
-  // NEW: NPC Car Y position animations (relative to scrollY)
-  // They should also scroll with the background, but might have different offsets or speeds
-  const npcCar1YAnim = useRef(new Animated.Value(-npcCarHeight * 2)).current; // Start further off-screen
-  const npcCar2YAnim = useRef(new Animated.Value(-npcCarHeight * 4)).current; // Start even further off-screen
-  const npcCar3YAnim = useRef(new Animated.Value(mapHeight + npcCarHeight)).current; // Start off-screen bottom for southbound
-  const npcCar4YAnim = useRef(new Animated.Value(mapHeight + npcCarHeight * 3)).current; // Start even further off-screen bottom for southbound
-
+  // NPC Car Y position offsets (they will move with scrollY)
+  const npcCar1Offset = -npcCarHeight * 2;
+  const npcCar2Offset = -npcCarHeight * 4;
+  const npcCar3Offset = height * 0.3;
+  const npcCar4Offset = height * 0.5;
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
@@ -223,73 +218,54 @@ export default function DrivingGame() {
     }
   }, [showQuestion, isJeepneyVisible]);
 
-  // NEW: Animation for NPC car sprites
+  // NPC Car sprite animations
   useEffect(() => {
-    if (!showQuestion && isNpcCar1Visible) {
-      const npc1Interval = setInterval(() => {
-        setNpcCar1Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
-      }, 280);
-      return () => clearInterval(npc1Interval);
-    }
-  }, [showQuestion, isNpcCar1Visible]);
+    if (showQuestion || showAnswers) return;
+    const npc1Interval = setInterval(() => {
+      setNpcCar1Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
+    }, 280);
+    return () => clearInterval(npc1Interval);
+  }, [showQuestion, showAnswers]);
 
   useEffect(() => {
-    if (!showQuestion && isNpcCar2Visible) {
-      const npc2Interval = setInterval(() => {
-        setNpcCar2Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
-      }, 220);
-      return () => clearInterval(npc2Interval);
-    }
-  }, [showQuestion, isNpcCar2Visible]);
+    if (showQuestion || showAnswers) return;
+    const npc2Interval = setInterval(() => {
+      setNpcCar2Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
+    }, 220);
+    return () => clearInterval(npc2Interval);
+  }, [showQuestion, showAnswers]);
 
   useEffect(() => {
-    if (!showQuestion && isNpcCar3Visible) {
-      const npc3Interval = setInterval(() => {
-        setNpcCar3Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
-      }, 270);
-      return () => clearInterval(npc3Interval);
-    }
-  }, [showQuestion, isNpcCar3Visible]);
+    if (showQuestion || showAnswers) return;
+    const npc3Interval = setInterval(() => {
+      setNpcCar3Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
+    }, 270);
+    return () => clearInterval(npc3Interval);
+  }, [showQuestion, showAnswers]);
 
   useEffect(() => {
-    if (!showQuestion && isNpcCar4Visible) {
-      const npc4Interval = setInterval(() => {
-        setNpcCar4Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
-      }, 230);
-      return () => clearInterval(npc4Interval);
-    }
-  }, [showQuestion, isNpcCar4Visible]);
-
+    if (showQuestion || showAnswers) return;
+    const npc4Interval = setInterval(() => {
+      setNpcCar4Frame((prevFrame) => (prevFrame === 0 ? 1 : 0));
+    }, 230);
+    return () => clearInterval(npc4Interval);
+  }, [showQuestion, showAnswers]);
 
   const scrollAnimationRef = useRef(null);
   const jeepneyAnimationRef = useRef(null);
-  // NEW: Refs for NPC car animations
-  const npcCar1AnimationRef = useRef(null);
-  const npcCar2AnimationRef = useRef(null);
-  const npcCar3AnimationRef = useRef(null);
-  const npcCar4AnimationRef = useRef(null);
-
 
   function startScrollAnimation() {
     scrollY.setValue(0);
     jeepneyYAnim.setValue(-jeepHeight);
-    // NEW: Reset NPC car positions
-    npcCar1YAnim.setValue(-npcCarHeight * 2);
-    npcCar2YAnim.setValue(-npcCarHeight * 4);
-    npcCar3YAnim.setValue(mapHeight + npcCarHeight);
-    npcCar4YAnim.setValue(mapHeight + npcCarHeight * 3);
-
 
     playerCarXAnim.setValue(width / 2 - playerCarWidth / 2);
     setPlayerCarDirection("NORTH");
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
-    // NEW: Set NPC cars visible
     setIsNpcCar1Visible(true);
     setIsNpcCar2Visible(true);
     setIsNpcCar3Visible(true);
     setIsNpcCar4Visible(true);
-
 
     scrollAnimationRef.current = Animated.loop(
       Animated.timing(scrollY, {
@@ -312,16 +288,20 @@ export default function DrivingGame() {
         if (scrollAnimationRef.current) {
           scrollAnimationRef.current.stop();
         }
+
         setIsPlayerCarVisible(true);
         setIsJeepneyVisible(true);
-        // NEW: Stop NPC cars sprite animations and set frame
-        setIsNpcCar1Visible(true); setNpcCar1Frame(0);
-        setIsNpcCar2Visible(true); setNpcCar2Frame(0);
-        setIsNpcCar3Visible(true); setNpcCar3Frame(0);
-        setIsNpcCar4Visible(true); setNpcCar4Frame(0);
+        setIsNpcCar1Visible(true);
+        setIsNpcCar2Visible(true);
+        setIsNpcCar3Visible(true);
+        setIsNpcCar4Visible(true);
 
         setPlayerCarFrame(0);
         setJeepneyFrame(0);
+        setNpcCar1Frame(0);
+        setNpcCar2Frame(0);
+        setNpcCar3Frame(0);
+        setNpcCar4Frame(0);
 
         setShowQuestion(true);
         setTimeout(() => {
@@ -329,51 +309,6 @@ export default function DrivingGame() {
         }, 1000);
       }, 2000);
     });
-
-    // NEW: NPC Car 1 animation (northbound, moves with scroll)
-    npcCar1AnimationRef.current = Animated.loop(
-        Animated.timing(npcCar1YAnim, {
-            toValue: mapHeight + npcCarHeight, // Move off-screen bottom
-            duration: mapHeight * 15, // Slower than main scroll, so it appears to be moving against it
-            easing: Easing.linear,
-            useNativeDriver: true,
-        })
-    );
-    npcCar1AnimationRef.current.start();
-
-    // NEW: NPC Car 2 animation (northbound, moves with scroll)
-    npcCar2AnimationRef.current = Animated.loop(
-        Animated.timing(npcCar2YAnim, {
-            toValue: mapHeight + npcCarHeight,
-            duration: mapHeight * 12, // Faster than npcCar1
-            easing: Easing.linear,
-            useNativeDriver: true,
-        })
-    );
-    npcCar2AnimationRef.current.start();
-
-    // NEW: NPC Car 3 animation (southbound, moves against scroll)
-    npcCar3AnimationRef.current = Animated.loop(
-        Animated.timing(npcCar3YAnim, {
-            toValue: -npcCarHeight, // Move off-screen top
-            duration: mapHeight * 15,
-            easing: Easing.linear,
-            useNativeDriver: true,
-        })
-    );
-    npcCar3AnimationRef.current.start();
-
-    // NEW: NPC Car 4 animation (southbound, moves against scroll)
-    npcCar4AnimationRef.current = Animated.loop(
-        Animated.timing(npcCar4YAnim, {
-            toValue: -npcCarHeight,
-            duration: mapHeight * 12,
-            easing: Easing.linear,
-            useNativeDriver: true,
-        })
-    );
-    npcCar4AnimationRef.current.start();
-
   }
 
   useEffect(() => {
@@ -381,11 +316,6 @@ export default function DrivingGame() {
     return () => {
       if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
       if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
-      // NEW: Stop NPC car animations on unmount
-      if (npcCar1AnimationRef.current) npcCar1AnimationRef.current.stop();
-      if (npcCar2AnimationRef.current) npcCar2AnimationRef.current.stop();
-      if (npcCar3AnimationRef.current) npcCar3AnimationRef.current.stop();
-      if (npcCar4AnimationRef.current) npcCar4AnimationRef.current.stop();
     };
   }, []);
 
@@ -417,146 +347,132 @@ export default function DrivingGame() {
   };
 
   const animateStayInLane = async () => {
-    // Keep scroll animation running
     if (scrollAnimationRef.current) scrollAnimationRef.current.start();
-    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop(); // Jeepney stays put for feedback
-    // NEW: Keep NPC car animations running
-    if (npcCar1AnimationRef.current) npcCar1AnimationRef.current.start();
-    if (npcCar2AnimationRef.current) npcCar2AnimationRef.current.start();
-    if (npcCar3AnimationRef.current) npcCar3AnimationRef.current.start();
-    if (npcCar4AnimationRef.current) npcCar4AnimationRef.current.start();
+    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
 
     setPlayerCarDirection("NORTH");
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
-    // NEW: Ensure NPC cars are visible and their frames are reset
     setIsNpcCar1Visible(true); setNpcCar1Frame(0);
     setIsNpcCar2Visible(true); setNpcCar2Frame(0);
     setIsNpcCar3Visible(true); setNpcCar3Frame(0);
     setIsNpcCar4Visible(true); setNpcCar4Frame(0);
 
-
-    // No specific player car movement for "stay in lane", just continue scrolling
-    await new Promise(resolve => setTimeout(resolve, 500)); // Small pause before feedback
+    await new Promise(resolve => setTimeout(resolve, 500));
     handleFeedback(selectedAnswer);
   };
 
   const animateSuddenOvertake = async () => {
-    // Keep scroll animation running
     if (scrollAnimationRef.current) scrollAnimationRef.current.start();
-    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop(); // Jeepney stays put
-    // NEW: Keep NPC car animations running
-    if (npcCar1AnimationRef.current) npcCar1AnimationRef.current.start();
-    if (npcCar2AnimationRef.current) npcCar2AnimationRef.current.start();
-    if (npcCar3AnimationRef.current) npcCar3AnimationRef.current.start();
-    if (npcCar4AnimationRef.current) npcCar4AnimationRef.current.start();
+    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
 
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
-    // NEW: Ensure NPC cars are visible and their frames are reset
-    setIsNpcCar1Visible(true); setNpcCar1Frame(0);
-    setIsNpcCar2Visible(true); setNpcCar2Frame(0);
-    setIsNpcCar3Visible(true); setNpcCar3Frame(0);
-    setIsNpcCar4Visible(true); setNpcCar4Frame(0);
+    setIsNpcCar1Visible(true);
+    setIsNpcCar2Visible(true);
+    setIsNpcCar3Visible(true);
+    setIsNpcCar4Visible(true);
 
-
-    const targetXLeftLane = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2);
+    const targetXSouthboundLane = 4 * tileSize + (tileSize / 2 - playerCarWidth / 2);
 
     await new Promise(resolve => {
-        setPlayerCarDirection("NORTHWEST");
-        Animated.parallel([
-            Animated.timing(playerCarXAnim, {
-                toValue: targetXLeftLane,
-                duration: 400,
-                easing: Easing.easeOut,
-                useNativeDriver: false,
-            }),
-            // Only scrollY is handled by the loop, no additional scroll here
-        ]).start(resolve);
+      setPlayerCarDirection("NORTHEAST");
+      Animated.timing(playerCarXAnim, {
+        toValue: targetXSouthboundLane,
+        duration: 400,
+        easing: Easing.easeOut,
+        useNativeDriver: false,
+      }).start(resolve);
     });
 
     await new Promise(resolve => {
-        setPlayerCarDirection("NORTH");
-        Animated.parallel([
-            Animated.timing(jeepneyYAnim, {
-                toValue: jeepneyYAnim._value + height + jeepHeight, // Move jeepney far down relative to its current pos
-                duration: 800,
-                easing: Easing.easeIn,
-                useNativeDriver: true,
-            }),
-            // Only scrollY is handled by the loop, no additional scroll here
-        ]).start(resolve);
+      setPlayerCarDirection("NORTH");
+      Animated.sequence([
+        Animated.timing(playerCarXAnim, {
+          toValue: playerCarXAnim._value + 15,
+          duration: 50,
+          useNativeDriver: false,
+        }),
+        Animated.timing(playerCarXAnim, {
+          toValue: playerCarXAnim._value - 15,
+          duration: 50,
+          useNativeDriver: false,
+        }),
+        Animated.timing(playerCarXAnim, {
+          toValue: playerCarXAnim._value + 15,
+          duration: 50,
+          useNativeDriver: false,
+        }),
+        Animated.timing(playerCarXAnim, {
+          toValue: playerCarXAnim._value,
+          duration: 50,
+          useNativeDriver: false,
+        }),
+      ]).start(resolve);
     });
-    setIsJeepneyVisible(false);
-
-    setPlayerCarDirection("NORTH");
 
     await new Promise(resolve => setTimeout(resolve, 1000));
     handleFeedback(selectedAnswer);
   };
 
   const animateCarefulOvertake = async () => {
-    // Keep scroll animation running
     if (scrollAnimationRef.current) scrollAnimationRef.current.start();
-    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop(); // Jeepney stays put
-    // NEW: Keep NPC car animations running
-    if (npcCar1AnimationRef.current) npcCar1AnimationRef.current.start();
-    if (npcCar2AnimationRef.current) npcCar2AnimationRef.current.start();
-    if (npcCar3AnimationRef.current) npcCar3AnimationRef.current.start();
-    if (npcCar4AnimationRef.current) npcCar4AnimationRef.current.start();
+    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
 
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
-    // NEW: Ensure NPC cars are visible and their frames are reset
-    setIsNpcCar1Visible(true); setNpcCar1Frame(0);
-    setIsNpcCar2Visible(true); setNpcCar2Frame(0);
-    setIsNpcCar3Visible(true); setNpcCar3Frame(0);
-    setIsNpcCar4Visible(true); setNpcCar4Frame(0);
+    setIsNpcCar1Visible(true);
+    setIsNpcCar2Visible(true);
+    setIsNpcCar3Visible(true);
+    setIsNpcCar4Visible(true);
 
-
-    const targetXLeftLane = 1 * tileSize + (tileSize / 2 - playerCarWidth / 2);
-
-    // No scroll animation here as it's handled by the loop
+    const targetXSouthboundLane = 4 * tileSize + (tileSize / 2 - playerCarWidth / 2);
 
     await new Promise(resolve => {
-        setPlayerCarDirection("NORTHWEST");
-        Animated.parallel([
-            Animated.timing(playerCarXAnim, {
-                toValue: targetXLeftLane,
-                duration: 800,
-                easing: Easing.easeOut,
-                useNativeDriver: false,
-            }),
-            // Only scrollY is handled by the loop, no additional scroll here
-        ]).start(resolve);
+      setPlayerCarDirection("NORTHEAST");
+      Animated.timing(playerCarXAnim, {
+        toValue: targetXSouthboundLane,
+        duration: 800,
+        easing: Easing.easeOut,
+        useNativeDriver: false,
+      }).start(resolve);
     });
 
     await new Promise(resolve => {
-        setPlayerCarDirection("NORTH");
-        Animated.parallel([
-            Animated.timing(jeepneyYAnim, {
-                toValue: jeepneyYAnim._value + height + jeepHeight, // Move jeepney far down relative to its current pos
-                duration: 1200,
-                easing: Easing.easeIn,
-                useNativeDriver: true,
-            }),
-            // Only scrollY is handled by the loop, no additional scroll here
-        ]).start(resolve);
+      setPlayerCarDirection("NORTH");
+      Animated.sequence([
+        Animated.timing(playerCarXAnim, {
+          toValue: playerCarXAnim._value + 15,
+          duration: 50,
+          useNativeDriver: false,
+        }),
+        Animated.timing(playerCarXAnim, {
+          toValue: playerCarXAnim._value - 15,
+          duration: 50,
+          useNativeDriver: false,
+        }),
+        Animated.timing(playerCarXAnim, {
+          toValue: playerCarXAnim._value + 15,
+          duration: 50,
+          useNativeDriver: false,
+        }),
+        Animated.timing(playerCarXAnim, {
+          toValue: playerCarXAnim._value,
+          duration: 50,
+          useNativeDriver: false,
+        }),
+      ]).start(resolve);
     });
-    setIsJeepneyVisible(false);
-
-    setPlayerCarDirection("NORTH");
 
     await new Promise(resolve => setTimeout(resolve, 1000));
     handleFeedback(selectedAnswer);
   };
-
 
   const handleAnswer = async (option) => {
     setSelectedAnswer(option);
@@ -566,21 +482,11 @@ export default function DrivingGame() {
     const currentQuestion = questions[questionIndex];
     const isCorrect = option === currentQuestion.correct;
     updateProgress(option, isCorrect);
-    
-    // Importantly, DO NOT STOP scrollAnimationRef.current here.
-    // It should continue running during the answer animation.
-    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
-    // NEW: Stop NPC car animations immediately (if they need to pause for the interaction)
-    // Or keep them running if they should continue in the background
-    if (npcCar1AnimationRef.current) npcCar1AnimationRef.current.stop();
-    if (npcCar2AnimationRef.current) npcCar2AnimationRef.current.stop();
-    if (npcCar3AnimationRef.current) npcCar3AnimationRef.current.stop();
-    if (npcCar4AnimationRef.current) npcCar4AnimationRef.current.stop();
 
+    if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
 
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
-    // NEW: Ensure NPC cars are visible before animating
     setIsNpcCar1Visible(true);
     setIsNpcCar2Visible(true);
     setIsNpcCar3Visible(true);
@@ -588,7 +494,6 @@ export default function DrivingGame() {
 
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
-    // NEW: Reset NPC car frames
     setNpcCar1Frame(0);
     setNpcCar2Frame(0);
     setNpcCar3Frame(0);
@@ -598,16 +503,15 @@ export default function DrivingGame() {
 
     if (option === actualCorrectAnswer) {
       await animateStayInLane();
-      handleFeedback(option)
+      handleFeedback(option);
     } else if (option === "Follow other drivers and cross the lines since everyone is doing it") {
       await animateSuddenOvertake();
-      handleFeedback(option)
-    } else if (option === "Cross only if no traffic enforcers are visible") { // Assuming this also triggers an overtake
-        await animateCarefulOvertake();
+      handleFeedback(option);
+    } else if (option === "Cross only if no traffic enforcers are visible") {
+      await animateCarefulOvertake();
     } else {
-        // Fallback for any other wrong answer if not handled by specific animations
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        handleFeedback(option);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      handleFeedback(option);
     }
   };
 
@@ -618,73 +522,62 @@ export default function DrivingGame() {
     setIsCorrectAnswer(null);
     setPlayerCarFrame(0);
     setJeepneyFrame(0);
-    // NEW: Reset NPC car frames
     setNpcCar1Frame(0);
     setNpcCar2Frame(0);
     setNpcCar3Frame(0);
     setNpcCar4Frame(0);
-
 
     const centerX = width / 2 - playerCarWidth / 2;
     playerCarXAnim.setValue(centerX);
     setPlayerCarDirection("NORTH");
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
-    // NEW: Set NPC cars visible
     setIsNpcCar1Visible(true);
     setIsNpcCar2Visible(true);
     setIsNpcCar3Visible(true);
     setIsNpcCar4Visible(true);
 
-
     if (questionIndex < questions.length - 1) {
-    setQuestionIndex(questionIndex + 1);
-    startScrollAnimation();
-  } else {
-    // Get current scenario number from file name
-    const currentFileScenario = 8; // For S1P1, this is 1; for S2P1 it would be 2, etc.
-    
-    if (currentFileScenario >= 10) {
-      // Last scenario of phase 1 - complete session and go to results
-      try {
-        const sessionResults = await completeSession();
-        if (sessionResults) {
-          router.push({
-            pathname: '/result',
-            params: {
-              ...sessionResults,
-              userAttempts: JSON.stringify(sessionResults.attempts),
-              scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Error completing session:', error);
-        Alert.alert('Error', 'Failed to save session results');
-      }
+      setQuestionIndex(questionIndex + 1);
+      startScrollAnimation();
     } else {
-      // Move to next scenario in phase 1
-      moveToNextScenario();
-      
-      const nextScenarioNumber = currentFileScenario + 1;
-      const nextScreen = `S${nextScenarioNumber}P1`;
-      router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
-    }
+      const currentFileScenario = 8;
 
-    setShowQuestion(false);
+      if (currentFileScenario >= 10) {
+        try {
+          const sessionResults = await completeSession();
+          if (sessionResults) {
+            router.push({
+              pathname: '/result',
+              params: {
+                ...sessionResults,
+                userAttempts: JSON.stringify(sessionResults.attempts),
+                scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error completing session:', error);
+          Alert.alert('Error', 'Failed to save session results');
+        }
+      } else {
+        moveToNextScenario();
+
+        const nextScenarioNumber = currentFileScenario + 1;
+        const nextScreen = `S${nextScenarioNumber}P1`;
+        router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
+      }
+
+      setShowQuestion(false);
       if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
       if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
-      if (npcCar1AnimationRef.current) npcCar1AnimationRef.current.stop();
-      if (npcCar2AnimationRef.current) npcCar2AnimationRef.current.stop();
-      if (npcCar3AnimationRef.current) npcCar3AnimationRef.current.stop();
-      if (npcCar4AnimationRef.current) npcCar4AnimationRef.current.stop();
-  }
-};
+    }
+  };
+
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
     ? "Correct! You must follow traffic rules regardless of others' behavior or your personal circumstances."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
-
 
   return (
     <View style={{ flex: 1, backgroundColor: "black", overflow: 'hidden' }}>
@@ -727,7 +620,7 @@ export default function DrivingGame() {
         ))}
       </Animated.View>
 
-      {/* Responsive Jeepney */}
+      {/* Jeepney */}
       {isJeepneyVisible && (
         <Animated.Image
           source={jeepneySprites.NORTH[jeepneyFrame]}
@@ -735,14 +628,14 @@ export default function DrivingGame() {
             width: jeepWidth,
             height: jeepHeight,
             position: "absolute",
-            left: jeepneyInitialX, // Keep it in its lane
+            left: jeepneyInitialX,
             transform: [{ translateY: jeepneyYAnim }],
             zIndex: 4,
           }}
-                  />
+        />
       )}
 
-      {/* Responsive Player Car */}
+      {/* Player Car */}
       {isPlayerCarVisible && (
         <Animated.Image
           source={playerCarSprites[playerCarDirection][playerCarFrame]}
@@ -757,7 +650,7 @@ export default function DrivingGame() {
         />
       )}
 
-      {/* NEW: Responsive NPC Car 1 */}
+      {/* NPC Car 1 - Northbound */}
       {isNpcCar1Visible && (
         <Animated.Image
           source={npcCar1.NORTH[npcCar1Frame]}
@@ -766,17 +659,15 @@ export default function DrivingGame() {
             height: npcCarHeight,
             position: "absolute",
             left: npcCar1InitialX,
-            // NPC cars need to scroll with the background but also move independently
-            // This setup makes them appear to move "up" relative to the screen
             transform: [{
-                translateY:npcCar1YAnim
+              translateY: Animated.add(scrollY, npcCar1Offset)
             }],
-            zIndex: 3, // Behind player and jeepney
+            zIndex: 3,
           }}
         />
       )}
 
-      {/* NEW: Responsive NPC Car 2 */}
+      {/* NPC Car 2 - Northbound */}
       {isNpcCar2Visible && (
         <Animated.Image
           source={npcCar2.NORTH[npcCar2Frame]}
@@ -786,49 +677,48 @@ export default function DrivingGame() {
             position: "absolute",
             left: npcCar2InitialX,
             transform: [{
-                translateY:npcCar2YAnim
+              translateY: Animated.add(scrollY, npcCar2Offset)
             }],
             zIndex: 3,
           }}
         />
       )}
 
-      {/* NEW: Responsive NPC Car 3 */}
+      {/* NPC Car 3 - Southbound */}
       {isNpcCar3Visible && (
         <Animated.Image
-          source={npcCar3.SOUTH[npcCar3Frame]} // Note: SOUTH sprite
+          source={npcCar3.SOUTH[npcCar3Frame]}
           style={{
             width: npcCarWidth,
             height: npcCarHeight,
             position: "absolute",
             left: npcCar3InitialX,
-            // Southbound cars move "down" relative to the screen, against the scrollY
             transform: [{
-                translateY:npcCar3YAnim
+              translateY: Animated.subtract(npcCar3Offset, Animated.multiply(scrollY, 0.5))
             }],
             zIndex: 5,
           }}
         />
       )}
 
-      {/* NEW: Responsive NPC Car 4 */}
+      {/* NPC Car 4 - Southbound */}
       {isNpcCar4Visible && (
         <Animated.Image
-          source={npcCar4.SOUTH[npcCar4Frame]} // Note: SOUTH sprite
+          source={npcCar4.SOUTH[npcCar4Frame]}
           style={{
             width: npcCarWidth,
             height: npcCarHeight,
             position: "absolute",
             left: npcCar4InitialX,
             transform: [{
-                translateY: npcCar4YAnim
+              translateY: Animated.subtract(npcCar4Offset, Animated.multiply(scrollY, 0.5))
             }],
             zIndex: 3,
           }}
         />
       )}
 
-      {/* Responsive Question Overlay */}
+      {/* Question Overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -845,7 +735,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Responsive Answers */}
+      {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -860,7 +750,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Responsive Feedback - Updated to use S2P1 format */}
+      {/* Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -870,7 +760,7 @@ export default function DrivingGame() {
         </Animated.View>
       )}
 
-      {/* Responsive Next Button */}
+      {/* Next Button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
@@ -883,7 +773,6 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -895,8 +784,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 20,
   },
-
-  // ADDED: Intro styles (responsive)
   introContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -952,8 +839,7 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
-
- questionOverlay: {
+  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,

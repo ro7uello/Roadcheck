@@ -3,7 +3,9 @@ import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, 
 import { router } from 'expo-router';
 import { useSession } from '../../../../contexts/SessionManager';
 
+
 const { width, height } = Dimensions.get("window");
+
 
 // Responsive calculations
 const spriteWidth = Math.min(width * 0.08, 64);
@@ -15,12 +17,14 @@ const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
+
 // Map setup
 const mapImage = require("../../../../../assets/map/map3.png");
 const mapWidth = 320;
 const mapHeight = 768;
 const mapScale = width / mapWidth;
 const scaledMapHeight = mapHeight * mapScale;
+
 
 // Character sprites
 const maleSprites = {
@@ -37,6 +41,14 @@ const maleSprites = {
     require("../../../../../assets/character/sprites/north/north_walk4.png"),
   ],
 };
+
+
+// NPC standing sprites (alternating between north and west)
+const npcStandingSprites = [
+  require("../../../../../assets/character/sprites/north/north_walk1.png"),
+  require("../../../../../assets/character/sprites/west/west_walk1.png"),
+];
+
 
 // Multiple car colors - North facing
 const npcCarSprites = {
@@ -58,6 +70,7 @@ const npcCarSprites = {
   ],
 };
 
+
 // South facing cars
 const npcCarSpritesSouth = {
   blue: [
@@ -78,21 +91,23 @@ const npcCarSpritesSouth = {
   ],
 };
 
+
 const questions = [
   {
-    question: "You're navigating a crowded non-signalized crosswalk when suddenly your phone keeps buzzing with messages.  ",
+    question: "You're walking around BGC when you suddenly see that the sidewalk is occupied by restaurants and people. There's another 50 meters before the sidewalk clears.",
     options: [
-      "Check your messages while crossing the road.",
-      "Keep your phone in your pocket and focus on crossing the crowded crosswalk.",
-      "Check messages while occassionally checking the road."
+      "Walk on the side of the road facing oncoming traffic.",
+      "Walk on the side of the road with the traffic",
+      "Find alternative route."
     ],
-    correct: "Keep your phone in your pocket and focus on crossing the crowded crosswalk.",
+    correct: "Walk on the side of the road facing oncoming traffic.",
     wrongExplanation: {
-      "Check your messages while crossing the road.": "Wrong! While on the road and especially while crossing, always stay attentive of your surroundings so you can react when something happens.",
-      "Check messages while occassionally checking the road.": "Wrong! In high-chaos environments, any distraction increases accident risk especially when crossing the road."
+      "Walk on the side of the road with the traffic.": "Wrong! Walking on the side of the road in the same direction of the traffic might stop you from reacting to vehicles coming too close.",
+      "Find alternative route.": "Wrong! While cautious, this takes up too much time."
     }
   },
 ];
+
 
 export default function DrivingGame() {
   const {
@@ -113,9 +128,11 @@ export default function DrivingGame() {
 
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
 
+
   const startOffset = -(scaledMapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
+
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -123,6 +140,7 @@ export default function DrivingGame() {
     });
     return () => scrollY.removeListener(id);
   }, [scrollY]);
+
 
   // UI/game states
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -132,11 +150,13 @@ export default function DrivingGame() {
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(null);
   const [playerDirection, setPlayerDirection] = useState("NORTH");
 
+
   // Player
   const [playerFrame, setPlayerFrame] = useState(0);
   const [playerPaused, setPlayerPaused] = useState(false);
   const centerX = width * 0.5 - spriteWidth / 2;
   const playerXAnim = useRef(new Animated.Value(centerX)).current;
+
 
   // NPC Cars - Initial state with refs
   const carsRef = useRef([
@@ -150,14 +170,28 @@ export default function DrivingGame() {
     { id: 6, color: 'red', column: 2, direction: 'NORTH', yOffset: -750, frame: 0 },
   ]);
 
+
   const [npcCars, setNpcCars] = useState(carsRef.current);
+
+
+  // NPC People - Standing on sidewalk blocking the path
+  // Fixed positions on the map (will scroll with the map)
+  const npcPeopleMapPositions = [
+    { id: 1, mapY: scaledMapHeight * 0.45, spriteIndex: 0 },
+    { id: 2, mapY: scaledMapHeight * 0.47, spriteIndex: 1 },
+    { id: 3, mapY: scaledMapHeight * 0.49, spriteIndex: 0 },
+    { id: 4, mapY: scaledMapHeight * 0.51, spriteIndex: 1 },
+    { id: 5, mapY: scaledMapHeight * 0.53, spriteIndex: 0 },
+    { id: 6, mapY: scaledMapHeight * 0.43, spriteIndex: 1 },
+  ];
+
 
   // Animate NPC cars moving forward slowly with the map
   useEffect(() => {
     const carUpdateInterval = setInterval(() => {
       carsRef.current = carsRef.current.map(car => {
         let newYOffset;
-        
+       
         if (car.direction === 'NORTH') {
           // North facing cars move up (negative Y)
           newYOffset = car.yOffset - 2;
@@ -173,24 +207,27 @@ export default function DrivingGame() {
             newYOffset = -200;
           }
         }
-        
+       
         return {
           ...car,
           yOffset: newYOffset,
           frame: (car.frame + 1) % 2
         };
       });
-      
+     
       setNpcCars([...carsRef.current]);
     }, 50); // Update every 50ms for smooth movement
 
+
     return () => clearInterval(carUpdateInterval);
   }, []);
+
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
     const stopDistance = scaledMapHeight * 0.3;
     const stopOffset = startOffset + stopDistance;
+
 
     Animated.timing(scrollY, {
       toValue: stopOffset,
@@ -203,10 +240,11 @@ export default function DrivingGame() {
       }, 1000);
     });
   }
-  
+ 
   useEffect(() => {
     startScrollAnimation();
   }, []);
+
 
   // Player sprite frame loop
   useEffect(() => {
@@ -219,8 +257,10 @@ export default function DrivingGame() {
     return () => clearInterval(iv);
   }, [playerPaused, playerDirection]);
 
+
   const [animationType, setAnimationType] = useState(null);
   const [showNext, setShowNext] = useState(false);
+
 
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
@@ -239,142 +279,154 @@ export default function DrivingGame() {
     }
   };
 
- const handleAnswer = (answer) => {
+
+  const handleAnswer = (answer) => {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
+    setPlayerPaused(false); // Enable walking animation
 
-    const currentQuestion = questions[questionIndex];
-    const isCorrect = answer === currentQuestion.correct;
-    updateProgress(answer, isCorrect);
 
-    if (answer === "Check your messages while crossing the road.") {
-      // Face west and run to the left (west)
+    // Capture current scroll value at the moment of answer
+    const scrollAtAnswer = currentScroll.current;
+
+
+    if (answer === "Walk on the side of the road facing oncoming traffic.") {
+      // OPTION 1 (CORRECT): Walk to the left side facing oncoming traffic
       setPlayerDirection("WEST");
       setPlayerFrame(0);
-      
-      const leftX = width * 0.05 - spriteWidth / 2;
-      
+     
+      const leftX = width * 0.15 - spriteWidth / 2;
+      const targetScroll = scrollAtAnswer + scaledMapHeight * 0.08;
+     
       Animated.parallel([
         Animated.timing(playerXAnim, {
           toValue: leftX,
-          duration: 1500, // Faster for running
+          duration: 2000,
           useNativeDriver: true,
         }),
         Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.08,
+          toValue: targetScroll,
+          duration: 2000,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        setPlayerPaused(true);
+        handleFeedback(answer);
+      });
+     
+      return;
+    } else if (answer === "Walk on the side of the road with the traffic") {
+      // OPTION 2 (WRONG): Walk on right side WITH traffic (same direction as cars)
+      setPlayerDirection("NORTH");
+      setPlayerFrame(0);
+     
+      const rightX = width * 0.70 - spriteWidth / 2;
+      const targetScroll = scrollAtAnswer + scaledMapHeight * 0.08;
+     
+      // Move diagonally to the right side while moving forward
+      Animated.parallel([
+        Animated.timing(playerXAnim, {
+          toValue: rightX,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scrollY, {
+          toValue: targetScroll,
+          duration: 2000,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        setPlayerPaused(true);
+        handleFeedback(answer);
+      });
+     
+      return;
+    } else if (answer === "Find alternative route.") {
+      // OPTION 3 (WRONG): Turn around and go back
+      setPlayerDirection("WEST");
+      setPlayerFrame(0);
+     
+      const leftX = centerX - spriteWidth * 2;
+     
+      // First move left (west)
+      Animated.timing(playerXAnim, {
+        toValue: leftX,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        // Then walk backwards (scroll down)
+        const targetScroll = scrollAtAnswer - scaledMapHeight * 0.05;
+        Animated.timing(scrollY, {
+          toValue: targetScroll,
           duration: 1500,
           useNativeDriver: true,
-        })
-      ]).start(() => {
-        setIsPlayerVisible(false);
-        handleFeedback(answer);
+        }).start(() => {
+          setPlayerPaused(true);
+          handleFeedback(answer);
+        });
       });
-      
-      return;
-    } else if (answer === "Keep your phone in your pocket and focus on crossing the crowded crosswalk.") {
-      // Walk straight north to pedestrian lane
-      setPlayerDirection("WEST");
-      setPlayerFrame(0);
-      
-      const leftX = width * 0.1 - spriteWidth / 2;
-      
-      Animated.parallel([
-        Animated.timing(playerXAnim, {
-          toValue: leftX,
-          duration: 2000, // Walking speed
-          useNativeDriver: true,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.06,
-          duration: 2000,
-          useNativeDriver: true,
-        })
-      ]).start(() => {
-        setIsPlayerVisible(false);
-        handleFeedback(answer);
-      });
-      
-      return;
-    } else if (answer === "Check messages while occassionally checking the road.") {
-      // Face west and walk to the left (west)
-      setPlayerDirection("WEST");
-      setPlayerFrame(0);
-      
-      const leftX = width * 0.1 - spriteWidth / 2;
-      
-      Animated.parallel([
-        Animated.timing(playerXAnim, {
-          toValue: leftX,
-          duration: 2000, // Walking speed
-          useNativeDriver: true,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.06,
-          duration: 2000,
-          useNativeDriver: true,
-        })
-      ]).start(() => {
-        setIsPlayerVisible(false);
-        handleFeedback(answer);
-      });
-      
+     
       return;
     }
   };
+
 
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setPlayerFrame(0);
-    
+   
     const centerX = width * 0.5 - spriteWidth / 2;
     playerXAnim.setValue(centerX);
     setPlayerDirection("NORTH");
     setIsPlayerVisible(true);
     setPlayerPaused(false);
-    
+   
     if (questionIndex < questions.length - 1) {
-          setQuestionIndex(questionIndex + 1);
-          startScrollAnimation();
-        } else if (currentScenario >= 10) {
+      setQuestionIndex(questionIndex + 1);
+      startScrollAnimation();
+    } else if (currentScenario >= 10) {
 
-          try {
-            const sessionResults = await completeSession();
+      try {
+        const sessionResults = await completeSession();
 
-            if (!sessionResults) {
-              Alert.alert('Error', 'Failed to complete session');
-              return;
-            }
-
-            router.push({
-              pathname: '/result-page',
-              params: {
-                ...sessionResults,
-                userAttempts: JSON.stringify(sessionResults.attempts)
-              }
-            });
-          } catch (error) {
-            console.error('Error completing session:', error);
-            Alert.alert('Error', 'Failed to save session results');
-          }
-        } else {
-          // Move to next scenario
-          moveToNextScenario();
-          const nextScreen = `S${currentScenario + 1}P1`;
-          router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session');
+          return;
         }
-      };
+
+        router.push({
+          pathname: '/result-page',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
+    } else {
+      // Move to next scenario
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P1`;
+      router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+    }
+  };
+
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
     ? "Correct! Stay completely alert, you'll never know when a vehicle doesn't respect road markings."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
-  const currentPlayerSprite = maleSprites[playerDirection] && maleSprites[playerDirection][playerFrame] 
-    ? maleSprites[playerDirection][playerFrame] 
+
+  const currentPlayerSprite = maleSprites[playerDirection] && maleSprites[playerDirection][playerFrame]
+    ? maleSprites[playerDirection][playerFrame]
     : maleSprites["NORTH"][0];
+
 
   // Calculate car positions based on columns
   const getCarXPosition = (column) => {
@@ -384,6 +436,7 @@ export default function DrivingGame() {
       return width * 0.45; // Column 2 (middle-left lane)
     }
   };
+
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -406,7 +459,32 @@ export default function DrivingGame() {
           }}
           resizeMode="stretch"
         />
+
+
+        {/* NPC People - Positioned on the map, will scroll with it */}
+        {npcPeopleMapPositions.map(person => (
+          <View
+            key={person.id}
+            style={{
+              position: "absolute",
+              left: width * 0.50 - (spriteWidth * 1.5) / 2,
+              top: person.mapY,
+              width: spriteWidth * 1.5,
+              height: spriteHeight * 1.5,
+            }}
+          >
+            <Image
+              source={npcStandingSprites[person.spriteIndex]}
+              style={{
+                width: spriteWidth * 1.5,
+                height: spriteHeight * 1.5,
+              }}
+              resizeMode="contain"
+            />
+          </View>
+        ))}
       </Animated.View>
+
 
       {/* NPC Cars - Fixed positioning */}
       {npcCars.map(car => {
@@ -435,6 +513,7 @@ export default function DrivingGame() {
         );
       })}
 
+
       {/* Player sprite */}
       {isPlayerVisible && (
         <Animated.Image
@@ -449,6 +528,7 @@ export default function DrivingGame() {
           }}
         />
       )}
+
 
       {/* Question overlay */}
       {showQuestion && (
@@ -467,20 +547,22 @@ export default function DrivingGame() {
         </View>
       )}
 
+
       {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
-          {questions[questionIndex].options.map((answer) => (
+          {questions[questionIndex].options.map((option) => (
             <TouchableOpacity
-              key={answer}
+              key={option}
               style={styles.answerButton}
-              onPress={() => handleAnswer(answer)}
+              onPress={() => handleAnswer(option)}
             >
-              <Text style={styles.answerText}>{answer}</Text>
+              <Text style={styles.answerText}>{option}</Text>
             </TouchableOpacity>
           ))}
         </View>
       )}
+
 
       {/* Feedback */}
       {animationType === "correct" && (
@@ -491,6 +573,7 @@ export default function DrivingGame() {
           </View>
         </View>
       )}
+
 
       {animationType === "wrong" && (
         <View style={styles.feedbackOverlay}>
@@ -503,6 +586,7 @@ export default function DrivingGame() {
         </View>
       )}
 
+
       {/* Next button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
@@ -514,6 +598,7 @@ export default function DrivingGame() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   questionOverlay: {
@@ -624,3 +709,4 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+

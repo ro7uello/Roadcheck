@@ -19,7 +19,7 @@ import {
   Linking,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@env';
+import { API_URL } from '../../config/api';
 
 const { width, height } = Dimensions.get('window');
 const BACKGROUND_SPEED = 12000;
@@ -420,7 +420,7 @@ export default function ResultPage() {
       <View style={styles.topRightIcons}>
         <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
           <Image
-            source={require('../../assets/icon/Settings.png')}
+            source={require('../../assets/icon/c-trans.png')}
             style={styles.topIcon}
             resizeMode="contain"
           />

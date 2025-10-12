@@ -34,27 +34,6 @@ const maleSprites = {
     require("../../../../../assets/character/sprites/north/north_walk3.png"),
     require("../../../../../assets/character/sprites/north/north_walk4.png"),
   ],
-  NORTH_REFLECTIVE: [
-    require("../../../../../assets/character/sprites/north/north_walk_reflective1.png"),
-    require("../../../../../assets/character/sprites/north/north_walk_reflective2.png"),
-    require("../../../../../assets/character/sprites/north/north_walk_reflective3.png"),
-    require("../../../../../assets/character/sprites/north/north_walk_reflective4.png"),
-  ],
-};
-
-const npcSprites = {
-  NPC1: [
-    require("../../../../../assets/character/sprites/north/npc_north_walk1.png"),
-    require("../../../../../assets/character/sprites/north/npc_north_walk2.png"),
-    require("../../../../../assets/character/sprites/north/npc_north_walk3.png"),
-    require("../../../../../assets/character/sprites/north/npc_north_walk4.png"),
-  ],
-  NPC2: [
-    require("../../../../../assets/character/sprites/north/npc2_north_walk1.png"),
-    require("../../../../../assets/character/sprites/north/npc2_north_walk2.png"),
-    require("../../../../../assets/character/sprites/north/npc2_north_walk3.png"),
-    require("../../../../../assets/character/sprites/north/npc2_north_walk4.png"),
-  ],
 };
 
 const trafficSign = {
@@ -78,16 +57,16 @@ const streetLights = [
 
 const questions = [
   {
-    question: "You're walking along the road at midnight for exercise. It's still dim, and there's no sidewalk.",
+    question: "You need to walk about 100 meters to reach the jeepney terminal. There are no sidewalks available but the street is well lit. You are currently on the side of the road where you are not facing traffic.",
     options: [
-      "Wear dark clothes to blend in and walk quietly",
-      "Use your phone's flashlight and wear bright/reflective clothing",
-      "Walk in groups and make noise so drivers can hear you"
+      "Walk on the right side of the road facing the same direction as traffic",
+      "Check if the road is clear and cross the street to walk on the left side facing oncoming traffic.",
+      "Walk in the middle of the road where street lights are brightest"
     ],
-    correct: "Use your phone's flashlight and wear bright/reflective clothing",
+    correct: "Check if the road is clear and cross the street to walk on the left side facing oncoming traffic.",
     wrongExplanation: {
-      "Wear dark clothes to blend in and walk quietly": "Wrong! Dark clothes make you hard to see for drivers in dim/misty conditions",
-      "Walk in groups and make noise so drivers can hear you": "Wrong! Group noises won't guarantee that drivers can hear you, and groups can block more roadway space unsafely."
+      "Walk on the right side of the road facing the same direction as traffic": "Accident prone! Walking with traffic means you can't see approaching vehicles. You won't know if a car is coming too close until it's too late.",
+      "Walk in the middle of the road where street lights are brightest": "Accident Prone! Walking in the roadway is extremely dangerous."
     }
   },
 ];
@@ -110,7 +89,6 @@ export default function DrivingGame() {
   };
 
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
-  const [showNPCs, setShowNPCs] = useState(false);
 
   const startOffset = -(scaledMapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
@@ -135,9 +113,8 @@ export default function DrivingGame() {
 
   // Player
   const [playerFrame, setPlayerFrame] = useState(0);
-  const [npcFrame, setNpcFrame] = useState(0);
   const [playerPaused, setPlayerPaused] = useState(false);
-  const rightX = width * 0.56 - spriteWidth / 2;
+  const rightX = width * 0.56 - spriteWidth / 2; // Adjusted to right side by half
   const playerXAnim = useRef(new Animated.Value(rightX)).current;
 
   function startScrollAnimation() {
@@ -156,7 +133,7 @@ export default function DrivingGame() {
       }, 1000);
     });
   }
-  
+
   useEffect(() => {
     startScrollAnimation();
   }, []);
@@ -164,30 +141,13 @@ export default function DrivingGame() {
   // Player sprite frame loop
   useEffect(() => {
     let iv;
-    if (!playerPaused) {
-      const spriteArray = playerDirection === "NORTH_REFLECTIVE" 
-        ? maleSprites.NORTH_REFLECTIVE 
-        : maleSprites[playerDirection];
-      
-      if (spriteArray) {
-        iv = setInterval(() => {
-          setPlayerFrame((p) => (p + 1) % spriteArray.length);
-        }, 200);
-      }
-    }
-    return () => clearInterval(iv);
-  }, [playerPaused, playerDirection]);
-
-  // NPC sprite frame loop
-  useEffect(() => {
-    let iv;
-    if (showNPCs) {
+    if (!playerPaused && maleSprites[playerDirection]) {
       iv = setInterval(() => {
-        setNpcFrame((p) => (p + 1) % npcSprites.NPC1.length);
+        setPlayerFrame((p) => (p + 1) % maleSprites[playerDirection].length);
       }, 200);
     }
     return () => clearInterval(iv);
-  }, [showNPCs]);
+  }, [playerPaused, playerDirection]);
 
   const [animationType, setAnimationType] = useState(null);
   const [showNext, setShowNext] = useState(false);
@@ -218,26 +178,38 @@ export default function DrivingGame() {
     const isCorrect = answer === currentQuestion.correct;
     updateProgress(answer, isCorrect);
 
-    if (answer === "Wear dark clothes to blend in and walk quietly") {
+    if (answer === "Walk in the middle of the road where street lights are brightest") {
+      // Face west and walk to middle
+      setPlayerDirection("WEST");
+      setPlayerFrame(0);
+
+      const middleX = width * 0.35 - spriteWidth / 2;
+
+      Animated.timing(playerXAnim, {
+        toValue: middleX,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start(() => {
+        // After reaching middle, face north and walk
+        setPlayerDirection("NORTH");
+        setPlayerFrame(0);
+
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + scaledMapHeight * 0.15,
+          duration: 3000,
+          useNativeDriver: true,
+        }).start(() => {
+          setIsPlayerVisible(false);
+          handleFeedback(answer);
+        });
+      });
+
+      return;
+    } else if (answer === "Walk on the right side of the road facing the same direction as traffic") {
       // Just walk straight north
       setPlayerDirection("NORTH");
       setPlayerFrame(0);
-      
-      Animated.timing(scrollY, {
-        toValue: currentScroll.current + scaledMapHeight * 0.25,
-        duration: 4500,
-        useNativeDriver: true,
-      }).start(() => {
-        setIsPlayerVisible(false);
-        handleFeedback(answer);
-      });
-      
-      return;
-    } else if (answer === "Use your phone's flashlight and wear bright/reflective clothing") {
-      // Change to reflective sprite and walk straight north
-      setPlayerDirection("NORTH_REFLECTIVE");
-      setPlayerFrame(0);
-      
+
       Animated.timing(scrollY, {
         toValue: currentScroll.current + scaledMapHeight * 0.25,
         duration: 4500,
@@ -247,23 +219,32 @@ export default function DrivingGame() {
         handleFeedback(answer);
       });
       return;
-    } else if (answer === "Walk in groups and make noise so drivers can hear you") {
-      // Show NPCs and walk straight north
-      setShowNPCs(true);
-      setPlayerDirection("NORTH");
+    } else if (answer === "Check if the road is clear and cross the street to walk on the left side facing oncoming traffic.") {
+      // Face west and walk to cross the road
+      setPlayerDirection("WEST");
       setPlayerFrame(0);
-      setNpcFrame(0);
-      
-      Animated.timing(scrollY, {
-        toValue: currentScroll.current + scaledMapHeight * 0.25,
-        duration: 4500,
+
+      const leftX = width * 0.20 - spriteWidth / 2;
+
+      Animated.timing(playerXAnim, {
+        toValue: leftX,
+        duration: 2500,
         useNativeDriver: true,
       }).start(() => {
-        setIsPlayerVisible(false);
-        setShowNPCs(false);
-        handleFeedback(answer);
+        // After crossing, face north and walk
+        setPlayerDirection("NORTH");
+        setPlayerFrame(0);
+
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + scaledMapHeight * 0.2,
+          duration: 3500,
+          useNativeDriver: true,
+        }).start(() => {
+          setIsPlayerVisible(false);
+          handleFeedback(answer);
+        });
       });
-      
+
       return;
     }
   };
@@ -273,45 +254,53 @@ export default function DrivingGame() {
     setShowNext(false);
     setSelectedAnswer(null);
     setPlayerFrame(0);
-    setShowNPCs(false);
-    
+
     const rightX = width * 0.65 - spriteWidth / 2;
     playerXAnim.setValue(rightX);
     setPlayerDirection("NORTH");
     setIsPlayerVisible(true);
     setPlayerPaused(false);
-    
+
     if (questionIndex < questions.length - 1) {
-        setQuestionIndex(questionIndex + 1);
-        startScrollAnimation();
-      } else if (currentScenario >= 10) {
-        console.log('Completing session...');
-        // Complete session
-      } else {
-        console.log('Moving to next scenario...');
-        moveToNextScenario();
-        const nextScreen = `S${currentScenario + 1}P1`;
-        console.log('Next screen:', nextScreen);
-        console.log('Full path:', `/scenarios/pedestrian/phase1/${nextScreen}`);
-        router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
-      }
-    };
+          setQuestionIndex(questionIndex + 1);
+          startScrollAnimation();
+        } else if (currentScenario >= 10) {
+
+          try {
+            const sessionResults = await completeSession();
+
+            if (!sessionResults) {
+              Alert.alert('Error', 'Failed to complete session');
+              return;
+            }
+
+            router.push({
+              pathname: '/result-page',
+              params: {
+                ...sessionResults,
+                userAttempts: JSON.stringify(sessionResults.attempts)
+              }
+            });
+          } catch (error) {
+            console.error('Error completing session:', error);
+            Alert.alert('Error', 'Failed to save session results');
+          }
+        } else {
+          // Move to next scenario
+          moveToNextScenario();
+          const nextScreen = `S${currentScenario + 1}P1`;
+          router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+        }
+      };
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Use flashlight and bright/reflective clothing for maximum visibility in low-light conditions."
+    ? "Correct! Always walk facing traffic when there are no sidewalks. This allows you to see vehicles approaching and react accordingly for your safety."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
-  const getCurrentPlayerSprite = () => {
-    if (playerDirection === "NORTH_REFLECTIVE") {
-      return maleSprites.NORTH_REFLECTIVE[playerFrame];
-    } else if (maleSprites[playerDirection]) {
-      return maleSprites[playerDirection][playerFrame];
-    }
-    return maleSprites.NORTH[0];
-  };
-
-  const currentPlayerSprite = getCurrentPlayerSprite();
+  const currentPlayerSprite = maleSprites[playerDirection] && maleSprites[playerDirection][playerFrame]
+    ? maleSprites[playerDirection][playerFrame]
+    : maleSprites["NORTH"][0];
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -334,12 +323,12 @@ export default function DrivingGame() {
           }}
           resizeMode="stretch"
         />
-        
+
         {/* Render multiple streetlights with correct directions */}
         {streetLights.map((light, index) => {
           const lightLeft = light.col * tileSize + light.xOffset;
           const lightTop = light.row * tileSize;
-          
+
           return (
             <Image
               key={`streetlight-${index}`}
@@ -358,24 +347,6 @@ export default function DrivingGame() {
         })}
       </Animated.View>
 
-      {/* NPC 1 - Left side */}
-      {showNPCs && (
-        <Animated.Image
-          source={npcSprites.NPC1[npcFrame]}
-          style={{
-            width: spriteWidth * 1.5,
-            height: spriteHeight * 1.5,
-            position: "absolute",
-            bottom: 80,
-            transform: [{ translateX: playerXAnim.interpolate({
-              inputRange: [0, width],
-              outputRange: [-spriteWidth * 2, width - spriteWidth * 2]
-            }) }],
-            zIndex: 7,
-          }}
-        />
-      )}
-
       {/* Player sprite */}
       {isPlayerVisible && (
         <Animated.Image
@@ -387,24 +358,6 @@ export default function DrivingGame() {
             bottom: 80,
             transform: [{ translateX: playerXAnim }],
             zIndex: 8,
-          }}
-        />
-      )}
-
-      {/* NPC 2 - Right side */}
-      {showNPCs && (
-        <Animated.Image
-          source={npcSprites.NPC2[npcFrame]}
-          style={{
-            width: spriteWidth * 1.5,
-            height: spriteHeight * 1.5,
-            position: "absolute",
-            bottom: 80,
-            transform: [{ translateX: playerXAnim.interpolate({
-              inputRange: [0, width],
-              outputRange: [-spriteWidth * 3, width - spriteWidth * 3]
-            }) }],
-            zIndex: 7,
           }}
         />
       )}
