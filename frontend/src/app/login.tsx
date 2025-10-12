@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Animated, Dimensions, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { API_URL } from '@env';
+import { supabase } from '../../supabaseClient';
 
 const { width, height } = Dimensions.get("window");
 const BACKGROUND_SPEED = 12000;

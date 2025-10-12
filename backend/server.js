@@ -4,7 +4,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { authenticate } from './middleware/auth.js';
 import { supabase } from './config/supabase.js';
-import { body, validationResult } from 'express-validator';
 
 dotenv.config();
 
@@ -197,30 +196,37 @@ app.get('/auth/check-email/:email', async (req, res) => {
   }
 });
 
-app.post('/auth/signup', [
-  body('email').isEmail().withMessage('Valid email is required'),
-  body('password').custom((value) => {
-    const errors = validatePassword(value);
-    if (errors.length > 0) {
-      throw new Error(errors.join(', '));
-    }
-    return true;
-  }),
-  body('username')
-    .trim()
-    .isLength({ min: 3, max: 20 }).withMessage('Username must be 3-20 characters')
-    .matches(/^[a-zA-Z0-9_-]+$/).withMessage('Username can only contain letters, numbers, underscores, and hyphens')
-    .notEmpty().withMessage('Username is required'),
-  body('firstName').trim().notEmpty().withMessage('First name is required'),
-  body('lastName').trim().notEmpty().withMessage('Last name is required')
-], async (req, res) => {
-  // Check for validation errors
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ error: errors.array()[0].msg });
+app.post('/auth/signup', async (req, res) => {
+  const { email, password, username, firstName, lastName } = req.body;
+
+  // Validate email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Valid email is required' });
   }
 
-  const { email, password, username, firstName, lastName } = req.body;
+  // Validate password
+  const passwordErrors = validatePassword(password);
+  if (passwordErrors.length > 0) {
+    return res.status(400).json({ error: passwordErrors.join(', ') });
+  }
+
+  // Validate username
+  if (!username || username.trim().length < 3 || username.trim().length > 20) {
+    return res.status(400).json({ error: 'Username must be 3-20 characters' });
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+    return res.status(400).json({ error: 'Username can only contain letters, numbers, underscores, and hyphens' });
+  }
+
+  // Validate first and last name
+  if (!firstName || !firstName.trim()) {
+    return res.status(400).json({ error: 'First name is required' });
+  }
+  if (!lastName || !lastName.trim()) {
+    return res.status(400).json({ error: 'Last name is required' });
+  }
+
   const usernameLower = username.toLowerCase().trim();
   const emailLower = email.toLowerCase().trim();
   const fullName = `${firstName.trim()} ${lastName.trim()}`;
@@ -264,7 +270,7 @@ app.post('/auth/signup', [
           last_name: lastName.trim(),
           full_name: fullName
         },
-        emailRedirectTo: undefined // Disable email confirmation redirect
+        emailRedirectTo: undefined
       }
     });
 
@@ -284,10 +290,8 @@ app.post('/auth/signup', [
 
     console.log('✅ Auth user created:', authData.user.id);
 
-    // 3. Create profile entry with proper error handling
+    // 3. Create profile entry
     console.log('Creating profile entry...');
-
-    // Use service role client to bypass RLS if needed
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .insert({
@@ -301,43 +305,17 @@ app.post('/auth/signup', [
 
     if (profileError) {
       console.error('❌ Profile creation error:', profileError);
-      console.error('Error details:', JSON.stringify(profileError, null, 2));
-
-      // If profile creation fails, try to clean up the auth user
-      console.log('Attempting to clean up auth user...');
-      try {
-        await supabase.auth.admin.deleteUser(authData.user.id);
-        console.log('✅ Auth user cleaned up');
-      } catch (cleanupError) {
-        console.error('❌ Failed to clean up auth user:', cleanupError);
-      }
-
-      // Check specific error codes
-      if (profileError.code === '23505') { // Unique violation
-        return res.status(400).json({
-          error: 'Username is already taken'
-        });
-      } else if (profileError.code === '42501') { // Insufficient privilege
-        return res.status(500).json({
-          error: 'Database permission error. Please contact support.'
-        });
-      } else if (profileError.code === '23503') { // Foreign key violation
-        return res.status(500).json({
-          error: 'Database constraint error. Please contact support.'
-        });
-      }
-
+      await supabase.auth.admin.deleteUser(authData.user.id);
       return res.status(500).json({
-        error: 'Failed to create user profile. Please contact support.',
+        error: 'Failed to create user profile',
         details: profileError.message
       });
     }
 
-    console.log('✅ Profile created successfully:', profileData);
+    console.log('✅ Profile created successfully');
 
     // 4. Initialize user progress
-    console.log('Initializing user progress...');
-    const { data: progressData, error: progressError } = await supabase
+    await supabase
       .from('user_progress')
       .insert({
         user_id: authData.user.id,
@@ -346,31 +324,19 @@ app.post('/auth/signup', [
         current_scenario_index: 0,
         completed_scenarios: [],
         phase_scores: { "1": 0, "2": 0, "3": 0 },
-        total_score: 0,
-        last_scenario_id: null
-      })
-      .select()
-      .single();
-
-    if (progressError) {
-      console.error('⚠️ Progress initialization error:', progressError);
-      // Don't fail the whole registration if progress fails
-    } else {
-      console.log('✅ User progress initialized');
-    }
+        total_score: 0
+      });
 
     console.log('=== SIGNUP PROCESS COMPLETE ===');
 
     res.status(201).json({
-      message: 'Account created successfully! Please check your email to confirm.',
+      message: 'Account created successfully!',
       user: {
         id: authData.user.id,
         email: authData.user.email,
         username: usernameLower,
         full_name: fullName
-      },
-      profile_created: !!profileData,
-      progress_created: !!progressData
+      }
     });
 
   } catch (err) {

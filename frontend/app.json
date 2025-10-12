@@ -5,8 +5,8 @@
     "version": "1.0.0",
     "orientation": "landscape",
     "scheme": "roadcheck",
+    "icon": "./assets/background/login page.png",
     "userInterfaceStyle": "light",
-    "API_URL": "http://localhost:5000",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -16,16 +16,29 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#000000"
-      }
+      },
+      "package": "com.ro7ello.roadcheck"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "newArchEnabled": true
     },
-    "fonts": [
-      "./assets/fonts/pixel3.ttf"
-    ]
+    "extra": {
+      
+      "router": {},
+      "eas": {
+        "projectId": "a8936058-bc96-47d8-a54c-2d7f568426ca"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.ro7ello.roadcheck",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
   }
 }

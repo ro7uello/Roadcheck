@@ -7,6 +7,7 @@ import {
   TouchableOpacity, 
   Dimensions, 
   ImageBackground,
+  ScrollView,
   SafeAreaView,
   Animated,
   Image,
@@ -21,6 +22,7 @@ export default function Home() {
   const scrollAnimation = useRef(new Animated.Value(0)).current;
   const carAnimation = useRef(new Animated.Value(0)).current;
   const [showDisclaimer, setShowDisclaimer] = useState(false);
+  const [disclaimerScrolledToBottom, setDisclaimerScrolledToBottom] = useState(false);
 
   React.useEffect(() => {
     const startBackgroundAnimation = () => {
@@ -72,7 +74,23 @@ export default function Home() {
     outputRange: [0, -8],
   });
 
+  const handleDisclaimerScroll = (event) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 20;
+    
+    // Check if content is smaller than container (no scrolling needed)
+    const contentFitsInView = contentSize.height <= layoutMeasurement.height + paddingToBottom;
+    
+    // Check if scrolled to bottom
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    
+    if (contentFitsInView || isCloseToBottom) {
+      setDisclaimerScrolledToBottom(true);
+    }
+  };
+
   const handleStartPress = () => {
+    setDisclaimerScrolledToBottom(false);
     setShowDisclaimer(true);
     console.log('Starting RoadCheck app...');
     console.log('All env vars:', process.env);
@@ -80,9 +98,26 @@ export default function Home() {
   };
 
   const handleDisclaimerAccept = () => {
-    setShowDisclaimer(false);
-    router.push('/login');
+    if (disclaimerScrolledToBottom) {
+      setShowDisclaimer(false);
+      router.push('/login');
+    }
   };
+
+  React.useEffect(() => {
+    if (showDisclaimer) {
+      setTimeout(() => {
+        // Check if content doesn't need scrolling - for small screens
+        const modalHeight = height * 0.80;
+        const headerHeight = 60; // Approximate header height
+        const buttonHeight = 60; // Approximate button height
+        const availableContentHeight = modalHeight - headerHeight - buttonHeight;
+        
+        // If estimated content height is small, auto-enable
+        // This is a fallback for when content fits without scrolling
+      }, 500);
+    }
+  }, [showDisclaimer]);
 
   return (
     <TouchableOpacity style={styles.container} onPress={handleStartPress} activeOpacity={1}>
@@ -161,22 +196,68 @@ export default function Home() {
                 <Text style={styles.disclaimerTitle}>IMPORTANT DISCLAIMER</Text>
               </View>
               
-              <View style={styles.disclaimerContent}>
+              <ScrollView 
+                style={styles.disclaimerScrollView}
+                contentContainerStyle={styles.disclaimerContent}
+                showsVerticalScrollIndicator={true}
+                onScroll={handleDisclaimerScroll} // Add scroll handler
+                scrollEventThrottle={16} // Smooth scroll tracking
+                onContentSizeChange={(contentWidth, contentHeight) => {
+                  // Auto-enable if content fits in view
+                  const modalScrollViewHeight = height * 0.80 - 120; // Subtract header and button space
+                  if (contentHeight <= modalScrollViewHeight) {
+                    setDisclaimerScrolledToBottom(true);
+                  }
+                }}
+              >
                 <Text style={styles.disclaimerText}>
-                  RoadCheck is a driving decision simulator. It only simulates scenarios that may or may not be encountered by the user on the road.{'\n\n'}
+                  RoadCheck is a driving decision simulator developed for educational purposes only.{'\n\n'}
+          
+                  <Text style={styles.disclaimerSectionHeader}>IMPORTANT LIMITATIONS:{'\n\n'}</Text>
                   
-                  Road directions and locations may not be accurate in real life.{'\n\n'}
+                  • Road directions, locations, and scenarios presented in this application may not accurately reflect real-world conditions.{'\n\n'}
                   
-                  Please exercise defensive driving and adjust accordingly when you encounter these scenarios in real life.
+                  • This application does NOT replace professional driving instruction, official LTO (Land Transportation Office) training programs, or hands-on driving experience.{'\n\n'}
+                  
+                  • Simulated scenarios are simplified and cannot capture all real-world variables such as weather conditions, traffic density, road quality, vehicle conditions, and other drivers' unpredictable behavior.{'\n\n'}
+                  
+                  <Text style={styles.disclaimerSectionHeader}>USER RESPONSIBILITY:{'\n\n'}</Text>
+                  
+                  • Always exercise defensive driving and strictly follow official Philippine traffic rules and regulations.{'\n\n'}
+                  
+                  • Make driving decisions based on actual road conditions and your judgment, not solely on app simulations.{'\n\n'}
+                  
+                  • Never use this application while operating a vehicle or motorcycle.{'\n\n'}
+                  
+                  • Consult with licensed driving instructors and refer to official LTO materials and manuals for authoritative guidance.{'\n\n'}
+                  
+                  • Practice safe driving habits and remain alert to your surroundings at all times.{'\n\n'}
+                  
+                  <Text style={styles.disclaimerSectionHeader}>NO LIABILITY:{'\n\n'}</Text>
+                  
+                  • The developers of RoadCheck assume no responsibility or liability for any accidents, traffic violations, damages, injuries, or losses that may occur from decisions made based on information, scenarios, or simulations provided by this application.{'\n\n'}
+                  
+                  • By using RoadCheck, you acknowledge and understand that real-world driving requires sound judgment, proper training, practical experience, and strict adherence to local traffic laws. All of which go beyond what any simulation can provide.
                 </Text>
-              </View>
+              </ScrollView>
+
+              {/* Show scroll prompt if not scrolled to bottom */}
 
               <TouchableOpacity 
-                style={styles.disclaimerButton}
+                style={[
+                  styles.disclaimerButton,
+                  !disclaimerScrolledToBottom && styles.disclaimerButtonDisabled
+                ]}
                 onPress={handleDisclaimerAccept}
-                activeOpacity={0.8}
+                activeOpacity={disclaimerScrolledToBottom ? 0.8 : 1}
+                disabled={!disclaimerScrolledToBottom} // Disable button
               >
-                <Text style={styles.disclaimerButtonText}>I UNDERSTAND</Text>
+                <Text style={[
+                  styles.disclaimerButtonText,
+                  !disclaimerScrolledToBottom && styles.disclaimerButtonTextDisabled
+                ]}>
+                  {disclaimerScrolledToBottom ? "I UNDERSTAND" : "SCROLL TO CONTINUE"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -278,10 +359,12 @@ const styles = StyleSheet.create({
   disclaimerModal: {
     backgroundColor: 'white',
     borderRadius: 15,
-    width: width * 0.85,
-    maxHeight: height * 0.75, 
-    minHeight: height * 0.65,
+    width: width * 0.90, 
+    height: height * 0.80,
     overflow: 'hidden',
+  },
+  disclaimerScrollView: {
+    flex: 1,
   },
   disclaimerHeader: {
     backgroundColor: '#ff4444',
@@ -297,17 +380,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   disclaimerContent: {
-    flex: 1, // Added flex to take available space
     padding: 20,
     paddingBottom: 10,
-    justifyContent: 'center',
   },
   disclaimerText: {
     fontSize: 11,
     color: '#333',
     lineHeight: 16,
+    textAlign: 'left',
+  },
+  disclaimerSectionHeader: {
+    fontSize: 11,
+    color: '#ff4444',
     fontFamily: 'Pixel3',
-    textAlign: 'center',
+    fontWeight: 'bold',
+    textAlign: 'left',
   },
   disclaimerButton: {
     backgroundColor: '#4ef5a2',
@@ -323,5 +410,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Pixel3',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  disclaimerButtonDisabled: {
+    backgroundColor: '#cccccc',
+  },
+  disclaimerButtonTextDisabled: {
+    color: '#666666',
   },
 });
