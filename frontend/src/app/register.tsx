@@ -562,6 +562,10 @@ export default function Register() {
                         {usernameError.includes("chars") ? "⚠️ " : "❌ "}{usernameError}
                       </Text>
                     )}
+          
+          <Text style={styles.pleaseReadText}>
+            Please read our Terms and Conditions
+          </Text>
 
           {/* Terms and Privacy Policy Agreement */}
           <View>
@@ -682,14 +686,12 @@ export default function Register() {
                 • Always refer to official LTO regulations and guidelines for authoritative information.{'\n\n'}
                 
                 <Text style={styles.sectionHeader}>CHANGES TO TERMS{'\n'}</Text>
-                • To the fullest extent permitted by law:{'\n\n'}
+                • To the fullest extent permitted by law:{'\n'}
                   • RoadCheck and its developers are not liable for any direct, indirect, incidental, consequential, or punitive damages arising from your use or inability to use the application.{'\n'}
                   • This includes but is not limited to: damages for loss of data, failed examinations, or any reliance on information provided by the application.{'\n'}
                   • RoadCheck is provided "as is" without warranties of any kind, either express or implied.{'\n'}
                   • As a capstone/prototype project, the application may contain bugs, errors, or incomplete features.{'\n\n'}
-                
-                6. CHANGES TO TERMS{'\n'}
-                • We reserve the right to modify these terms at any time.{'\n\n'}
+              
                 
                 For questions, contact us at support@roadcheck.app
               </Text>
@@ -979,6 +981,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#333',
     lineHeight: 14,
+    fontFamily:'spaceMono'
   },
   legalLinksContainer: {
     flexDirection: 'row',
@@ -1077,5 +1080,14 @@ const styles = StyleSheet.create({
     fontFamily: 'pixel',
     fontWeight: 'bold',
     textDecorationLine: 'underline',
+  },
+   pleaseReadText: {
+    fontSize: 9,
+    color: "#ffd700", // Golden color to make it stand out
+    fontFamily: "pixel",
+    textAlign: "center",
+    marginTop: 8,
+    marginBottom: 5,
+    fontStyle: 'italic', // Make it italic for emphasis
   },
 });

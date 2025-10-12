@@ -385,6 +385,7 @@ const styles = StyleSheet.create({
   },
   disclaimerText: {
     fontSize: 11,
+    fontFamily:'spaceMono',
     color: '#333',
     lineHeight: 16,
     textAlign: 'left',
