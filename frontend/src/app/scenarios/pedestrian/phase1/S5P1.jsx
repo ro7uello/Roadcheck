@@ -102,7 +102,7 @@ export default function DrivingGame() {
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      const scenarioId = currentScenario;
+      const scenarioId = 90 + currentScenario;
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -282,36 +282,20 @@ export default function DrivingGame() {
     setPlayerPaused(false);
     
     if (questionIndex < questions.length - 1) {
-          setQuestionIndex(questionIndex + 1);
-          startScrollAnimation();
-        } else if (currentScenario >= 10) {
-
-          try {
-            const sessionResults = await completeSession();
-
-            if (!sessionResults) {
-              Alert.alert('Error', 'Failed to complete session');
-              return;
-            }
-
-            router.push({
-              pathname: '/result-page',
-              params: {
-                ...sessionResults,
-                userAttempts: JSON.stringify(sessionResults.attempts)
-              }
-            });
-          } catch (error) {
-            console.error('Error completing session:', error);
-            Alert.alert('Error', 'Failed to save session results');
-          }
-        } else {
-          // Move to next scenario
-          moveToNextScenario();
-          const nextScreen = `S${currentScenario + 1}P1`;
-          router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
-        }
-      };
+        setQuestionIndex(questionIndex + 1);
+        startScrollAnimation();
+      } else if (currentScenario >= 10) {
+        console.log('Completing session...');
+        // Complete session
+      } else {
+        console.log('Moving to next scenario...');
+        moveToNextScenario();
+        const nextScreen = `S${currentScenario + 1}P1`;
+        console.log('Next screen:', nextScreen);
+        console.log('Full path:', `/scenarios/pedestrian/phase1/${nextScreen}`);
+        router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+      }
+    };
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer

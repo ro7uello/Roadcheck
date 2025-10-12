@@ -102,7 +102,7 @@ export default function DrivingGame() {
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      const scenarioId = currentScenario;
+      const scenarioId = 90 + currentScenario;
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -296,40 +296,41 @@ export default function DrivingGame() {
      
       return;
     } else if (answer === "Ask a sober friend to help guide you to the proper crossing") {
-      // Sober friend appears and both walk west together safely
-      setIsFriendVisible(true);
-      setPlayerDirection("WEST");
-      setFriendDirection("WEST");
-      setPlayerFrame(0);
-      setFriendFrame(0);
-     
-D
-     
-     
-      Animated.parallel([
-        Animated.timing(playerXAnim, {
-          toValue: playerLeftX,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(friendXAnim, {
-          toValue: friendLeftX,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.15,
-          duration: 3000,
-          useNativeDriver: true,
-        })
-      ]).start(() => {
-        setIsPlayerVisible(false);
-        setIsFriendVisible(false);
-        handleFeedback(answer);
-      });
-     
-      return;
-    }
+        // Sober friend appears and both walk west together safely
+        setIsFriendVisible(true);
+        setPlayerDirection("WEST");
+        setFriendDirection("WEST");
+        setPlayerFrame(0);
+        setFriendFrame(0);
+
+        // Define the target positions
+        const playerLeftX = width * 0.25 - spriteWidth / 2;
+        const friendLeftX = width * 0.15 - spriteWidth / 2;
+
+        Animated.parallel([
+          Animated.timing(playerXAnim, {
+            toValue: playerLeftX,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(friendXAnim, {
+            toValue: friendLeftX,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scrollY, {
+            toValue: currentScroll.current + scaledMapHeight * 0.15,
+            duration: 3000,
+            useNativeDriver: true,
+          })
+        ]).start(() => {
+          setIsPlayerVisible(false);
+          setIsFriendVisible(false);
+          handleFeedback(answer);
+        });
+
+        return;
+      }
   };
 
 
