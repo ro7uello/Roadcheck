@@ -4,7 +4,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { authenticate } from './middleware/auth.js';
 import { supabase } from './config/supabase.js';
-import { body, validationResult } from 'express-validator';
 
 dotenv.config();
 
@@ -197,27 +196,36 @@ app.get('/auth/check-email/:email', async (req, res) => {
   }
 });
 
-app.post('/auth/signup', [
-  body('email').isEmail().withMessage('Valid email is required'),
-  body('password').custom((value) => {
-    const errors = validatePassword(value);
-    if (errors.length > 0) {
-      throw new Error(errors.join(', '));
-    }
-    return true;
-  }),
-  body('username')
-    .trim()
-    .isLength({ min: 3, max: 20 }).withMessage('Username must be 3-20 characters')
-    .matches(/^[a-zA-Z0-9_-]+$/).withMessage('Username can only contain letters, numbers, underscores, and hyphens')
-    .notEmpty().withMessage('Username is required'),
-  body('firstName').trim().notEmpty().withMessage('First name is required'),
-  body('lastName').trim().notEmpty().withMessage('Last name is required')
-], async (req, res) => {
-  // Check for validation errors
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ error: errors.array()[0].msg });
+app.post('/auth/signup', async (req, res) => {
+  // Manual validation
+  const { email, password, username, firstName, lastName } = req.body;
+
+  // Validate email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Valid email is required' });
+  }
+
+  // Validate password
+  const passwordErrors = validatePassword(password);
+  if (passwordErrors.length > 0) {
+    return res.status(400).json({ error: passwordErrors.join(', ') });
+  }
+
+  // Validate username
+  if (!username || username.trim().length < 3 || username.trim().length > 20) {
+    return res.status(400).json({ error: 'Username must be 3-20 characters' });
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+    return res.status(400).json({ error: 'Username can only contain letters, numbers, underscores, and hyphens' });
+  }
+
+  // Validate first and last name
+  if (!firstName || !firstName.trim()) {
+    return res.status(400).json({ error: 'First name is required' });
+  }
+  if (!lastName || !lastName.trim()) {
+    return res.status(400).json({ error: 'Last name is required' });
   }
 
   const { email, password, username, firstName, lastName } = req.body;
