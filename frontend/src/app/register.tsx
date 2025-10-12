@@ -654,24 +654,39 @@ export default function Register() {
               <Text style={styles.modalText}>
                 Welcome to RoadCheck! By using our application, you agree to the following terms:{'\n\n'}
                 
-                1. ACCEPTANCE OF TERMS{'\n'}
-                By downloading, installing, or using RoadCheck, you agree to be bound by these terms.{'\n\n'}
+                <Text style={styles.sectionHeader}>ACCEPTANCE OF TERMS{'\n'}</Text>
+                By downloading, installing, or using RoadCheck, you agree to be bound by these Terms and Conditions. If you do not agree to these terms, please do not use the application{'\n\n'}
+
+                <Text style={styles.sectionHeader}>ABOUT ROADCHECK{'\n'}</Text>
+                RoadCheck is a capstone project application developed for educational and research purposes. This application serves as a prototype to help users learn traffic rules and road safety in accordance with Philippine traffic regulations.{'\n\n'}
                 
-                2. USE OF THE APPLICATION{'\n'}
+                <Text style={styles.sectionHeader}>USE OF THE APPLICATION{'\n'}</Text>
                 • RoadCheck is designed for educational purposes to help users learn traffic rules and road safety.{'\n'}
                 • You must be at least 18 years old to use this application.{'\n'}
                 • You are responsible for maintaining the confidentiality of your account.{'\n\n'}
                 
-                3. USER CONDUCT{'\n'}
+                <Text style={styles.sectionHeader}>USER CONDUCT{'\n'}</Text>
                 • Use the app responsibly and in accordance with applicable laws.{'\n'}
+                • Not use the application for any illegal or unauthorized purpose.{'\n'}
+                • Not interfere with or disrupt the application's servers or networks.{'\n'}
+                • Not impersonate others or provide false information.{'\n'}
                 • Do not attempt to hack, reverse engineer, or misuse the application.{'\n\n'}
                 
-                4. EDUCATIONAL CONTENT{'\n'}
-                • The content provided is for educational purposes only.{'\n'}
-                • While we strive for accuracy, always refer to official traffic regulations.{'\n\n'}
+                 <Text style={styles.sectionHeader}>EDUCATIONAL CONTENT{'\n'}</Text>
+                • All content provided is for educational purposes to help you be knowledgeable about the Philippine traffic rules and regulations only and should not replace official driver's education or examination preparation.{'\n'}
+                • While we strive for accuracy in presenting traffic rules and regulations, this application is NOT a substitute for:{'\n'}
+                {'\u00A0\u00A0\u00A0\u00A0'}• Official LTO (Land Transportation Office) training programs;{'\n'}
+                {'\u00A0\u00A0\u00A0\u00A0'}• Professional driving instruction;{'\n'}
+                {'\u00A0\u00A0\u00A0\u00A0'}• Official driver's license examinations.{'\n'}
+                • RoadCheck does not guarantee passing any official driving tests or examinations.{'\n'}
+                • Always refer to official LTO regulations and guidelines for authoritative information.{'\n\n'}
                 
-                5. LIMITATION OF LIABILITY{'\n'}
-                • RoadCheck is not liable for any damages arising from the use of this application.{'\n\n'}
+                <Text style={styles.sectionHeader}>CHANGES TO TERMS{'\n'}</Text>
+                • To the fullest extent permitted by law:{'\n\n'}
+                  • RoadCheck and its developers are not liable for any direct, indirect, incidental, consequential, or punitive damages arising from your use or inability to use the application.{'\n'}
+                  • This includes but is not limited to: damages for loss of data, failed examinations, or any reliance on information provided by the application.{'\n'}
+                  • RoadCheck is provided "as is" without warranties of any kind, either express or implied.{'\n'}
+                  • As a capstone/prototype project, the application may contain bugs, errors, or incomplete features.{'\n\n'}
                 
                 6. CHANGES TO TERMS{'\n'}
                 • We reserve the right to modify these terms at any time.{'\n\n'}
@@ -722,38 +737,38 @@ export default function Register() {
               <Text style={styles.modalText}>
                 Your privacy is important to us. This policy explains how we collect and use your information.{'\n\n'}
                 
-                1. INFORMATION WE COLLECT{'\n'}
+                 <Text style={styles.sectionHeader}>INFORMATION WE COLLECT{'\n'}</Text>
                 • Account information: username, email, first name, last name{'\n'}
                 • Usage data: game progress, scores, and learning analytics{'\n'}
                 • App interaction data: which scenarios you complete and your performance{'\n\n'}
                 
-                2. HOW WE USE YOUR INFORMATION{'\n'}
+                <Text style={styles.sectionHeader}>HOW WE USE YOUR INFORMATION{'\n'}</Text>
                 • To provide and improve our services{'\n'}
                 • To track your learning progress{'\n'}
                 • To send important updates about the app{'\n\n'}
                 
-                3. INFORMATION SHARING{'\n'}
+                <Text style={styles.sectionHeader}>INFORMATION SHARING{'\n'}</Text>
                 • We do not sell or rent your personal information{'\n'}
                 • We may share aggregated, anonymized data for research purposes{'\n'}
                 • We may disclose information if required by law{'\n\n'}
                 
-                4. DATA SECURITY{'\n'}
+                <Text style={styles.sectionHeader}>DATA SECURITY{'\n'}</Text>
                 • We use industry-standard security measures{'\n'}
                 • Your password is encrypted and secure{'\n'}
                 • We regularly update our security practices{'\n\n'}
                 
-                5. YOUR RIGHTS{'\n'}
-                • You can request deletion of your account{'\n'}
+                <Text style={styles.sectionHeader}>YOUR RIGHTS{'\n'}</Text>
+                • You can delete your account{'\n'}
                 • You can contact us about any privacy concerns{'\n\n'}
 
-                6. DATA RETENTION{'\n'}
+                <Text style={styles.sectionHeader}>DATA RETENTION{'\n'}</Text>
                 • We keep your account data as long as your account is active{'\n'}
                 • Learning progress data is stored to improve your experience{'\n\n'}
                 
-                7. U18 PRIVACY{'\n'}
+                <Text style={styles.sectionHeader}>UNDER 18 PRIVACY{'\n'}</Text>
                 • We do not knowingly collect information from user under 18.{'\n\n'}
                 
-                8. CHANGES TO POLICY{'\n'}
+                <Text style={styles.sectionHeader}>CHANGES TO POLICY{'\n'}</Text>
                 • We may update this policy and will notify users of significant changes.{'\n\n'}
                 
                 Contact us at privacy@roadcheck.app for questions about this policy.
@@ -1055,5 +1070,12 @@ const styles = StyleSheet.create({
   },
   modalButtonTextDisabled: {
     color: '#666666',
+  },
+  sectionHeader: {
+    fontSize: 10,
+    color: '#000',
+    fontFamily: 'pixel',
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
   },
 });
