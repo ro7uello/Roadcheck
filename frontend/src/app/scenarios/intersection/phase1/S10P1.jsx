@@ -199,30 +199,46 @@ export default function DrivingGame() {
   // Car
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
-  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 0.8)).current;
 
   // Side NPC Car (beside player)
   const [sideNpcFrame, setSideNpcFrame] = useState(0);
   const [sideNpcDirection, setSideNpcDirection] = useState("NORTH");
   const [sideNpcPaused, setSideNpcPaused] = useState(false);
-  const sideNpcXAnim = useRef(new Animated.Value(width / 2 - carWidth * 1.5)).current;
+  const sideNpcXAnim = useRef(new Animated.Value(width / 2 - carWidth * 0.5)).current;
 
-  // NPC Cars state
-  const [npcCars, setNpcCars] = useState([
-    { id: 1, row: 2.5, color: 'red', xAnim: useRef(new Animated.Value(-carWidth)).current, frame: 0 },
-    { id: 2, row: 2.5, color: 'blue', xAnim: useRef(new Animated.Value(-carWidth * 3)).current, frame: 0 },
-    { id: 3, row: 3.5, color: 'green', xAnim: useRef(new Animated.Value(-carWidth * 1.5)).current, frame: 0 },
-    { id: 4, row: 3.5, color: 'yellow', xAnim: useRef(new Animated.Value(-carWidth * 4)).current, frame: 0 },
+  // NPC Cars state - NEW: Add refs to store animation controllers
+  const npcAnimationRefs = useRef([]);
+  
+  // Store initial positions
+  const initialNpcPositions = useRef([
+    -carWidth,
+    -carWidth * 5,
+    -carWidth * 1.5,
+    -carWidth * 6
   ]);
 
-  // Animate NPC cars continuously
-  useEffect(() => {
-    const animateNPCCar = (car) => {
-      Animated.loop(
+  const [npcCars, setNpcCars] = useState([
+    { id: 1, row: 2.5, color: 'red', xAnim: new Animated.Value(-carWidth), frame: 0 },
+    { id: 2, row: 2.5, color: 'blue', xAnim: new Animated.Value(-carWidth * 5), frame: 0 },
+    { id: 3, row: 3.5, color: 'green', xAnim: new Animated.Value(-carWidth * 1.5), frame: 0 },
+    { id: 4, row: 3.5, color: 'yellow', xAnim: new Animated.Value(-carWidth * 6), frame: 0 },
+  ]);
+
+  // NEW: Function to start NPC animations
+  const startNPCAnimations = () => {
+    // Stop any existing animations first
+    npcAnimationRefs.current.forEach(anim => {
+      if (anim) anim.stop();
+    });
+    npcAnimationRefs.current = [];
+
+    npcCars.forEach((car, index) => {
+      const animation = Animated.loop(
         Animated.sequence([
           Animated.timing(car.xAnim, {
             toValue: width + carWidth,
-            duration: 8000,
+            duration: 17000,
             useNativeDriver: false,
           }),
           Animated.timing(car.xAnim, {
@@ -231,10 +247,53 @@ export default function DrivingGame() {
             useNativeDriver: false,
           }),
         ])
-      ).start();
-    };
+      );
+      
+      npcAnimationRefs.current[index] = animation;
+      animation.start();
+    });
+  };
 
-    npcCars.forEach(car => animateNPCCar(car));
+  // NEW: Function to reset NPC animations
+  const resetNPCAnimations = () => {
+    console.log('Resetting NPC animations...');
+    
+    // Stop all animations
+    npcAnimationRefs.current.forEach(anim => {
+      if (anim) anim.stop();
+    });
+    npcAnimationRefs.current = [];
+
+    // Reset positions to initial values immediately
+    npcCars.forEach((car, index) => {
+      car.xAnim.setValue(initialNpcPositions.current[index]);
+    });
+    
+    // Force frame reset
+    setNpcCars(prev => prev.map((car, index) => ({
+      ...car,
+      frame: 0
+    })));
+
+    console.log('NPC positions reset to:', initialNpcPositions.current);
+
+    // Restart animations after a brief delay
+    setTimeout(() => {
+      startNPCAnimations();
+      console.log('NPC animations restarted');
+    }, 100);
+  };
+
+  // Start animations on mount
+  useEffect(() => {
+    startNPCAnimations();
+    
+    // Cleanup on unmount
+    return () => {
+      npcAnimationRefs.current.forEach(anim => {
+        if (anim) anim.stop();
+      });
+    };
   }, []);
 
   // NPC car sprite animation
@@ -268,7 +327,7 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 8;
+    const stopRow = 8.5;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -347,6 +406,9 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
+    // NEW: Reset NPC car animations when player selects an answer
+    resetNPCAnimations();
+
     const currentQuestion = questions[questionIndex];
     const isCorrect = answer === currentQuestion.correct;
     await updateProgress(answer, isCorrect);
@@ -355,7 +417,7 @@ export default function DrivingGame() {
 
     if (answer === "Race the car to enter the roundabout first") {
       // Both cars race quickly to the roundabout
-      const turnStartRow = 10;
+      const turnStartRow = 9;
       const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
       // Quick aggressive movement to roundabout
@@ -378,8 +440,8 @@ export default function DrivingGame() {
             let deltaYScroll = 0;
 
             if (turnSequence[currentTurnStep] === "NORTHEAST") {
-              deltaX = tileSize / 4;
-              deltaYScroll = tileSize / 4;
+              deltaX = tileSize / 6;
+              deltaYScroll = tileSize / 6;
             } else if (turnSequence[currentTurnStep] === "EAST") {
               deltaX = tileSize / 2;
               deltaYScroll = tileSize / 2;
@@ -464,7 +526,7 @@ export default function DrivingGame() {
       // Move both cars to the roundabout entrance
       Animated.timing(scrollY, {
         toValue: initialScrollTarget,
-        duration: 1500,
+        duration: 1000,
         useNativeDriver: true,
       }).start(() => {
         // Brief pause to show coordination
@@ -473,8 +535,8 @@ export default function DrivingGame() {
           const currentSideNpcY = scrollY._value;
           
           Animated.timing(scrollY, {
-            toValue: currentSideNpcY + tileSize * 1.5,
-            duration: 800,
+            toValue: currentSideNpcY + tileSize * 0.6,
+            duration: 500,
             useNativeDriver: true,
           }).start(() => {
             // Now NPC car goes through the roundabout turn
@@ -499,7 +561,7 @@ export default function DrivingGame() {
                 // Only animate NPC car horizontally, NO scroll (player stays in place)
                 Animated.timing(sideNpcXAnim, {
                   toValue: currentSideNpcX + deltaX,
-                  duration: 600,
+                  duration: 500,
                   useNativeDriver: false,
                 }).start(() => {
                   currentTurnStep++;
@@ -509,7 +571,7 @@ export default function DrivingGame() {
                 // Side NPC exits the screen completely
                 Animated.timing(sideNpcXAnim, {
                   toValue: width * 2,
-                  duration: 1200,
+                  duration: 500,
                   useNativeDriver: false,
                 }).start(() => {
                   setIsSideNpcVisible(false);
@@ -542,12 +604,12 @@ export default function DrivingGame() {
                         Animated.parallel([
                           Animated.timing(carXAnim, {
                             toValue: currentCarX + deltaX,
-                            duration: 600,
+                            duration: 500,
                             useNativeDriver: false,
                           }),
                           Animated.timing(scrollY, {
                             toValue: currentScrollY + deltaYScroll,
-                            duration: 600,
+                            duration: 500,
                             useNativeDriver: true,
                           }),
                         ]).start(() => {
@@ -558,7 +620,7 @@ export default function DrivingGame() {
                         // Player exits the screen
                         Animated.timing(carXAnim, {
                           toValue: width * 2,
-                          duration: 1200,
+                          duration: 500,
                           useNativeDriver: false,
                         }).start(() => {
                           setIsCarVisible(false);
@@ -567,13 +629,13 @@ export default function DrivingGame() {
                       }
                     };
                     animatePlayerCar();
-                  }, 500);
+                  });
                 });
               }
             };
             animateSideNpcFirst();
           });
-        }, 800);
+        });
       });
       return;
     }
