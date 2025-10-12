@@ -613,7 +613,9 @@ export default function DrivingGame() {
           Alert.alert('Error', 'Failed to save session results');
         }
       } else {
-        router.push(`/scenarios/road-markings/phase1/S10P1`);
+        const nextScenarioNumber = currentFileScenario + 1;
+        const nextScreen = `S${nextScenarioNumber}P1`;
+        router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
       }
 
       setShowQuestion(false);

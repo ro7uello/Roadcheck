@@ -87,31 +87,25 @@ const carSprites = {
   ],
 };
 
-// NPC Car Sprites - Green Bus
-const busSprites = {
+// Ambulance Sprite
+const ambulanceSprite = {
   EAST: [
-    require("../../../../../assets/car/BUS TOPDOWN/Green/MOVE/EAST/SEPARATED/Green_BUS_CLEAN_EAST_000.png"),
-    require("../../../../../assets/car/BUS TOPDOWN/Green/MOVE/EAST/SEPARATED/Green_BUS_CLEAN_EAST_001.png"),
-  ],
-  WEST: [
-    require("../../../../../assets/car/BUS TOPDOWN/Green/MOVE/WEST/SEPARATED/Green_BUS_CLEAN_WEST_000.png"),
-    require("../../../../../assets/car/BUS TOPDOWN/Green/MOVE/WEST/SEPARATED/Green_BUS_CLEAN_WEST_001.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/EAST/SEPARATED/AMBULANCE_CLEAN_EAST_000.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/EAST/SEPARATED/AMBULANCE_CLEAN_EAST_001.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/EAST/SEPARATED/AMBULANCE_CLEAN_EAST_002.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/EAST/SEPARATED/AMBULANCE_CLEAN_EAST_003.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/EAST/SEPARATED/AMBULANCE_CLEAN_EAST_004.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/EAST/SEPARATED/AMBULANCE_CLEAN_EAST_005.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/EAST/SEPARATED/AMBULANCE_CLEAN_EAST_006.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/EAST/SEPARATED/AMBULANCE_CLEAN_EAST_007.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/EAST/SEPARATED/AMBULANCE_CLEAN_EAST_008.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/EAST/SEPARATED/AMBULANCE_CLEAN_EAST_009.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/EAST/SEPARATED/AMBULANCE_CLEAN_EAST_010.png"),
+    require("../../../../../assets/car/AMBULANCE TOPDOWN/MOVE/EAST/SEPARATED/AMBULANCE_CLEAN_EAST_011.png"),
   ],
 };
 
-// NPC Car Sprites - Yellow Civic
-const yellowCivicSprites = {
-  EAST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/EAST/SEPARATED/Yellow_CIVIC_CLEAN_EAST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/EAST/SEPARATED/Yellow_CIVIC_CLEAN_EAST_001.png"),
-  ],
-  WEST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/WEST/SEPARATED/Yellow_CIVIC_CLEAN_WEST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/WEST/SEPARATED/Yellow_CIVIC_CLEAN_WEST_001.png"),
-  ],
-};
-
-// Give way sign sprite - using traffic light temporarily to test positioning
+// Give way sign sprite
 const giveWaySign = require("../../../../../assets/signs/give_way.png");
 
 // Updated question structure
@@ -161,10 +155,10 @@ export default function DrivingGame() {
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  // Give way sign position - using EXACT traffic light position that worked
-  const giveWayRowIndex = 9; // Same as traffic light
-  const giveWayColIndex = 3; // Same as traffic light
-  const giveWayXOffset = -30; // Same as traffic light
+  // Give way sign position
+  const giveWayRowIndex = 9;
+  const giveWayColIndex = 3;
+  const giveWayXOffset = -30;
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -185,7 +179,7 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
 
   // Animation speed control
-  const [animationSpeed, setAnimationSpeed] = useState(4000); // Default speed
+  const [animationSpeed, setAnimationSpeed] = useState(4000);
 
   // Responsive car positioning
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
@@ -193,12 +187,11 @@ export default function DrivingGame() {
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
 
-  // NPC Cars State
-  const [showNPCCars, setShowNPCCars] = useState(false);
-  const [npcBusFrame, setNpcBusFrame] = useState(0);
-  const [npcCivicFrame, setNpcCivicFrame] = useState(0);
-  const busXAnim = useRef(new Animated.Value(-carWidth * 2)).current; // Start off-screen left
-  const civicXAnim = useRef(new Animated.Value(-carWidth * 2.5)).current; // Start slightly behind bus
+  // Ambulance State
+  const [showAmbulance, setShowAmbulance] = useState(false);
+  const [ambulanceFrame, setAmbulanceFrame] = useState(0);
+  const ambulanceXAnim = useRef(new Animated.Value(-carWidth * 2)).current;
+  const ambulanceYAnim = useRef(new Animated.Value(0)).current;
 
   // Car animation frame cycling
   useEffect(() => {
@@ -211,33 +204,28 @@ export default function DrivingGame() {
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
 
-  // NPC Cars animation frame cycling
+  // Ambulance animation frame cycling
   useEffect(() => {
     let iv;
-    if (showNPCCars) {
+    if (showAmbulance) {
       iv = setInterval(() => {
-        setNpcBusFrame((p) => (p + 1) % busSprites.EAST.length);
-        setNpcCivicFrame((p) => (p + 1) % yellowCivicSprites.EAST.length);
-      }, 200);
+        setAmbulanceFrame((p) => (p + 1) % ambulanceSprite.EAST.length);
+      }, 100);
     }
     return () => clearInterval(iv);
-  }, [showNPCCars]);
+  }, [showAmbulance]);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
 
-    const stopRow = 5.7; // Stop before the give way sign
+    const stopRow = 5.7;
     const stopOffset = startOffset + stopRow * tileSize;
-
-    // Show question when approaching give way sign
-    const questionTriggerTime = 2500; // 2.5 seconds into the animation
 
     Animated.timing(scrollY, {
       toValue: stopOffset,
       duration: animationSpeed,
       useNativeDriver: true,
     }).start(() => {
-      // Animation complete - show question
       setShowQuestion(true);
       setTimeout(() => {
         setShowAnswers(true);
@@ -276,6 +264,59 @@ export default function DrivingGame() {
     }
   };
 
+  const animateAmbulanceCrossing = () => {
+    const intersectionRow = 10;
+    const ambulanceY = height - (intersectionRow * tileSize) + Math.abs(currentScroll.current - startOffset);
+    
+    ambulanceYAnim.setValue(ambulanceY);
+    ambulanceXAnim.setValue(-carWidth);
+    
+    setShowAmbulance(true);
+    
+    Animated.timing(ambulanceXAnim, {
+      toValue: width + carWidth,
+      duration: 3000,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowAmbulance(false);
+      
+      const finalTarget = currentScroll.current + (1 * tileSize);
+      
+      setCarPaused(false);
+      Animated.timing(scrollY, {
+        toValue: finalTarget,
+        duration: 1500,
+        useNativeDriver: true,
+      }).start(() => {
+        handleFeedback("Stop completely at the give way lines and wait for the vehicle to pass");
+      });
+    });
+  };
+
+  const animateCollision = () => {
+    // Calculate ambulance position to align with car's intersection point
+    const intersectionRow = 7.5;
+    // Calculate Y position relative to viewport, not the map
+    const carBottomPosition = height * 0.1; // Car's bottom position
+    const ambulanceY = carBottomPosition - (carHeight * 0.3); // Slightly overlap with car
+    
+    ambulanceYAnim.setValue(ambulanceY);
+    ambulanceXAnim.setValue(-carWidth * 1.5);
+    
+    setShowAmbulance(true);
+    
+    // Ambulance moves to collision point (where car will be)
+    const carPosition = width / 2 - carWidth / 2; // Center position of car
+    
+    Animated.timing(ambulanceXAnim, {
+      toValue: carPosition,
+      duration: 1500,
+      useNativeDriver: true,
+    }).start(() => {
+      handleFeedback("Speed up to cross before the approaching vehicle reaches the intersection");
+    });
+  };
+
   const handleAnswer = async (answer) => {
     setSelectedAnswer(answer);
     setShowQuestion(false);
@@ -287,66 +328,61 @@ export default function DrivingGame() {
 
     const currentRow = Math.abs(currentScroll.current - startOffset) / tileSize;
 
-    // Pan camera to road22 (rows 7-8) to show NPC cars
-    const road22Row = 7.5; // Middle of the intersection
+    const road22Row = 6;
     const panTarget = startOffset + road22Row * tileSize;
 
-    // Show NPC cars and animate them
-    setShowNPCCars(true);
-
-    // Animate NPC cars from left to right across the intersection
-    Animated.parallel([
-      Animated.timing(busXAnim, {
-        toValue: width + carWidth,
-        duration: 3000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(civicXAnim, {
-        toValue: width + carWidth,
-        duration: 3500,
-        useNativeDriver: true,
-      }),
-      // Pan camera to show the intersection
-      Animated.timing(scrollY, {
-        toValue: panTarget,
-        duration: 1500,
-        useNativeDriver: true,
-      })
-    ]).start(() => {
-      // After showing NPC cars, execute the chosen behavior
+    Animated.timing(scrollY, {
+      toValue: panTarget,
+      duration: 1500,
+      useNativeDriver: true,
+    }).start(() => {
       executeAnswerBehavior(answer, currentRow);
     });
   };
 
 const executeAnswerBehavior = (answer, currentRow) => {
     if (answer === "Stop completely at the give way lines and wait for the vehicle to pass") {
-      // Animation: Car comes to a complete stop at give way lines
-      setCarPaused(true);
-
-      // Stay stopped for 3 seconds to show full stop behavior
-      setTimeout(() => {
-        handleFeedback(answer);
-      }, 3000);
-
-    } else if (answer === "Speed up to cross before the approaching vehicle reaches the intersection") {
-      // Animation: Car speeds up and goes through intersection quickly
-      // Use current scroll position after NPC animation
+      // Choice 1: Car proceeds to give way lines and makes COMPLETE STOP
+      const giveWayStopRow = 6.5; // Stop exactly at give way lines
       const currentScrollValue = currentScroll.current;
-      const road22Row = 7.5; // Where we are now (after NPC animation)
-      const targetRow = 12; // Past the intersection
-      const rowsToMove = targetRow - road22Row;
-      const nextTarget = currentScrollValue + rowsToMove * tileSize;
+      const rowsToMove = giveWayStopRow - 6; // From road22Row (6) to give way lines
+      const giveWayTarget = currentScrollValue + rowsToMove * tileSize;
 
+      // Move to give way lines with slower speed to show controlled stop
       Animated.timing(scrollY, {
-        toValue: nextTarget,
-        duration: 2000, // Fast animation
+        toValue: giveWayTarget,
+        duration: 2500, // Slower approach for complete stop
+        easing: Easing.out(Easing.quad), // Deceleration easing
         useNativeDriver: true,
       }).start(() => {
+        // Complete stop at give way lines
+        setCarPaused(true);
+        
+        // Finish animation after stop
         handleFeedback(answer);
       });
 
+    } else if (answer === "Speed up to cross before the approaching vehicle reaches the intersection") {
+      // Choice 2: Speed up and collision
+      const currentScrollValue = currentScroll.current;
+      const targetRow = 7.5; // Intersection point
+      const rowsToMove = targetRow - 6; // From current position
+      const nextTarget = currentScrollValue + rowsToMove * tileSize;
+
+      // Car speeds up to intersection
+      Animated.timing(scrollY, {
+        toValue: nextTarget,
+        duration: 1000, // Fast movement
+        useNativeDriver: true,
+      }).start(() => {
+        // Pause car at intersection
+        setCarPaused(true);
+        // Trigger collision animation immediately
+        animateCollision();
+      });
+
     } else if (answer === "Yield by slowing down or stopping as needed to let the vehicle pass safely first") {
-      // Animation: Car slows down (longer duration), then proceeds
+      // Choice 3: Slow approach, ambulance passes by safely, then proceed
       const giveWayStopRow = 7.8; // Just at the give way lines
       const rowsToGiveWay = giveWayStopRow - currentRow;
       const giveWayTarget = currentScroll.current + rowsToGiveWay * tileSize;
@@ -354,26 +390,47 @@ const executeAnswerBehavior = (answer, currentRow) => {
       // First, slow approach to give way lines
       Animated.timing(scrollY, {
         toValue: giveWayTarget,
-        duration: 3000, // Slower to show yielding behavior
+        duration: 2000, // Slower to show yielding behavior
         useNativeDriver: true,
       }).start(() => {
         // Brief pause to yield
         setCarPaused(true);
+        
+        // Show ambulance passing by after car stops
         setTimeout(() => {
-          setCarPaused(false);
-          // Then proceed through intersection
-          const targetRow = 12;
-          const finalRowsToMove = targetRow - giveWayStopRow;
-          const finalTarget = giveWayTarget + finalRowsToMove * tileSize;
-
-          Animated.timing(scrollY, {
-            toValue: finalTarget,
-            duration: 2500,
+          // Ambulance passes in front of stopped car
+          const carBottomPosition = height * 0.1;
+          const ambulanceY = carBottomPosition - (carHeight * 0.5);
+          
+          ambulanceYAnim.setValue(ambulanceY);
+          ambulanceXAnim.setValue(-carWidth * 1.5);
+          
+          setShowAmbulance(true);
+          
+          // Ambulance crosses completely across screen
+          Animated.timing(ambulanceXAnim, {
+            toValue: width + carWidth,
+            duration: 1500,
             useNativeDriver: true,
           }).start(() => {
-            handleFeedback(answer);
+            // After ambulance passes, hide it
+            setShowAmbulance(true);
+            
+            // Car resumes and proceeds through intersection
+            setCarPaused(false);
+            const targetRow = 12;
+            const finalRowsToMove = targetRow - giveWayStopRow;
+            const finalTarget = giveWayTarget + finalRowsToMove * tileSize;
+
+            Animated.timing(scrollY, {
+              toValue: finalTarget,
+              duration: 2500,
+              useNativeDriver: true,
+            }).start(() => {
+              handleFeedback(answer);
+            });
           });
-        }, 1500); // 1.5 second yield pause
+        }, 500); // Small delay before ambulance appears
       });
     }
   };
@@ -385,12 +442,12 @@ const executeAnswerBehavior = (answer, currentRow) => {
     setIsCorrectAnswer(null);
     setCarFrame(0);
     setCarPaused(false);
-    setAnimationSpeed(4000); // Reset to default speed
+    setAnimationSpeed(4000);
 
-    // Reset NPC cars
-    setShowNPCCars(false);
-    busXAnim.setValue(-carWidth * 2);
-    civicXAnim.setValue(-carWidth * 2.5);
+    setShowAmbulance(false);
+    ambulanceXAnim.setValue(-carWidth * 2);
+    ambulanceYAnim.setValue(0);
+    setAmbulanceFrame(0);
 
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
@@ -401,7 +458,6 @@ const executeAnswerBehavior = (answer, currentRow) => {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else if (currentScenario >= 10) {
-          // Last scenario in phase - complete session
           try {
             const sessionResults = await completeSession();
             router.push({
@@ -416,27 +472,22 @@ const executeAnswerBehavior = (answer, currentRow) => {
             Alert.alert('Error', 'Failed to save session results');
           }
         } else {
-          moveToNextScenario();
-          const nextScreen = `S${currentScenario + 1 }P2`; // Will be S2P2
-         router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-
+                 moveToNextScenario();
+                 const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
+                 router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
         }
   };
 
-  // Calculate give way sign position
   const giveWayLeft = giveWayColIndex * tileSize + giveWayXOffset;
   const giveWayTop = giveWayRowIndex * tileSize;
 
-  // Determine the feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
     ? "Correct! Give way signs require yielding right of way, which may involve slowing down, stopping, or adjusting timing to let cross traffic pass safely."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
 
-  // Main game rendering
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
-      {/* Map */}
       <Animated.View
         style={{
           position: "absolute",
@@ -464,12 +515,11 @@ const executeAnswerBehavior = (answer, currentRow) => {
           ))
         )}
 
-        {/* Give Way Sign - EXACT same position as traffic light */}
         <Image
           source={giveWaySign}
           style={{
-            width: tileSize * 1.5,
-            height: tileSize * 2,
+            width: tileSize * .6,
+            height: tileSize * .8,
             position: "absolute",
             top: giveWayTop,
             left: giveWayLeft,
@@ -479,7 +529,6 @@ const executeAnswerBehavior = (answer, currentRow) => {
         />
       </Animated.View>
 
-      {/* Responsive Car */}
       {isCarVisible && (
         <Animated.Image
           source={carSprites[carDirection][carFrame]}
@@ -494,40 +543,22 @@ const executeAnswerBehavior = (answer, currentRow) => {
         />
       )}
 
-      {/* NPC Cars - Green Bus and Yellow Civic */}
-      {showNPCCars && (
-        <>
-          {/* Green Bus - positioned on road22 row */}
-          <Animated.Image
-            source={busSprites.EAST[npcBusFrame]}
-            style={{
-              width: carWidth * 1.3, // Slightly larger for bus
-              height: carHeight * 1.3,
-              position: "absolute",
-              top: -110, // Positioned on road22
-              bottom:-90,
-              transform: [{ translateX: busXAnim }],
-              zIndex: 6,
-            }}
-          />
-
-          {/* Yellow Civic - positioned on road22 row, following bus */}
-          <Animated.Image
-            source={yellowCivicSprites.EAST[npcCivicFrame]}
-            style={{
-              width: carWidth,
-              height: carHeight,
-              bottom:-80,
-              position: "absolute",
-              top: -130, // Same horizontal road as bus
-              transform: [{ translateX: civicXAnim }],
-              zIndex: 6,
-            }}
-          />
-        </>
+      {showAmbulance && (
+        <Animated.Image
+          source={ambulanceSprite.EAST[ambulanceFrame]}
+          style={{
+            width: carWidth * 1.3,
+            height: carHeight * 1.3,
+            position: "absolute",
+            transform: [
+              { translateX: ambulanceXAnim },
+              { translateY: ambulanceYAnim }
+            ],
+            zIndex: 6,
+          }}
+        />
       )}
 
-      {/* Responsive Question Overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -544,7 +575,6 @@ const executeAnswerBehavior = (answer, currentRow) => {
         </View>
       )}
 
-      {/* Responsive Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -559,7 +589,6 @@ const executeAnswerBehavior = (answer, currentRow) => {
         </View>
       )}
 
-      {/* Responsive Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -569,7 +598,6 @@ const executeAnswerBehavior = (answer, currentRow) => {
         </Animated.View>
       )}
 
-      {/* Responsive Next Button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
@@ -582,7 +610,6 @@ const executeAnswerBehavior = (answer, currentRow) => {
 }
 
 const styles = StyleSheet.create({
-  // Loading screen styles
   loadingContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -594,8 +621,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
   },
-  // No intro styles (responsive)
-  // In-game responsive styles
  questionOverlay: {
     position: "absolute",
     bottom: 0,
