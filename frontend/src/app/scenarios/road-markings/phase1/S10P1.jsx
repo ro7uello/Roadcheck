@@ -106,6 +106,13 @@ const carSprites = {
   ],
 };
 
+const npcCarSprites = {
+  NORTH: [
+    require("../../../../../assets/car/SEDAN TOPDOWN/Magenta/MOVE/NORTH/SEPARATED/Magenta_SEDAN_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/SEDAN TOPDOWN/Magenta/MOVE/NORTH/SEPARATED/Magenta_SEDAN_CLEAN_NORTH_001.png"),
+  ],
+};
+
 // Updated question structure following S9P1 format
 const questions = [
   {
@@ -162,15 +169,20 @@ export default function DrivingGame() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [showQuestion, setShowQuestion] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [isCorrectAnswer, setIsCorrectAnswer] = useState(null); // NEW STATE from S9P1 for correct/wrong feedback
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState(null);
   const [animationType, setAnimationType] = useState(null);
   const [showNext, setShowNext] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carFrame, setCarFrame] = useState(0);
+  
+
+  // NPC cars state
+  const [npcCars, setNpcCars] = useState([]);
 
   // Responsive car positioning
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+  const carYAnim = useRef(new Animated.Value(height * 0.1)).current; // ADD THIS LINE
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
@@ -205,7 +217,7 @@ export default function DrivingGame() {
   }
 
   function startScrollAnimation() {
-    scrollY.setValue(startOffset); // Ensure scroll starts from bottom for each game start
+    scrollY.setValue(startOffset);
 
     const stopRow = 6.5;
     const stopOffset = startOffset + stopRow * tileSize;
@@ -226,11 +238,10 @@ export default function DrivingGame() {
     startScrollAnimation();
   }, []);
 
-  // Updated handleFeedback function from S9P1
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
     if (answerGiven === currentQuestion.correct) {
-      setIsCorrectAnswer(true); // Set to true for correct feedback
+      setIsCorrectAnswer(true);
       setAnimationType("correct");
       Animated.timing(correctAnim, {
         toValue: 1,
@@ -241,7 +252,7 @@ export default function DrivingGame() {
         setShowNext(true);
       });
     } else {
-      setIsCorrectAnswer(false); // Set to false for wrong feedback
+      setIsCorrectAnswer(false);
       setAnimationType("wrong");
       Animated.timing(wrongAnim, {
         toValue: 1,
@@ -274,99 +285,114 @@ export default function DrivingGame() {
         duration: 3000,
         useNativeDriver: true,
       }).start(() => handleFeedback(answer));
-    } else if (answer === "Quickly change lanes before the intersection despite the solid lines") {
-      const turnStartRow = 7;
-      const turnEndRow = 9;
+    }
+    else if (answer === "Quickly change lanes before the intersection despite the solid lines") {
+  const turnStartRow = 6.5;
+  const initialScrollTarget =
+    currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
-      const initialScrollTarget =
-        currentScroll.current + (turnStartRow - currentRow) * tileSize;
-
+  Animated.timing(scrollY, {
+    toValue: initialScrollTarget,
+    duration: 2000,
+    useNativeDriver: true,
+  }).start(() => {
+    // Animation: Car rushes through lane change dangerously fast
+    // Step 1: Face NORTHWEST and move diagonally to change lanes
+    setCarDirection("NORTHWEST");
+    
+    Animated.parallel([
+      Animated.timing(carXAnim, {
+        toValue: (width / 2 - carWidth / 2) - tileSize, // Move left one lane
+        duration: 800,
+        useNativeDriver: false,
+      }),
       Animated.timing(scrollY, {
-        toValue: initialScrollTarget,
-        duration: 2000,
+        toValue: currentScroll.current + tileSize * 1.5,
+        duration: 800,
+        useNativeDriver: true,
+      })
+    ]).start(() => {
+      // Step 2: Face NORTH and continue forward
+      setCarDirection("NORTH");
+      
+      Animated.timing(scrollY, {
+        toValue: currentScroll.current + tileSize * 2,
+        duration: 1000,
         useNativeDriver: true,
       }).start(() => {
-        const turnSequence = ["NORTHWEST", "NORTH"];
-        let currentTurnStep = 0;
-
-        const animateTurnAndMove = () => {
-          if (currentTurnStep < turnSequence.length) {
-            setCarDirection(turnSequence[currentTurnStep]);
-            setCarFrame(0);
-
-            let deltaX = 0;
-            let deltaYScroll = 0;
-
-            if (turnSequence[currentTurnStep] === "NORTHWEST") {
-              deltaX = -tileSize * 0.5;
-              deltaYScroll = tileSize * 0.5;
-            } else if (turnSequence[currentTurnStep] === "NORTH") {
-              deltaX = 0;
-              deltaYScroll = tileSize;
-            }
-
-            Animated.parallel([
-              Animated.timing(carXAnim, {
-                toValue: carXAnim._value + deltaX,
-                duration: 500,
-                useNativeDriver: false,
-              }),
-              Animated.timing(scrollY, {
-                toValue: scrollY._value + deltaYScroll,
-                duration: 500,
-                useNativeDriver: true,
-              }),
-            ]).start(() => {
-              currentTurnStep++;
-              animateTurnAndMove();
-            });
-          } else {
+        // Step 3: Quick turn to face west (changing lanes more)
+        setCarDirection("WEST");
+        setTimeout(() => {
+          // Step 4: Rush west (only horizontal movement, no map scroll)
+          Animated.timing(carXAnim, {
+            toValue: (width / 2 - carWidth / 2) - tileSize * 2,
+            duration: 1000,
+            useNativeDriver: false,
+          }).start(() => {
+            // Move car off screen after dangerous lane change
             Animated.timing(carXAnim, {
               toValue: -width,
-              duration: 2500,
+              duration: 1500,
               useNativeDriver: false,
             }).start(() => {
               setIsCarVisible(false);
               handleFeedback(answer);
             });
-          }
-        };
-        animateTurnAndMove();
+          });
+        }, 200);
       });
-      return;
-    } else if (answer === "Stop and reverse to get in the correct lane") {
-      const turnStartRow = 6.5;
-      const reverseAmount = tileSize * 2;
+    });
+  });
+  return;
+} else if (answer === "Stop and reverse to get in the correct lane") {
+  const turnStartRow = 6.5;
 
-      const initialScrollTarget =
-        currentScroll.current + (turnStartRow - currentRow) * tileSize;
+  const initialScrollTarget =
+    currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
-      Animated.timing(scrollY, {
-        toValue: initialScrollTarget,
-        duration: 2000,
-        useNativeDriver: true,
-      }).start(() => {
-        setCarDirection("NORTH");
-        setCarFrame(0);
+  // Spawn NPC cars behind the player - STATIONARY
+  const npc1Y = new Animated.Value(height * 0.70); // Static position behind player
+  const npc2Y = new Animated.Value(height * 0.30); // Further back
+  const npc1X = width / 2 - carWidth / 2; // Same lane as player
+  const npc2X = (width / 2 - carWidth / 2) + tileSize; // Adjacent lane
 
-        Animated.timing(scrollY, {
-          toValue: scrollY._value - reverseAmount, // Scroll down to simulate car moving back
-          duration: 1500, // Duration for reversing
-          useNativeDriver: true,
-        }).start(() => {handleFeedback(answer);});
-            });
-    }
+  const newNpcCars = [
+    { id: 1, y: npc1Y, x: npc1X },
+    { id: 2, y: npc2Y, x: npc2X },
+  ];
+  setNpcCars(newNpcCars);
+
+  Animated.timing(scrollY, {
+    toValue: initialScrollTarget,
+    duration: 2000,
+    useNativeDriver: true,
+  }).start(() => {
+    setCarDirection("NORTH");
+    setCarFrame(0);
+
+    // Animate only the blue car reversing (moving down the screen)
+    Animated.timing(carYAnim, {
+      toValue: height * 0.01, // Move car down (reversing)
+      duration: 1500,
+      useNativeDriver: false,
+    }).start(() => {
+      handleFeedback(answer);
+    });
+  });
+}
   };
 
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setIsCorrectAnswer(null); // Reset feedback state from S9P1
+    setIsCorrectAnswer(null);
     setCarFrame(0);
+    setNpcCars([]);
 
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
+    carYAnim.setValue(height * 0.1);
     setCarDirection("NORTH");
     setIsCarVisible(true);
 
@@ -374,11 +400,9 @@ export default function DrivingGame() {
     setQuestionIndex(questionIndex + 1);
     startScrollAnimation();
   } else {
-    // Get current scenario number from file name
-    const currentFileScenario = 10; // For S1P1, this is 1; for S2P1 it would be 2, etc.
+    const currentFileScenario = 10;
     
     if (currentFileScenario >= 10) {
-      // Last scenario of phase 1 - complete session and go to results
       try {
         const sessionResults = await completeSession();
         if (sessionResults) {
@@ -396,32 +420,18 @@ export default function DrivingGame() {
         Alert.alert('Error', 'Failed to save session results');
       }
     } else {
-      // Move to next scenario in phase 1
-      moveToNextScenario();
-      
-      const nextScenarioNumber = currentFileScenario + 1;
-      const nextScreen = `S${nextScenarioNumber}P1`;
-      router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
+      router.push(`/scenarios/road-markings/phase1/S10P1`);
     }
 
     setShowQuestion(false);
-    if (scrollAnimationRef.current) {
-      scrollAnimationRef.current.stop();
-    }
-    if (jeepneyAnimationRef.current) {
-      jeepneyAnimationRef.current.stop();
-    }
-    npcCarAnimationsRef.current.forEach(anim => anim.stop());
   }
 };
 
-  // Determine the feedback message based on whether the answer was correct or wrong (from S9P1)
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
     ? "Solid white lines discourage crossing, you may even get a violation ticket if you did this near an intersection. It is safer to just continue and find another route towards your destination"
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
 
-  // Main game rendering
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
       {/* Map */}
@@ -461,12 +471,28 @@ export default function DrivingGame() {
             width: carWidth,
             height: carHeight,
             position: "absolute",
-            bottom: height * 0.1, // Responsive bottom positioning
+            bottom: carYAnim, // CHANGE from height * 0.1 to carYAnim
             left: carXAnim,
             zIndex: 5,
           }}
         />
       )}
+
+      {/* NPC Cars */}
+      {npcCars.map((npc) => (
+        <Animated.Image
+          key={npc.id}
+          source={npcCarSprites.NORTH[0]}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            top: npc.y,
+            left: npc.x,
+            zIndex: 4,
+          }}
+        />
+      ))}
 
       {/* Responsive Question Overlay */}
       {showQuestion && (
@@ -500,7 +526,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Responsive Feedback - Updated to use S9P1 format */}
+      {/* Responsive Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
         <Animated.View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -523,7 +549,6 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -535,8 +560,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 20,
   },
-
-  // ADDED: Intro styles (responsive)
   introContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -592,7 +615,6 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
-
  questionOverlay: {
     position: "absolute",
     bottom: 0,
