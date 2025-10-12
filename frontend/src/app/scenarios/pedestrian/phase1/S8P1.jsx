@@ -79,13 +79,13 @@ export default function DrivingGame() {
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      const scenarioId = 90 + currentScenario;
+      const scenarioId = currentScenario;
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
     }
   };
-
+  
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
 
 
@@ -214,9 +214,6 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
-    const currentQuestion = questions[questionIndex];
-    const isCorrect = answer === currentQuestion.correct;
-    updateProgress(answer, isCorrect);
 
     if (answer === "Continue jogging since you have the right of way on the sidewalk") {
       // Continue running forward (north) - will collide with car
@@ -287,36 +284,37 @@ export default function DrivingGame() {
     parkedCarOffset.setValue(0);
    
     if (questionIndex < questions.length - 1) {
-          setQuestionIndex(questionIndex + 1);
-          startScrollAnimation();
-        } else if (currentScenario >= 10) {
+      setQuestionIndex(questionIndex + 1);
+      startScrollAnimation();
+    } else if (currentScenario >= 10) {
 
-          try {
-            const sessionResults = await completeSession();
+      try {
+        const sessionResults = await completeSession();
 
-            if (!sessionResults) {
-              Alert.alert('Error', 'Failed to complete session');
-              return;
-            }
-
-            router.push({
-              pathname: '/result-page',
-              params: {
-                ...sessionResults,
-                userAttempts: JSON.stringify(sessionResults.attempts)
-              }
-            });
-          } catch (error) {
-            console.error('Error completing session:', error);
-            Alert.alert('Error', 'Failed to save session results');
-          }
-        } else {
-          // Move to next scenario
-          moveToNextScenario();
-          const nextScreen = `S${currentScenario + 1}P1`;
-          router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session');
+          return;
         }
-      };
+
+        router.push({
+          pathname: '/result-page',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
+    } else {
+      // Move to next scenario
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P1`;
+      router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+    }
+  };
+
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
@@ -412,13 +410,13 @@ export default function DrivingGame() {
       {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
-          {questions[questionIndex].options.map((answer) => (
+          {questions[questionIndex].options.map((option) => (
             <TouchableOpacity
-              key={answer}
+              key={option}
               style={styles.answerButton}
-              onPress={() => handleAnswer(answer)}
+              onPress={() => handleAnswer(option)}
             >
-              <Text style={styles.answerText}>{answer}</Text>
+              <Text style={styles.answerText}>{option}</Text>
             </TouchableOpacity>
           ))}
         </View>

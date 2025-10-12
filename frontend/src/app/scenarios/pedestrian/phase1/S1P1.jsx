@@ -76,18 +76,15 @@ const questions = [
 
 export default function DrivingGame() {
   const {
+    currentScenario,
     updateScenarioProgress,
     moveToNextScenario,
     completeSession,
-    currentScenario:
-    sessionData
   } = useSession();
-
-  const currentScenario = 1;
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      const scenarioId = 90 + currentScenario;
+      const scenarioId = currentScenario;
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
