@@ -1,6 +1,6 @@
 // C:\Users\wahoo\Desktop\roadcheck\frontend\src\contexts\SessionManager.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../../config/api';
 
@@ -21,6 +21,21 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
   const [sessionStartTime, setSessionStartTime] = useState(Date.now());
   const [scenarioStartTime, setScenarioStartTime] = useState(Date.now());
 
+  // Convert database phase ID to display phase number
+  // Road Markings (cat 1): phase IDs 1,2,3 → display 1,2,3
+  // Traffic Signs (cat 2): phase IDs 4,5,6 → display 1,2,3
+  // Intersection (cat 3): phase IDs 7,8,9 → display 1,2,3
+  // Pedestrian (cat 4): phase ID 10 → display 1
+  const getDisplayPhaseNumber = () => {
+    if (categoryId === 1) return phaseId;           // Road Markings
+    if (categoryId === 2) return phaseId - 3;       // Traffic Signs
+    if (categoryId === 3) return phaseId - 6;       // Intersection
+    if (categoryId === 4) return 1;                 // Pedestrian (always Phase 1)
+    return phaseId;
+  };
+
+  const displayPhaseNumber = getDisplayPhaseNumber();
+
   // Initialize session when component mounts
   useEffect(() => {
     initializeSession();
@@ -28,7 +43,7 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
 
   const initializeSession = async () => {
     try {
-      // Get userId from AsyncStorage - FIXED
+      // Get userId from AsyncStorage
       const userId = await AsyncStorage.getItem('userId');
       const token = await AsyncStorage.getItem('access_token');
 
@@ -47,7 +62,7 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          user_id: userId,  // Use the userId from AsyncStorage
+          user_id: userId,
           category_id: categoryId,
           phase_id: phaseId
         })
@@ -141,12 +156,12 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
   };
 
   const moveToNextScenario = () => {
-      console.log('Moving from scenario', currentScenario, 'to', currentScenario + 1);
+    console.log('Moving from scenario', currentScenario, 'to', currentScenario + 1);
     if (currentScenario < 10) {
       setCurrentScenario(currentScenario + 1);
       setScenarioStartTime(Date.now()); // Reset timer for next scenario
     }
-console.log('New current scenario:', currentScenario + 1);
+    console.log('New current scenario:', currentScenario + 1);
   };
 
   const completeSession = async () => {
@@ -176,9 +191,9 @@ console.log('New current scenario:', currentScenario + 1);
         // Return session results for result page
         return {
           sessionId: sessionData.id,
-          categoryId: sessionData.category_id, // ADD THIS
-          phaseId: sessionData.phase_id, // ADD THIS
-          categoryName: 'Traffic Signs', // Or get from sessionData
+          categoryId: sessionData.category_id,
+          phaseId: sessionData.phase_id,
+          categoryName: categoryName,
           totalTime,
           totalScore,
           correctCount,
@@ -192,11 +207,11 @@ console.log('New current scenario:', currentScenario + 1);
         };
       } else {
         console.error('Failed to complete session:', response.status);
-        return null; // This causes the error!
+        return null;
       }
     } catch (error) {
       console.error('Error completing session:', error);
-      return null; // This also causes the error!
+      return null;
     }
   };
 
@@ -217,7 +232,48 @@ console.log('New current scenario:', currentScenario + 1);
 
   return (
     <SessionContext.Provider value={value}>
-      {children}
+      <View style={styles.container}>
+        {children}
+        {/* Progression Indicator - Always visible at bottom */}
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>
+            {categoryName} - Phase {displayPhaseNumber}
+          </Text>
+          <Text style={styles.progressNumber}>
+            Scenario {currentScenario} / 10
+          </Text>
+        </View>
+      </View>
     </SessionContext.Provider>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  progressContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 2,
+    borderTopColor: '#4CAF50',
+  },
+  progressText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  progressNumber: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+});

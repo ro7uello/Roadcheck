@@ -6,7 +6,7 @@ export default function PedestrianPhase1Layout() {
   return (
     <SessionProvider
       categoryId={4}
-      phaseId={1}
+      phaseId={10}
       categoryName="Pedestrian"
     >
       <Stack screenOptions={{ headerShown: false, gestureEnabled: false }}>

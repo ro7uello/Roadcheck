@@ -263,53 +263,15 @@ const testBasicConnection = async () => {
         duration: 100,
         useNativeDriver: true,
       }),
-    ]).start(async () => {
-      try {
-        setIsLoading(true);
-        const userId = await AsyncStorage.getItem('userId');
-        const token = await AsyncStorage.getItem('access_token');
-
-        if (!userId || !token) {
-          Alert.alert('Error', 'Please log in again');
-          router.replace('/login');
-          return;
+    ]).start(() => {
+      router.push({
+        pathname: '/scenarios/pedestrian/phase1/S1P1',
+        params: {
+          categoryId: '4',
+          phaseId: '10',
+          categoryName: 'Pedestrian'
         }
-
-        const response = await fetch(`${API_BASE_URL}/progress/select-category`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: userId,
-            category_id: 4
-          }),
-        });
-
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const errorText = await response.text();
-          console.error('Response is not JSON:', errorText);
-          Alert.alert('Error', 'Server error. Please try again.');
-          return;
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          console.log('Pedestrian mode tracked');
-          // FIXED PATH - removed ../ and .jsx
-          router.push('/scenarios/pedestrian/phase1/S1P1');
-        } else {
-          Alert.alert('Error', 'Failed to start pedestrian mode');
-        }
-      } catch (error) {
-        console.error('Error starting pedestrian:', error);
-        Alert.alert('Error', 'Failed to start pedestrian mode');
-      } finally {
-        setIsLoading(false);
-      }
+      });
     });
   };
 

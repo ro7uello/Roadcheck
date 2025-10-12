@@ -1116,12 +1116,24 @@ app.put('/user-progress', async (req, res) => {
   try {
     const { user_id, current_category_id, current_phase, current_scenario_index } = req.body;
 
+    // Convert display phase to database phase ID
+    let actualPhaseId = parseInt(current_phase);
+    const categoryId = parseInt(current_category_id);
+
+    if (categoryId === 2) {
+      actualPhaseId = actualPhaseId + 3;  // Traffic Signs: 1,2,3 → 4,5,6
+    } else if (categoryId === 3) {
+      actualPhaseId = actualPhaseId + 6;  // Intersection: 1,2,3 → 7,8,9
+    }
+    // categoryId 1 stays the same (1,2,3)
+    // categoryId 4 stays as 1 → will need phase 10
+
     const { data, error } = await supabase
       .from('user_progress')
       .upsert({
         user_id,
-        current_category_id: parseInt(current_category_id),
-        current_phase: parseInt(current_phase),
+        current_category_id: categoryId,
+        current_phase: actualPhaseId,  // ✅ Now using correct DB phase ID
         current_scenario_index: parseInt(current_scenario_index),
         updated_at: new Date().toISOString()
       }, {
