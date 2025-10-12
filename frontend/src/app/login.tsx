@@ -241,6 +241,14 @@ export default function LoginPage() {
         />
 
         <TouchableOpacity 
+          onPress={() => router.push("/forgotPassword")}
+          disabled={loading}
+          style={styles.forgotPasswordContainer}
+        >
+          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
           style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleLogin}
           disabled={loading}
@@ -294,6 +302,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontSize: 14,
   },
+forgotPasswordContainer: {
+  alignItems: 'flex-end',
+  marginBottom: 12,
+  marginTop: -4,  // Move it closer to password field
+},
+forgotPasswordText: {
+  fontSize: 14,  // Good readable size
+  color: "#4ef5a2",
+  fontFamily: "pixel",
+},
   button: {
     backgroundColor: "rgba(0,0,0,0.8)",
     padding: 12,
