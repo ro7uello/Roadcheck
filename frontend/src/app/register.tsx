@@ -376,9 +376,10 @@ export default function Register() {
   const handleTermsScroll = (event) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     const paddingToBottom = 20; // How close to bottom before enabling button
+    const contentFitsInView = contentSize.height <= layoutMeasurement.height + paddingToBottom;
     const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
     
-    if (isCloseToBottom && !termsScrolledToBottom) {
+    if (isCloseToBottom && !termsScrolledToBottom || contentFitsInView) {
       setTermsScrolledToBottom(true);
     }
   };
@@ -386,9 +387,10 @@ export default function Register() {
   const handlePrivacyScroll = (event) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     const paddingToBottom = 20;
+    const contentFitsInView = contentSize.height <= layoutMeasurement.height + paddingToBottom;
     const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
     
-    if (isCloseToBottom && !privacyScrolledToBottom) {
+    if (isCloseToBottom && !privacyScrolledToBottom || contentFitsInView) {
       setPrivacyScrolledToBottom(true);
     }
   };
