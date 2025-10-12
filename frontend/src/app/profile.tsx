@@ -16,7 +16,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get("window");
-const API_URL = process.env.API_URL;
+import { API_URL } from '../../config/api';
 
 export default function ProfileScreen() {
   const router = useRouter();

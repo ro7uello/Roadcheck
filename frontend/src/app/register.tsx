@@ -19,7 +19,7 @@ import {
 const { width, height } = Dimensions.get("window");
 const BACKGROUND_SPEED = 12000;
 
-const API_URL = process.env.API_URL;
+import { API_URL } from '../../config/api';
 
 // Password validation regex patterns
 const PASSWORD_REQUIREMENTS = {

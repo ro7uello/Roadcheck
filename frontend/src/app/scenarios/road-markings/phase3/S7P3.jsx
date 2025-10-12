@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '@env';
+import { API_URL } from '../../../../../config/api';
 import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");

@@ -4,6 +4,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { authenticate } from './middleware/auth.js';
 import { supabase } from './config/supabase.js';
+import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -15,6 +17,14 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  }
+});
 
 // ===========================
 // PASSWORD VALIDATION HELPER
@@ -1363,6 +1373,35 @@ app.post('/sessions/start', async (req, res) => {
       success: false,
       message: 'Internal server error',
       error: error.message
+    });
+  }
+});
+
+// TEST EMAIL ENDPOINT
+app.post('/test-email', async (req, res) => {
+  try {
+    console.log('📧 Sending test email to:', process.env.EMAIL_USER);
+    
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: 'RoadCheck Email Test',
+      html: '<h1>✅ Email configuration works!</h1><p>Your email setup is ready for password resets!</p>'
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Test email sent:', info.messageId);
+    
+    res.json({ 
+      success: true, 
+      message: 'Test email sent! Check your inbox.',
+      messageId: info.messageId 
+    });
+  } catch (error) {
+    console.error('❌ Email test failed:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
     });
   }
 });
