@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const bgAnim = useRef(new Animated.Value(0)).current;
   const carAnim = useRef(new Animated.Value(0)).current;
@@ -41,7 +42,6 @@ export default function LoginPage() {
       const token = await AsyncStorage.getItem('access_token');
       if (token) {
         console.log('🔍 Existing token found, verifying...');
-        // Optional: Verify token with backend
         const isValid = await verifyToken(token);
         if (isValid) {
           console.log('✅ Token valid, navigating to optionPage');
@@ -82,12 +82,9 @@ export default function LoginPage() {
     try {
       setLoading(true);
       console.log('🔄 Starting login for:', email);
-      console.log('API_URL:', API_URL);
-      console.log('Calling:', `${API_URL}/auth/login`);
 
-      // Add timeout to prevent hanging requests
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
@@ -113,7 +110,6 @@ export default function LoginPage() {
 
         console.log('❌ Login failed. Status:', response.status, 'Error:', errorData);
 
-        // Better error messages based on status
         let errorMessage = 'Login failed';
         if (response.status === 401) {
           errorMessage = 'Invalid email or password';
@@ -131,7 +127,6 @@ export default function LoginPage() {
       const data = await response.json();
       console.log('✅ Login response received');
 
-      // Validate response structure
       if (!data.access_token) {
         console.log('❌ No access token in response');
         throw new Error('No access token received from server');
@@ -143,10 +138,9 @@ export default function LoginPage() {
 
       console.log('✅ Login successful!');
 
-      // Save authentication data - FIXED: Use 'userId' instead of 'user_id'
       const authData: [string, string][] = [
         ['access_token', data.access_token],
-        ['userId', String(data.user?.id || '')], // CHANGED THIS LINE
+        ['userId', String(data.user?.id || '')],
         ['user_email', data.user?.email || email.trim().toLowerCase()],
         ['login_timestamp', new Date().toISOString()]
       ];
@@ -155,9 +149,8 @@ export default function LoginPage() {
       await AsyncStorage.setItem('user_data', JSON.stringify(data.user));
       console.log('💾 Authentication data saved');
 
-      // Verify token was saved
       const savedToken = await AsyncStorage.getItem('access_token');
-      const savedUserId = await AsyncStorage.getItem('userId'); // VERIFY THIS TOO
+      const savedUserId = await AsyncStorage.getItem('userId');
 
       if (!savedToken) {
         throw new Error('Failed to save authentication token');
@@ -167,7 +160,6 @@ export default function LoginPage() {
       console.log('🔍 User ID saved:', savedUserId);
       console.log('🚀 Navigating to optionPage...');
 
-      // Use replace to prevent going back to login screen
       router.replace('/optionPage');
 
     } catch (error: any) {
@@ -207,10 +199,10 @@ export default function LoginPage() {
 
       {/* Car */}
       <Animated.View style={[styles.carContainer, { transform: [{ translateY: carBounce }] }]}>
-        <Image 
+        <Image
           source={require("../../assets/car/blue-car.png")}
-          style={styles.car} 
-          resizeMode="contain" 
+          style={styles.car}
+          resizeMode="contain"
         />
       </Animated.View>
 
@@ -229,18 +221,37 @@ export default function LoginPage() {
           editable={!loading}
           autoCorrect={false}
         />
-        <TextInput
-          placeholder="PASSWORD"
-          placeholderTextColor="#ccc"
-          secureTextEntry
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          editable={!loading}
-          autoCorrect={false}
-        />
 
-        <TouchableOpacity 
+        {/* Password Input with Eye Icon */}
+        <View style={styles.passwordContainer}>
+          <TextInput
+            placeholder="PASSWORD"
+            placeholderTextColor="#ccc"
+            secureTextEntry={!showPassword}
+            style={styles.passwordInput}
+            value={password}
+            onChangeText={setPassword}
+            editable={!loading}
+            autoCorrect={false}
+          />
+          <TouchableOpacity
+            onPress={() => setShowPassword(!showPassword)}
+            style={styles.eyeIcon}
+            disabled={loading}
+          >
+            <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          onPress={() => router.push("/forgotPassword")}
+          disabled={loading}
+          style={styles.forgotPasswordContainer}
+        >
+          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleLogin}
           disabled={loading}
@@ -250,7 +261,7 @@ export default function LoginPage() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => router.push("/register")}
           disabled={loading}
         >
@@ -293,6 +304,40 @@ const styles = StyleSheet.create({
     fontFamily: "pixel",
     marginBottom: 12,
     fontSize: 14,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: "#fff",
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: 'transparent',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 10,
+    color: "white",
+    fontFamily: "pixel",
+    fontSize: 14,
+  },
+  eyeIcon: {
+    padding: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eyeText: {
+    fontSize: 18,
+  },
+  forgotPasswordContainer: {
+    alignItems: 'flex-end',
+    marginBottom: 12,
+    marginTop: -4,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: "#4ef5a2",
+    fontFamily: "pixel",
   },
   button: {
     backgroundColor: "rgba(0,0,0,0.8)",

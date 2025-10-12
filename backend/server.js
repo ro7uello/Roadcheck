@@ -26,6 +26,19 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Add debug logging
+console.log('📧 EMAIL_USER:', process.env.EMAIL_USER);
+console.log('🔑 EMAIL_PASSWORD:', process.env.EMAIL_PASSWORD ? '✓ Set (' + process.env.EMAIL_PASSWORD.length + ' chars)' : '✗ Not set');
+
+// Verify email configuration on startup
+transporter.verify(function(error, success) {
+  if (error) {
+    console.error('❌ Email configuration error:', error);
+  } else {
+    console.log('✅ Email server is ready to send messages');
+  }
+});
+
 // ===========================
 // PASSWORD VALIDATION HELPER
 // ===========================
@@ -355,6 +368,204 @@ app.post('/auth/signup', async (req, res) => {
       error: 'Server error during registration',
       details: err.message
     });
+  }
+});
+
+// ===========================
+// PASSWORD RESET ROUTES
+// ===========================
+
+// 1. Request Password Reset
+app.post('/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const emailLower = email.toLowerCase().trim();
+    console.log('🔄 Password reset requested for:', emailLower);
+
+    // Check if user exists in Supabase Auth
+    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+    
+    if (listError) {
+      console.error('Error listing users:', listError);
+      throw listError;
+    }
+
+    const user = users.find(u => u.email?.toLowerCase() === emailLower);
+
+    // Don't reveal if user exists or not (security)
+    if (!user) {
+      console.log('⚠️ User not found, but returning success message');
+      return res.status(200).json({ 
+        message: 'If an account exists, a reset link has been sent to your email' 
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+    // Save token to profiles table
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        reset_token: resetToken,
+        reset_token_expiry: resetTokenExpiry.toISOString()
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('Error saving reset token:', updateError);
+      throw updateError;
+    }
+
+    console.log('✅ Reset token generated and saved');
+
+    // Create reset link (for mobile app deep linking)
+    const resetLink = `roadcheck://reset-password?token=${resetToken}`;
+    // For testing in Expo Go, use: 
+    // const resetLink = `exp://192.168.x.x:8081/--/reset-password?token=${resetToken}`;
+
+    // Send email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: emailLower,
+      subject: 'RoadCheck - Password Reset Request',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #4ef5a2;">RoadCheck Password Reset</h2>
+          <p>You requested to reset your password.</p>
+          <p>Click the button below to reset your password:</p>
+          <a href="${resetLink}" 
+             style="display: inline-block; padding: 12px 24px; background-color: #4ef5a2; 
+                    color: black; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: bold;">
+            Reset Password
+          </a>
+          <p style="color: #666; font-size: 14px;">
+            This link will expire in 1 hour.
+          </p>
+          <p style="color: #666; font-size: 14px;">
+            If you didn't request this, please ignore this email.
+          </p>
+          <p style="color: #999; font-size: 12px; margin-top: 30px;">
+            If the button doesn't work, copy and paste this link into your browser:<br/>
+            ${resetLink}
+          </p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log('✅ Reset email sent successfully');
+
+    res.status(200).json({ 
+      message: 'If an account exists, a reset link has been sent to your email' 
+    });
+
+  } catch (error) {
+    console.error('❌ Forgot password error:', error);
+    res.status(500).json({ message: 'Server error. Please try again later.' });
+  }
+});
+
+// 2. Verify Reset Token
+app.get('/auth/verify-reset-token/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('id, reset_token, reset_token_expiry')
+      .eq('reset_token', token)
+      .single();
+
+    if (error || !profile) {
+      return res.status(400).json({ message: 'Invalid or expired reset token' });
+    }
+
+    // Check if token is expired
+    if (new Date() > new Date(profile.reset_token_expiry)) {
+      return res.status(400).json({ message: 'Reset token has expired' });
+    }
+
+    // Get email from auth users
+    const { data: { user }, error: authError } = await supabase.auth.admin.getUserById(profile.id);
+
+    res.status(200).json({ 
+      message: 'Token is valid', 
+      email: user?.email || null 
+    });
+
+  } catch (error) {
+    console.error('❌ Token verification error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// 3. Reset Password
+app.post('/auth/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token and new password are required' });
+    }
+
+    // Validate password
+    const passwordErrors = validatePassword(newPassword);
+    if (passwordErrors.length > 0) {
+      return res.status(400).json({ message: passwordErrors.join(', ') });
+    }
+
+    // Find user by token
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('id, reset_token, reset_token_expiry')
+      .eq('reset_token', token)
+      .single();
+
+    if (error || !profile) {
+      return res.status(400).json({ message: 'Invalid or expired reset token' });
+    }
+
+    // Check if token is expired
+    if (new Date() > new Date(profile.reset_token_expiry)) {
+      return res.status(400).json({ message: 'Reset token has expired' });
+    }
+
+    console.log('🔄 Updating password for user:', profile.id);
+
+    // Update password in Supabase Auth
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
+      profile.id,
+      { password: newPassword }
+    );
+
+    if (updateError) {
+      console.error('Error updating password:', updateError);
+      throw updateError;
+    }
+
+    // Clear reset token from profiles
+    await supabase
+      .from('profiles')
+      .update({
+        reset_token: null,
+        reset_token_expiry: null
+      })
+      .eq('id', profile.id);
+
+    console.log('✅ Password reset successful');
+
+    res.status(200).json({ message: 'Password reset successful' });
+
+  } catch (error) {
+    console.error('❌ Reset password error:', error);
+    res.status(500).json({ message: 'Server error. Please try again later.' });
   }
 });
 

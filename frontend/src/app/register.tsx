@@ -43,6 +43,7 @@ export default function Register() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Modal states for legal documents
   const [showTerms, setShowTerms] = useState(false);
@@ -487,17 +488,22 @@ export default function Register() {
           />
 
           {/* Password */}
-          <TextInput
-            value={password}
-            onChangeText={handlePasswordChange}
-            placeholder="Password"
-            placeholderTextColor="#ccc"
-            secureTextEntry
-            style={[
-              styles.input,
-              password.length > 0 && passwordErrors.length === 0 ? styles.inputSuccess : null
-            ]}
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              value={password}
+              onChangeText={handlePasswordChange}
+              placeholder="Password"
+              placeholderTextColor="#ccc"
+              secureTextEntry={!showPassword}
+              style={styles.passwordInput}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
+              <Text style={styles.eyeText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Password Requirements */}
           {showPasswordRequirements && (
@@ -562,6 +568,10 @@ export default function Register() {
                         {usernameError.includes("chars") ? "⚠️ " : "❌ "}{usernameError}
                       </Text>
                     )}
+          
+          <Text style={styles.pleaseReadText}>
+            Please read our Terms and Conditions
+          </Text>
 
           {/* Terms and Privacy Policy Agreement */}
           <View>
@@ -682,14 +692,12 @@ export default function Register() {
                 • Always refer to official LTO regulations and guidelines for authoritative information.{'\n\n'}
                 
                 <Text style={styles.sectionHeader}>CHANGES TO TERMS{'\n'}</Text>
-                • To the fullest extent permitted by law:{'\n\n'}
+                • To the fullest extent permitted by law:{'\n'}
                   • RoadCheck and its developers are not liable for any direct, indirect, incidental, consequential, or punitive damages arising from your use or inability to use the application.{'\n'}
                   • This includes but is not limited to: damages for loss of data, failed examinations, or any reliance on information provided by the application.{'\n'}
                   • RoadCheck is provided "as is" without warranties of any kind, either express or implied.{'\n'}
                   • As a capstone/prototype project, the application may contain bugs, errors, or incomplete features.{'\n\n'}
-                
-                6. CHANGES TO TERMS{'\n'}
-                • We reserve the right to modify these terms at any time.{'\n\n'}
+              
                 
                 For questions, contact us at support@roadcheck.app
               </Text>
@@ -979,6 +987,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#333',
     lineHeight: 14,
+    fontFamily:'spaceMono'
   },
   legalLinksContainer: {
     flexDirection: 'row',
@@ -1077,5 +1086,40 @@ const styles = StyleSheet.create({
     fontFamily: 'pixel',
     fontWeight: 'bold',
     textDecorationLine: 'underline',
+  },
+   pleaseReadText: {
+    fontSize: 9,
+    color: "#ffd700", // Golden color to make it stand out
+    fontFamily: "pixel",
+    textAlign: "center",
+    marginTop: 8,
+    marginBottom: 5,
+    fontStyle: 'italic', // Make it italic for emphasis
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: "#fff",
+    borderRadius: 6,
+    marginBottom: 4,
+    backgroundColor: 'transparent',
+    height: 28,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    color: "white",
+    fontFamily: "pixel",
+    fontSize: 11,
+  },
+  eyeIcon: {
+    padding: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eyeText: {
+    fontSize: 14,
   },
 });

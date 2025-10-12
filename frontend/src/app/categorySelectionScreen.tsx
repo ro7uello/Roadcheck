@@ -28,6 +28,7 @@ export default function CategorySelectionScreen() {
   // Load font
   const [fontsLoaded] = useFonts({
     'pixel': require('../../assets/fonts/pixel3.ttf'),
+    'spaceMono': require('../../assets/fonts/SpaceMono-Regular.ttf')
   });
 
   // State
@@ -729,7 +730,7 @@ const styles = StyleSheet.create({
   referenceText: {
     fontSize: 9,
     color: 'black',
-    fontFamily: "Pixel3",
+    fontFamily: 'spaceMono',
     lineHeight: 14,
     textAlign: 'justify',
   },

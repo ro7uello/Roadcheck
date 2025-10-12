@@ -17,7 +17,22 @@
       "adaptiveIcon": {
         "backgroundColor": "#000000"
       },
-      "package": "com.ro7ello.roadcheck"
+      "package": "com.ro7ello.roadcheck",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "roadcheck"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "plugins": [
       "expo-router",
