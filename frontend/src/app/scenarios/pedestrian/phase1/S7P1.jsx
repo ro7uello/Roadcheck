@@ -35,9 +35,9 @@ const maleSprites = {
     require("../../../../../assets/character/sprites/west/west_walk4.png"),
   ],
   EAST: [
-    require("../../../../../assets/character/sprites/west/west_walk1.png"),
-    require("../../../../../assets/character/sprites/west/west_walk2.png"),
-    require("../../../../../assets/character/sprites/west/west_walk3.png"),
+    require("../../../../../assets/character/sprites/east/east_walk1.png"),
+    require("../../../../../assets/character/sprites/east/east_walk2.png"),
+    require("../../../../../assets/character/sprites/east/east_walk3.png"),
 
 
   ],
@@ -160,11 +160,9 @@ export default function DrivingGame() {
   const playerXAnim = useRef(new Animated.Value(centerX)).current;
 
 
-  // NPC Cars
+  // NPC Cars - Single stationary car showing traffic control
   const carsRef = useRef([
-    { id: 1, color: 'blue', row: 7, xOffset: -200, frame: 0 },
-    { id: 2, color: 'red', row: 7, xOffset: -600, frame: 0 },
-    { id: 3, color: 'green', row: 7, xOffset: -1000, frame: 0 },
+    { id: 1, color: 'blue', row: 7, xOffset: width * 0.03, frame: 0, stationary: true },
   ]);
 
 
@@ -183,26 +181,18 @@ export default function DrivingGame() {
   ]);
 
 
-  // Animate NPC cars moving EAST
+  // Stationary car - no animation needed
   useEffect(() => {
+    // Car stays in place to show traffic control
+    // Optional: add subtle frame animation for idle effect
     const carUpdateInterval = setInterval(() => {
-      carsRef.current = carsRef.current.map(car => {
-        let newXOffset = car.xOffset + 3;
-       
-        if (newXOffset > width + 200) {
-          newXOffset = -200;
-        }
-       
-        return {
-          ...car,
-          xOffset: newXOffset,
-          frame: (car.frame + 1) % 2
-        };
-      });
+      carsRef.current = carsRef.current.map(car => ({
+        ...car,
+        frame: (car.frame + 1) % 2
+      }));
      
       setNpcCars([...carsRef.current]);
-    }, 50);
-
+    }, 500); // Slower animation for idle effect
 
     return () => clearInterval(carUpdateInterval);
   }, []);
@@ -439,7 +429,7 @@ export default function DrivingGame() {
       </Animated.View>
 
 
-      {/* NPC Cars - Moving EAST on row 7 */}
+      {/* Single Stationary Car - Showing traffic control */}
       <Animated.View
         style={{
           position: "absolute",
@@ -705,4 +695,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
