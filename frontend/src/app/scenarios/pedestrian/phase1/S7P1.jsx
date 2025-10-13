@@ -284,6 +284,9 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    updateProgress(answer, isCorrect);
 
     if (answer === "Cross anywhere since there's an event and rules are relaxed") {
       // Option A: NPCs walk north, player goes east (right)

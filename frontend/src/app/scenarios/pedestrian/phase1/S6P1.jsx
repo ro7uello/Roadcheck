@@ -291,6 +291,9 @@ export default function DrivingGame() {
     setShowAnswers(false);
     setPlayerPaused(false); // Enable walking animation
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    updateProgress(answer, isCorrect);
 
     // Capture current scroll value at the moment of answer
     const scrollAtAnswer = currentScroll.current;
