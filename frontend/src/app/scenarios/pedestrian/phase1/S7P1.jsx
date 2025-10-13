@@ -47,6 +47,11 @@ const maleSprites = {
     require("../../../../../assets/character/sprites/north/north_walk3.png"),
     require("../../../../../assets/character/sprites/north/north_walk4.png"),
   ],
+    SOUTH: [
+    require("../../../../../assets/character/sprites/south/south_walk1.png"),
+    require("../../../../../assets/character/sprites/south/south_walk2.png"),
+
+  ],
 };
 
 
