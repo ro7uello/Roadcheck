@@ -82,6 +82,16 @@ const carSprites = {
   ],
 };
 
+// Pedestrian sprites
+const maleSprites = {
+  WEST: [
+    require("../../../../../assets/character/sprites/west/west_walk1.png"),
+    require("../../../../../assets/character/sprites/west/west_walk2.png"),
+    require("../../../../../assets/character/sprites/west/west_walk3.png"),
+    require("../../../../../assets/character/sprites/west/west_walk4.png"),
+  ],
+};
+
 // Traffic light sprites
 const trafficLightSprites = {
   normal: require("../../../../../assets/traffic light/traffic_light_green2.png"),
@@ -165,6 +175,14 @@ export default function DrivingGame() {
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
 
+  // Pedestrian states
+  const [pedestrianVisible, setPedestrianVisible] = useState(true);
+  const [pedestrianFrame, setPedestrianFrame] = useState(0);
+  const pedestrianWidth = tileSize * 0.4;
+  const pedestrianHeight = tileSize * 0.6;
+  const pedestrianXAnim = useRef(new Animated.Value(width * 0.2)).current; // Start from right side
+  const pedestrianYAnim = useRef(new Animated.Value((schoolZoneRowIndex + 0) * tileSize)).current;
+
   // Traffic light states
   const [trafficLightState, setTrafficLightState] = useState('normal');
   const [animationSpeed, setAnimationSpeed] = useState(4000); // Default animation duration
@@ -186,9 +204,23 @@ export default function DrivingGame() {
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
 
+  // Pedestrian animation frame cycling
+  useEffect(() => {
+    let iv;
+    if (pedestrianVisible) {
+      iv = setInterval(() => {
+        setPedestrianFrame((p) => (p + 1) % maleSprites.WEST.length);
+      }, 150); // Slightly faster animation for walking
+    }
+    return () => clearInterval(iv);
+  }, [pedestrianVisible]);
+
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
     setTrafficLightState('normal'); // Start with green light
+    setPedestrianVisible(true); // Show pedestrian
+    setPedestrianFrame(0);
+    pedestrianXAnim.setValue(width * 0.6); // Reset pedestrian to right side
 
     const stopRow = 6.7; // Stop before the intersection to show the question
     const stopOffset = startOffset + stopRow * tileSize;
@@ -252,23 +284,30 @@ export default function DrivingGame() {
         handleFeedback(answer);
       });
     } else if (answer === "Stop and allow the children to cross safely") {
-      // Option 2: Proceed to traffic light and stop at the stop line (before road59)
-      const stopAtTrafficLightRow = 6.5; // Stop at the traffic light/stop line
+      // Option 2: Stop and let pedestrian cross
+      const stopAtTrafficLightRow = 6.9;
       const rowsToMove = stopAtTrafficLightRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
       Animated.timing(scrollY, {
         toValue: nextTarget,
-        duration: 2000, // Normal speed to reach the traffic light
+        duration: 2000,
         useNativeDriver: true,
       }).start(() => {
-        // Car stops at the traffic light
         setCarPaused(true);
 
-        // Wait for 1 second then show feedback
-        setTimeout(() => {
-          handleFeedback(answer);
-        }, 1000);
+        // Animate pedestrian crossing from right to left
+        const leftX = width * 0.15;
+        Animated.timing(pedestrianXAnim, {
+          toValue: leftX,
+          duration: 2500,
+          useNativeDriver: true,
+        }).start(() => {
+          setPedestrianVisible(false);
+          setTimeout(() => {
+            handleFeedback(answer);
+          }, 500);
+        });
       });
     } else if (answer === "Slow down but maintain right of way") {
       // Option 3: Slow down significantly while approaching traffic light
@@ -323,9 +362,10 @@ export default function DrivingGame() {
                 Alert.alert('Error', 'Failed to save session results');
               }
             } else {
-              moveToNextScenario();
-              const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
-              router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+             // moveToNextScenario();
+             // const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
+              //router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+                router.push(`/scenarios/road-markings/phase2/S7P2`);
             }
       };
 
@@ -416,6 +456,31 @@ export default function DrivingGame() {
             zIndex: 5,
           }}
         />
+      )}
+
+      {/* Pedestrian */}
+      {pedestrianVisible && (
+        <Animated.View
+          style={{
+            position: "absolute",
+            width: pedestrianWidth,
+            height: pedestrianHeight,
+            transform: [
+              { translateX: pedestrianXAnim },
+              { translateY: Animated.add(scrollY, pedestrianYAnim) }
+            ],
+            zIndex: 6,
+          }}
+        >
+          <Image
+            source={maleSprites.WEST[pedestrianFrame]}
+            style={{
+              width: '100%',
+              height: '100%',
+            }}
+            resizeMode="contain"
+          />
+        </Animated.View>
       )}
 
       {/* Responsive Question Overlay */}
