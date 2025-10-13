@@ -40,6 +40,11 @@ const maleSprites = {
     require("../../../../../assets/character/sprites/north/north_walk3.png"),
     require("../../../../../assets/character/sprites/north/north_walk4.png"),
   ],
+      SOUTH: [
+    require("../../../../../assets/character/sprites/south/south_walk1.png"),
+    require("../../../../../assets/character/sprites/south/south_walk2.png"),
+
+  ],
 };
 
 
@@ -342,29 +347,20 @@ export default function DrivingGame() {
       });
      
       return;
-    } else if (answer === "Find alternative route.") {
+} else if (answer === "Find alternative route.") {
       // OPTION 3 (WRONG): Turn around and go back
-      setPlayerDirection("WEST");
+      setPlayerDirection("SOUTH");
       setPlayerFrame(0);
      
-      const leftX = centerX - spriteWidth * 2;
-     
-      // First move left (west)
-      Animated.timing(playerXAnim, {
-        toValue: leftX,
-        duration: 1000,
+      // Walk backwards (scroll down)
+      const targetScroll = scrollAtAnswer - scaledMapHeight * 0.09;
+      Animated.timing(scrollY, {
+        toValue: targetScroll,
+        duration: 1500,
         useNativeDriver: true,
       }).start(() => {
-        // Then walk backwards (scroll down)
-        const targetScroll = scrollAtAnswer - scaledMapHeight * 0.05;
-        Animated.timing(scrollY, {
-          toValue: targetScroll,
-          duration: 1500,
-          useNativeDriver: true,
-        }).start(() => {
-          setPlayerPaused(true);
-          handleFeedback(answer);
-        });
+        setPlayerPaused(true);
+        handleFeedback(answer);
       });
      
       return;
@@ -413,6 +409,8 @@ export default function DrivingGame() {
       moveToNextScenario();
       const nextScreen = `S${currentScenario + 1}P1`;
       router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+      
+
     }
   };
 
