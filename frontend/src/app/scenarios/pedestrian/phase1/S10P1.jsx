@@ -14,7 +14,7 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 // Map setup
-const mapImage = require("../../../../../assets/map/map2.png");
+const mapImage = require("../../../../../assets/map/map5.png");
 const mapWidth = 320;
 const mapHeight = 768;
 const mapScale = width / mapWidth;
@@ -57,16 +57,16 @@ const streetLights = [
 
 const questions = [
   {
-    question: "You need to walk about 100 meters to reach the jeepney terminal. There are no sidewalks available but the street is well lit. You are currently on the side of the road where you are not facing traffic.",
+    question: "You are crossing a major road, right before you reach the center island of the road the traffic light turns red for pedestrian. You saw that the center island provides a space for a pedestrian to stop. ",
     options: [
-      "Walk on the right side of the road facing the same direction as traffic",
-      "Check if the road is clear and cross the street to walk on the left side facing oncoming traffic.",
-      "Walk in the middle of the road where street lights are brightest"
+      "Walk quickly to reach the other side of the road.",
+      "Walk and stop at the center island and wait for the traffic light for pedestrian to turn green.",
+      "Stop where you are right now."
     ],
-    correct: "Check if the road is clear and cross the street to walk on the left side facing oncoming traffic.",
+    correct: "Walk and stop at the center island and wait for the traffic light for pedestrian to turn green.",
     wrongExplanation: {
-      "Walk on the right side of the road facing the same direction as traffic": "Accident prone! Walking with traffic means you can't see approaching vehicles. You won't know if a car is coming too close until it's too late.",
-      "Walk in the middle of the road where street lights are brightest": "Accident Prone! Walking in the roadway is extremely dangerous."
+      "Walk quickly to reach the other side of the road.": "Accident prone! Some drivers might not be able to notice you while crossing the road quickly getting you involved in an accident.",
+      "Stop where you are right now.": "Accident prone! Stopping at the middle of the road is dangerous."
     }
   },
 ];
@@ -114,17 +114,17 @@ export default function DrivingGame() {
   // Player
   const [playerFrame, setPlayerFrame] = useState(0);
   const [playerPaused, setPlayerPaused] = useState(false);
-  const rightX = width * 0.56 - spriteWidth / 2; // Adjusted to right side by half
+  const rightX = width * 0.80 - spriteWidth / 2; // Adjusted to right side by half
   const playerXAnim = useRef(new Animated.Value(rightX)).current;
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopDistance = scaledMapHeight * 0.2;
+    const stopDistance = scaledMapHeight * 0.4;
     const stopOffset = startOffset + stopDistance;
 
     Animated.timing(scrollY, {
       toValue: stopOffset,
-      duration: 3000,
+      duration: 5000,
       useNativeDriver: true,
     }).start(() => {
       setShowQuestion(true);
@@ -178,72 +178,63 @@ export default function DrivingGame() {
     const isCorrect = answer === currentQuestion.correct;
     updateProgress(answer, isCorrect);
 
-    if (answer === "Walk in the middle of the road where street lights are brightest") {
-      // Face west and walk to middle
+    if (answer === "Walk quickly to reach the other side of the road.") {
+      // Walk quickly across the entire road without stopping
       setPlayerDirection("WEST");
       setPlayerFrame(0);
 
-      const middleX = width * 0.35 - spriteWidth / 2;
+      const farLeftX = width * 0.05 - spriteWidth / 2;
 
       Animated.timing(playerXAnim, {
-        toValue: middleX,
-        duration: 2000,
-        useNativeDriver: true,
-      }).start(() => {
-        // After reaching middle, face north and walk
-        setPlayerDirection("NORTH");
-        setPlayerFrame(0);
-
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.15,
-          duration: 3000,
-          useNativeDriver: true,
-        }).start(() => {
-          setIsPlayerVisible(false);
-          handleFeedback(answer);
-        });
-      });
-
-      return;
-    } else if (answer === "Walk on the right side of the road facing the same direction as traffic") {
-      // Just walk straight north
-      setPlayerDirection("NORTH");
-      setPlayerFrame(0);
-
-      Animated.timing(scrollY, {
-        toValue: currentScroll.current + scaledMapHeight * 0.25,
-        duration: 4500,
+        toValue: farLeftX,
+        duration: 1000, // Faster duration to show "walking quickly"
         useNativeDriver: true,
       }).start(() => {
         setIsPlayerVisible(false);
         handleFeedback(answer);
       });
+
       return;
-    } else if (answer === "Check if the road is clear and cross the street to walk on the left side facing oncoming traffic.") {
-      // Face west and walk to cross the road
+    } else if (answer === "Walk and stop at the center island and wait for the traffic light for pedestrian to turn green.") {
+      // Walk to center island and stop
       setPlayerDirection("WEST");
       setPlayerFrame(0);
 
-      const leftX = width * 0.20 - spriteWidth / 2;
+      const centerIslandX = width * 0.35 - spriteWidth / 2;
 
       Animated.timing(playerXAnim, {
-        toValue: leftX,
-        duration: 2500,
+        toValue: centerIslandX,
+        duration: 2000,
         useNativeDriver: true,
       }).start(() => {
-        // After crossing, face north and walk
-        setPlayerDirection("NORTH");
-        setPlayerFrame(0);
-
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.2,
-          duration: 3500,
-          useNativeDriver: true,
-        }).start(() => {
-          setIsPlayerVisible(false);
-          handleFeedback(answer);
-        });
+        // Stop at center island (pause briefly)
+        setPlayerPaused(true);
+        
+        setTimeout(() => {
+          // After waiting, continue crossing
+          setPlayerPaused(false);
+          const farLeftX = width * 0.15 - spriteWidth / 2;
+          
+          Animated.timing(playerXAnim, {
+            toValue: farLeftX,
+            duration: 2000,
+            useNativeDriver: true,
+          }).start(() => {
+            setIsPlayerVisible(false);
+            handleFeedback(answer);
+          });
+        }, 1500); // Wait at center island
       });
+
+      return;
+    } else if (answer === "Stop where you are right now.") {
+      // Stop immediately without moving
+      setPlayerPaused(true);
+      
+      setTimeout(() => {
+        setIsPlayerVisible(false);
+        handleFeedback(answer);
+      }, 1500);
 
       return;
     }
@@ -287,15 +278,14 @@ export default function DrivingGame() {
           }
         } else {
           // Move to next scenario
-          moveToNextScenario();
+         moveToNextScenario();
           const nextScreen = `S${currentScenario + 1}P1`;
-          router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
-        }
+          router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);        }
       };
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Always walk facing traffic when there are no sidewalks. This allows you to see vehicles approaching and react accordingly for your safety."
+    ? "Correct! Use the center island to wait for the traffic light to turn green and avoid accidents."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   const currentPlayerSprite = maleSprites[playerDirection] && maleSprites[playerDirection][playerFrame]
