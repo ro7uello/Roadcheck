@@ -362,10 +362,9 @@ export default function DrivingGame() {
                 Alert.alert('Error', 'Failed to save session results');
               }
             } else {
-             // moveToNextScenario();
-             // const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
-              //router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-                router.push(`/scenarios/road-markings/phase2/S7P2`);
+            moveToNextScenario();
+            const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
+            router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
             }
       };
 
