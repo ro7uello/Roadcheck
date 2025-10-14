@@ -1,8 +1,8 @@
+// frontend\src\app\scenarios\intersection\phase1\S1P1.jsx
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
 import { useSession } from '../../../../contexts/SessionManager';
-import { scale, fontSize, wp, hp } from '../../../../contexts/ResponsiveHelper';
 
 const { width, height } = Dimensions.get("window");
 
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: 'white',
-    fontSize: fontSize(18),
+    fontSize: 18,
     fontWeight: 'bold',
   },
  questionOverlay: {
@@ -686,16 +686,16 @@ const styles = StyleSheet.create({
   },
   answersContainer: {
     position: "absolute",
-    top: hp(15),
-    right: wp(5),
-    width: wp(35),
-    height: hp(21),
+    top: height * 0.2,
+    right: sideMargin,
+    width: width * 0.35,
+    height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
     padding: height * 0.015,
-    borderRadius: scale(8),
+    borderRadius: 8,
     marginBottom: height * 0.015,
     borderWidth: 1,
     borderColor: "#555",
@@ -731,23 +731,23 @@ const styles = StyleSheet.create({
   },
   nextButtonContainer: {
     position: "absolute",
-    top: hp(50),
-    right: wp(5),
-    width: wp(20),
+    top: height * 0.50,
+    right: sideMargin,
+    width: width * 0.2,
     alignItems: "center",
     zIndex: 11,
   },
   nextButton: {
     backgroundColor: "#007bff",
     paddingVertical: height * 0.015,
-    paddingHorizontal: scale(20),
-    borderRadius: scale(8),
+    paddingHorizontal: width * 0.06,
+    borderRadius: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    minWidth: wp(15),
+    minWidth: width * 0.15,
     alignItems: "center",
   },
   nextButtonText: {

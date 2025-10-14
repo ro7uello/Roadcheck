@@ -177,12 +177,22 @@ const handleCategorySelect = (category) => {
 const testBasicConnection = async () => {
   try {
     console.log('Testing basic connection...');
-    const response = await fetch(`${process.env.API_URL}/categories`);
+    console.log('API_URL being used:', process.env.API_URL);
+    console.log('Full URL:', `${process.env.API_URL}/categories`);
+
+    const response = await fetch(`${process.env.API_URL}/categories`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
     console.log('Response status:', response.status);
     const data = await response.json();
     console.log('Response data:', data);
   } catch (error) {
     console.error('Basic connection test failed:', error);
+    console.error('Error details:', error.message);
   }
 };
 
