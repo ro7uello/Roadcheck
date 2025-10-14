@@ -397,34 +397,32 @@ export default function DrivingGame() {
     setIsCarVisible(true);
 
     if (questionIndex < questions.length - 1) {
-    setQuestionIndex(questionIndex + 1);
-    startScrollAnimation();
-  } else {
-    const currentFileScenario = 10;
-    
-    if (currentFileScenario >= 10) {
-      try {
-        const sessionResults = await completeSession();
-        if (sessionResults) {
-          router.push({
-            pathname: '/result-page',
-            params: {
-              ...sessionResults,
-              userAttempts: JSON.stringify(sessionResults.attempts),
-              scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Error completing session:', error);
-        Alert.alert('Error', 'Failed to save session results');
-      }
+      setQuestionIndex(questionIndex + 1);
+      startScrollAnimation();
     } else {
-      router.push(`/scenarios/road-markings/phase1/S10P1`);
-    }
+      const currentFileScenario = 10;
+      
+      if (currentFileScenario >= 10) {
+        try {
+          const sessionResults = await completeSession();
+          if (sessionResults) {
+            router.push({
+              pathname: '/result-page', 
+              params: {
+                ...sessionResults,
+                userAttempts: JSON.stringify(sessionResults.attempts),
+                scenarioProgress: JSON.stringify(sessionResults.scenarioProgress)
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error completing session:', error);
+          Alert.alert('Error', 'Failed to save session results');
+        }
+      }
 
-    setShowQuestion(false);
-  }
+      setShowQuestion(false);
+    }
 };
 
   const currentQuestionData = questions[questionIndex];
