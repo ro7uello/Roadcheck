@@ -443,9 +443,9 @@ if (answer === "Follow the turn lines from your current position even if it's no
            userAttempts: JSON.stringify(sessionResults.attempts)
          });
        } else {
-         moveToNextScenario();
-         const nextScreen = `S${currentScenario + 1}P3`;
-         navigation.navigate(nextScreen);
+        moveToNextScenario();
+        router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
+
        }
     };
 

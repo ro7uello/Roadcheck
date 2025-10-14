@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
-import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
-import { router } from 'expo-router';
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert, ActivityIndicator } from "react-native";
+import { router, useNavigation } from 'expo-router';
 import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
@@ -21,6 +21,7 @@ const roadTiles = {
   road20: require("../../../../../assets/road/road20.png"),
   road64: require("../../../../../assets/road/road64.png"),
   road79: require("../../../../../assets/road/road79.png"),
+  road666: require("../../../../../assets/road/road666.png"),
 };
 
 const mapLayout = [
@@ -39,7 +40,7 @@ const mapLayout = [
   ["road20", "road79", "road8", "road64", "road2"],
   ["road20", "road79", "road8", "road64", "road2"],
   ["road20", "road79", "road8", "road64", "road2"],
-  ["road20", "road79", "road8", "road64", "road2"],
+  ["road20", "road79", "road666", "road64", "road2"],
   ["road20", "road79", "road8", "road64", "road2"],
   ["road20", "road79", "road8", "road64", "road2"],
 ];
@@ -381,40 +382,43 @@ export default function DrivingGame() {
     }
   };
 
-  const handleNext = async () => {
-    setAnimationType(null);
-    setShowNext(false);
-    setSelectedAnswer(null);
-    setIsCorrectAnswer(null);
-    setCarFrame(0);
+const handleNext = async () => {
+  setAnimationType(null);
+  setShowNext(false);
+  setSelectedAnswer(null);
+  setIsCorrectAnswer(null);
+  setCarFrame(0);
 
-    carXAnim.setValue(regularLaneX); // Reset to regular lane
-    setCarDirection("NORTH");
-    setIsCarVisible(true);
-    setIsBusVisible(false);
-    BusYAnim.setValue(height * 1.5);
-    BusXAnim.setValue(busLaneX);
+  carXAnim.setValue(regularLaneX); // Reset to regular lane
+  setCarDirection("NORTH");
+  setIsCarVisible(true);
+  setIsBusVisible(false);
+  BusYAnim.setValue(height * 1.5);
+  BusXAnim.setValue(busLaneX);
 
-    if (questionIndex < questions.length - 1) {
-         setQuestionIndex(questionIndex + 1);
-       } else if (currentScenario >= 10) {
-         const sessionResults = await completeSession();
-         navigation.navigate('/result-page', {
-           ...sessionResults,
-           userAttempts: JSON.stringify(sessionResults.attempts)
-         });
-       } else {
-         moveToNextScenario();
-         const nextScreen = `S${currentScenario + 1}P3`;
-         navigation.navigate(nextScreen);
-       }
+  if (questionIndex < questions.length - 1) {
+    setQuestionIndex(questionIndex + 1);
+    startScrollAnimation();
+  } else if (currentScenario >= 10) {
+    const sessionResults = await completeSession();
+    router.navigate({
+      pathname: '/result-page',
+      params: {
+        ...sessionResults,
+        userAttempts: JSON.stringify(sessionResults.attempts)
+      }
+    });
+  } else {
+    moveToNextScenario();
+    router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
+  }
+};
+
+    // Helper function to return the scenario number based on the current file
+    const getCurrentScenarioNumber = () => {
+      // For S2P3 (Bus Lane scenario), return 2
+      return 2; // Change this to match your scenario number (1-10)
     };
-
-  // Helper function to return the scenario number based on the current file
-  const getCurrentScenarioNumber = () => {
-    // For S2P3 (Bus Lane scenario), return 2
-    return 2; // Change this to match your scenario number (1-10)
-  };
 
   // Determine the feedback message based on whether the answer was correct or wrong
   const currentQuestionData = questions[questionIndex];
