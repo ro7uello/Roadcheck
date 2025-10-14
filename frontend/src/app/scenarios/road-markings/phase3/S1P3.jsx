@@ -61,7 +61,7 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  BROWN_NORTH: [
+  NPC_NORTH: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
   ],
 };
@@ -86,6 +86,15 @@ const trafficLightSprites = {
   normal: require("../../../../../assets/traffic light/Traffic_Light.png"),
   green: require("../../../../../assets/traffic light/traffic_light_green2.png"),
 };
+
+// NPC car positions (rows 2-7, column 2 - right lane)
+const npcCarPositions = [
+  { row: 2, col: 1.8 },
+  { row: 3, col: 1.8 },
+  { row: 4, col: 1.8 },
+  { row: 5, col: 1.6 },
+  { row: 6, col: 1.6 },
+];
 
 export default function DrivingGame() {
 
@@ -138,8 +147,6 @@ export default function DrivingGame() {
   const carXAnim = useRef(new Animated.Value(width / 2 - (280 / 2))).current;
   
   const [trafficLightState, setTrafficLightState] = useState('green');
-  const [showTrafficCar, setShowTrafficCar] = useState(false);
-  const trafficCarY = useRef(new Animated.Value(-350)).current;
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -218,7 +225,7 @@ export default function DrivingGame() {
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
     if (answer === "Enter the yellow box since you have a green light") {
-        const targetRow = 8.5;
+      const targetRow = 9.2;
       const rowsToMove = targetRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
       
@@ -230,19 +237,13 @@ export default function DrivingGame() {
         setCarPaused(true);
         handleFeedback(answer);
       });
-        // Delay showing traffic car by 500ms (adjust this number)
-        setTimeout(() => {
-          setShowTrafficCar(true);
-          trafficCarY.setValue(-170);
-        }, 500);  // Change 500 to your desired delay in milliseconds
-        
       
     } else if (answer === "Wait outside the yellow box until you can completely clear it") {
       setCarPaused(true);
       
       setTimeout(() => {
         setCarPaused(false);
-        const targetRow = 10;
+        const targetRow = 7;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
         
@@ -253,10 +254,10 @@ export default function DrivingGame() {
         }).start(() => {
           handleFeedback(answer);
         });
-      }, 4000);
+      });
       
     } else if (answer === "Enter partially and move forward when space becomes available") {
-      const targetRow = 7.5;
+      const targetRow = 7;
       const rowsToMove = targetRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
       
@@ -266,7 +267,7 @@ export default function DrivingGame() {
         useNativeDriver: true,
       }).start(() => {
         setTimeout(() => {
-          const targetRow2 = 8.2;
+          const targetRow2 = 9;
           const nextTarget2 = currentScroll.current + (targetRow2 - 7.5) * tileSize;
           
           Animated.timing(scrollY, {
@@ -282,35 +283,33 @@ export default function DrivingGame() {
     }
   };
 
-const handleNext = async () => {
-  setAnimationType(null);
-  setShowNext(false);
-  setSelectedAnswer(null);
-  setIsCorrectAnswer(null);
-  setCarFrame(0);
-  setCarPaused(false);
-  carXAnim.setValue(width / 2 - (280 / 2));
-  setTrafficLightState('green');
-  setShowTrafficCar(false);
-  trafficCarY.setValue(-350);
-
-  if (questionIndex < questions.length - 1) {
-    setQuestionIndex(questionIndex + 1);
-    startScrollAnimation();
-  } else if (currentScenario >= 10) {
-    const sessionResults = await completeSession();
-    router.navigate({
-      pathname: '/result-page',
-      params: {
+  const handleNext = async () => {
+    setAnimationType(null);
+    setShowNext(false);
+    setSelectedAnswer(null);
+    setIsCorrectAnswer(null);
+    setCarFrame(0);
+    setCarPaused(false);
+    carXAnim.setValue(width / 2 - (280 / 2));
+    setTrafficLightState('green');
+    setShowTrafficCar(false);
+    trafficCarY.setValue(-350);
+    if (questionIndex < questions.length - 1) {
+      setQuestionIndex(questionIndex + 1);
+      startScrollAnimation();
+    } else if (currentScenario >= 10) {
+      const sessionResults = await completeSession();
+      navigation.navigate('/result-page', {
         ...sessionResults,
         userAttempts: JSON.stringify(sessionResults.attempts)
-      }
-    });
-  } else {
-    moveToNextScenario();
-    router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
-  }
-};
+      });
+    } else {
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P3`;
+      navigation.navigate(nextScreen);
+    }
+  };
+
   const handleStartGame = () => {
     setShowIntro(false);
   };
@@ -334,7 +333,8 @@ const handleNext = async () => {
           <Text style={styles.introTitle}>Road Markings - Phase 3</Text>
           <Text style={styles.introText}>
             Test your knowledge of road rules and signs.
-            Choose the correct option to proceed safely.          </Text>
+            Choose the correct option to proceed safely.
+          </Text>
           <TouchableOpacity style={styles.startButton} onPress={handleStartGame}>
             <Text style={styles.startButtonText}>Start Scenario</Text>
           </TouchableOpacity>
@@ -372,6 +372,23 @@ const handleNext = async () => {
           ))
         )}
 
+        {/* NPC Cars - placed at rows 2-7, column 2 (right lane) */}
+        {npcCarPositions.map((pos, index) => (
+          <Image
+            key={`npc-${index}`}
+            source={carSprites["NPC_NORTH"][0]}
+            style={{
+              width: tileSize * 1.7,
+              height: tileSize * 1.7,
+              position: "absolute",
+              top: pos.row * tileSize,
+              left: pos.col * tileSize + (tileSize * 0.1),
+              zIndex: 5,
+            }}
+            resizeMode="contain"
+          />
+        ))}
+
         <Image
           source={trafficLightSprites[trafficLightState]}
           style={{
@@ -397,21 +414,6 @@ const handleNext = async () => {
           zIndex: 8,
         }}
       />
-
-      {/* Traffic car in front (brown) */}
-      {showTrafficCar && (
-        <Animated.Image
-          source={carSprites["BROWN_NORTH"][0]}
-          style={{
-            width: 280,
-            height: 350,
-            position: "absolute",
-            top: trafficCarY,
-            left: width / 2 - (280 / 2),
-            zIndex: 9,
-          }}
-        />
-      )}
 
       {showQuestion && (
         <View style={styles.questionOverlay}>
@@ -464,7 +466,6 @@ const handleNext = async () => {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -476,8 +477,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 20,
   },
-
-  // ADDED: Intro styles (responsive)
   introContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -533,8 +532,7 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
-
- questionOverlay: {
+  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -642,5 +640,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
-//s1

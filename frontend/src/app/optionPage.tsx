@@ -288,10 +288,6 @@ const testBasicConnection = async () => {
       setLibraryVisible(true);
   };
 
-  const goBack = () => {
-    router.back();
-  };
-
   if (!fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
@@ -356,14 +352,6 @@ const testBasicConnection = async () => {
           resizeMode="contain"
         />
       </Animated.View>
-
-      <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
-              <Image
-                source={require('../../assets/icon/backButton.png')}
-                style={styles.backButtonImage}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
 
       <View style={styles.topRightIcons}>
         <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
