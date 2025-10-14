@@ -100,7 +100,7 @@ export default function Home() {
   const handleDisclaimerAccept = () => {
     if (disclaimerScrolledToBottom) {
       setShowDisclaimer(false);
-      router.push('scenarios/traffic-signs/phase1/S1P1');
+      router.push('/login');
     }
   };
 

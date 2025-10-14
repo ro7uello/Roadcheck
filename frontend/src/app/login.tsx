@@ -107,15 +107,15 @@ export default function LoginPage() {
       if (response.status === 409) {
         setLoading(false);
         Alert.alert(
-          'Already Logged In',
-          'You are already logged in on another device. Would you like to logout from the other device and login here?',
+          'Account Already in Session',
+          'This account is already logged in on another device. Would you like to end that session and login here?',
           [
             {
               text: 'Cancel',
               style: 'cancel'
             },
             {
-              text: 'Logout Other Device',
+              text: 'End Other Session',
               onPress: () => handleForceLogout()
             }
           ]
@@ -147,7 +147,7 @@ export default function LoginPage() {
 
       setLoading(false);
 
-      // Navigate to home and reset navigation stack
+      // Navigate to option page and reset navigation stack
       router.replace('/optionPage');
 
     } catch (error) {
@@ -156,6 +156,64 @@ export default function LoginPage() {
       Alert.alert(
         'Connection Error',
         'Unable to connect to the server. Please check your internet connection and try again.'
+      );
+    }
+  };
+
+  // ============================================
+  // 🆕 FORCE LOGOUT FROM OTHER DEVICES
+  // ============================================
+  const handleForceLogout = async () => {
+    setLoading(true);
+
+    try {
+      console.log('Force logout requested for:', email);
+
+      const response = await fetch(`${API_URL}/auth/force-logout-others`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password
+        })
+      });
+
+      const data = await response.json();
+      console.log('Force logout response:', data);
+
+      if (!response.ok) {
+        setLoading(false);
+        Alert.alert('Error', data.message || 'Failed to logout other devices');
+        return;
+      }
+
+      // Save tokens to AsyncStorage
+      await AsyncStorage.setItem('access_token', data.access_token);
+      await AsyncStorage.setItem('refresh_token', data.refresh_token);
+
+      // Save user data
+      await AsyncStorage.setItem('user_id', data.user.id);
+      await AsyncStorage.setItem('user_email', data.user.email);
+
+      console.log('✅ Other device logged out, new session created');
+
+      setLoading(false);
+
+      // Show success message
+      Alert.alert(
+        'Success',
+        'Other device has been logged out. You are now logged in.',
+        [{ text: 'OK', onPress: () => router.replace('/optionPage') }]
+      );
+
+    } catch (error) {
+      setLoading(false);
+      console.error('Force logout error:', error);
+      Alert.alert(
+        'Connection Error',
+        'Unable to connect to the server. Please try again.'
       );
     }
   };
