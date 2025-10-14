@@ -1,4 +1,4 @@
-// SessionManager.jsx - FULLY OPTIMIZED WITH CACHING
+// SessionManager.jsx - FULLY OPTIMIZED WITH CACHING - FIXED
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -97,7 +97,7 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     }
   };
 
-  // 🆕 OPTIMIZED: Load scenarios with better caching
+  // ✅ FIXED: Load scenarios with better caching
   const loadScenariosOptimized = async () => {
     try {
       console.log(`🚀 Loading scenarios for category ${categoryId}, phase ${phaseId}...`);
@@ -130,6 +130,11 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
         }
         return false;
       }
+    } catch (error) {
+      console.error('❌ Error loading scenarios:', error);
+      setCacheStatus(prev => ({ ...prev, scenarios: false }));
+      return false;
+    }
   };
 
   // 🆕 OPTIMIZED: Load session progress with caching
