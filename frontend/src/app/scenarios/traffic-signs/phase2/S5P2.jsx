@@ -222,55 +222,61 @@ export default function DrivingGame() {
     const originalLaneX = width / 2 - carWidth / 2;
     const rightLaneX = width / 2 - carWidth / 2 + tileSize;
     const leftLaneX = width / 1.3 - carWidth / 1.3 - tileSize;
+    const busLaneX = tileSize * 2; // Column 2 (0-indexed: column 1)
 
     // CORRECT ANSWER: Safely exit the bus lane
     if (answer === actualCorrectAnswer) {
       setIsCarVisible(true);
       setIsBusVisible(true);
 
-      // Set bus initial position behind the car (same lane)
-      BusXAnim.setValue(rightLaneX);
-      BusYAnim.setValue(height * 0.3); // Start behind the car
+      // Set bus initial position at column 2, behind the car
+      BusXAnim.setValue(busLaneX);
+      BusYAnim.setValue(height * 0.35);
 
       Animated.sequence([
-        // Step 1: Car moves to right lane
+        // Step 1: Car starts moving diagonally (NORTHEAST) to exit right
         Animated.parallel([
           Animated.timing(carXAnim, {
             toValue: rightLaneX,
             duration: 500,
-            easing: Easing.easeOut,
+            easing: Easing.out(Easing.ease),
             useNativeDriver: true,
           }),
           Animated.timing(scrollY, {
-            toValue: currentScroll.current + tileSize * 0.5,
+            toValue: currentScroll.current + tileSize * 1.2,
             duration: 500,
             easing: Easing.linear,
             useNativeDriver: true,
           }),
         ]),
-        // Step 2: Bus passes in left lane while car exits right
+        // Step 2: Car continues NORTH in right lane, bus passes in bus lane (column 2)
         Animated.parallel([
           Animated.timing(BusYAnim, {
-            toValue: -carHeight * 2,
-            duration: 1500,
+            toValue: -carHeight * 2.5,
+            duration: 1000,
             easing: Easing.linear,
             useNativeDriver: true,
           }),
-          Animated.timing(BusXAnim, {
-            toValue: leftLaneX,
-            duration: 800,
-            useNativeDriver: true,
-          }),
           Animated.timing(scrollY, {
-            toValue: currentScroll.current + tileSize * 3,
-            duration: 1500,
+            toValue: currentScroll.current + tileSize * 4,
+            duration: 1000,
             easing: Easing.linear,
             useNativeDriver: true,
           }),
         ]),
       ]).start(() => {
+        setCarDirection("NORTH");
         handleFeedback(answer);
       });
+
+      // Change car direction during animation
+      setTimeout(() => {
+        setCarDirection("NORTHEAST");
+      }, 50);
+      
+      setTimeout(() => {
+        setCarDirection("NORTH");
+      }, 850);
     }
     // WRONG ANSWER 1: Continue in the bus lane
     else if (answer === "Continue in the bus lane since you're already there") {
@@ -301,7 +307,7 @@ export default function DrivingGame() {
 
       // Bus starts behind in the same lane
       BusXAnim.setValue(rightLaneX);
-      BusYAnim.setValue(height * 0.4); // Start closer behind
+      BusYAnim.setValue(height * 0.4);
 
       // Player car speeds up, but bus overtakes
       Animated.parallel([
@@ -315,7 +321,7 @@ export default function DrivingGame() {
         // Bus overtakes faster
         Animated.timing(BusYAnim, {
           toValue: -carHeight * 3,
-          duration: 2500, // Faster than car scroll
+          duration: 2500,
           easing: Easing.linear,
           useNativeDriver: true,
         }),
