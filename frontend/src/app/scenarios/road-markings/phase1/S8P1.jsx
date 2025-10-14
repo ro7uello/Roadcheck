@@ -179,6 +179,7 @@ export default function DrivingGame() {
   const [npcCar4Frame, setNpcCar4Frame] = useState(0);
 
   const playerCarXAnim = useRef(new Animated.Value(width / 2 - playerCarWidth / 2)).current;
+  const playerCarYOffset = useRef(new Animated.Value(0)).current;
 
   const jeepneyInitialX = 2 * tileSize + (tileSize / 2 - jeepWidth / 2);
   const jeepneyYAnim = useRef(new Animated.Value(-jeepHeight)).current;
@@ -377,10 +378,11 @@ export default function DrivingGame() {
     setIsNpcCar3Visible(true);
     setIsNpcCar4Visible(true);
 
-    const targetXSouthboundLane = 4 * tileSize + (tileSize / 2 - playerCarWidth / 2);
+    const targetXSouthboundLane = 1 * tileSize + (tileSize / 2 - npcCarWidth / 2); // Lane 1
 
+    // Lane change animation
     await new Promise(resolve => {
-      setPlayerCarDirection("NORTHEAST");
+      setPlayerCarDirection("NORTHWEST");
       Animated.timing(playerCarXAnim, {
         toValue: targetXSouthboundLane,
         duration: 400,
@@ -389,38 +391,25 @@ export default function DrivingGame() {
       }).start(resolve);
     });
 
+    // Set direction to north after lane change
+    setPlayerCarDirection("NORTH");
+
+    // Accelerate forward - move player car up relative to its current position
     await new Promise(resolve => {
-      setPlayerCarDirection("NORTH");
-      Animated.sequence([
-        Animated.timing(playerCarXAnim, {
-          toValue: playerCarXAnim._value + 15,
-          duration: 50,
-          useNativeDriver: false,
-        }),
-        Animated.timing(playerCarXAnim, {
-          toValue: playerCarXAnim._value - 15,
-          duration: 50,
-          useNativeDriver: false,
-        }),
-        Animated.timing(playerCarXAnim, {
-          toValue: playerCarXAnim._value + 15,
-          duration: 50,
-          useNativeDriver: false,
-        }),
-        Animated.timing(playerCarXAnim, {
-          toValue: playerCarXAnim._value,
-          duration: 50,
-          useNativeDriver: false,
-        }),
-      ]).start(resolve);
+      Animated.timing(playerCarYOffset, {
+        toValue: -height * 8, // Move up significantly
+        duration: 1500,
+        easing: Easing.inOut,
+        useNativeDriver: false,
+      }).start(resolve);
     });
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     handleFeedback(selectedAnswer);
   };
 
   const animateCarefulOvertake = async () => {
-    if (scrollAnimationRef.current) scrollAnimationRef.current.start();
+if (scrollAnimationRef.current) scrollAnimationRef.current.start();
     if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
 
     setPlayerCarFrame(0);
@@ -432,45 +421,33 @@ export default function DrivingGame() {
     setIsNpcCar3Visible(true);
     setIsNpcCar4Visible(true);
 
-    const targetXSouthboundLane = 4 * tileSize + (tileSize / 2 - playerCarWidth / 2);
+    const targetXSouthboundLane = 1 * tileSize + (tileSize / 2 - npcCarWidth / 2); // Lane 1
 
+    // Lane change animation
     await new Promise(resolve => {
-      setPlayerCarDirection("NORTHEAST");
+      setPlayerCarDirection("NORTHWEST");
       Animated.timing(playerCarXAnim, {
         toValue: targetXSouthboundLane,
-        duration: 800,
+        duration: 400,
         easing: Easing.easeOut,
         useNativeDriver: false,
       }).start(resolve);
     });
 
+    // Set direction to north after lane change
+    setPlayerCarDirection("NORTH");
+
+    // Accelerate forward - move player car up relative to its current position
     await new Promise(resolve => {
-      setPlayerCarDirection("NORTH");
-      Animated.sequence([
-        Animated.timing(playerCarXAnim, {
-          toValue: playerCarXAnim._value + 15,
-          duration: 50,
-          useNativeDriver: false,
-        }),
-        Animated.timing(playerCarXAnim, {
-          toValue: playerCarXAnim._value - 15,
-          duration: 50,
-          useNativeDriver: false,
-        }),
-        Animated.timing(playerCarXAnim, {
-          toValue: playerCarXAnim._value + 15,
-          duration: 50,
-          useNativeDriver: false,
-        }),
-        Animated.timing(playerCarXAnim, {
-          toValue: playerCarXAnim._value,
-          duration: 50,
-          useNativeDriver: false,
-        }),
-      ]).start(resolve);
+      Animated.timing(playerCarYOffset, {
+        toValue: -height * 6, // Move up significantly
+        duration: 1500,
+        easing: Easing.inOut,
+        useNativeDriver: false,
+      }).start(resolve);
     });
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     handleFeedback(selectedAnswer);
   };
 
@@ -529,6 +506,7 @@ export default function DrivingGame() {
 
     const centerX = width / 2 - playerCarWidth / 2;
     playerCarXAnim.setValue(centerX);
+    playerCarYOffset.setValue(0); // Reset Y offset
     setPlayerCarDirection("NORTH");
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
@@ -566,6 +544,7 @@ export default function DrivingGame() {
         const nextScenarioNumber = currentFileScenario + 1;
         const nextScreen = `S${nextScenarioNumber}P1`;
         router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
+
       }
 
       setShowQuestion(false);
@@ -643,7 +622,7 @@ export default function DrivingGame() {
             width: playerCarWidth,
             height: playerCarHeight,
             position: "absolute",
-            bottom: height * 0.1,
+            bottom: Animated.add(height * 0.1, playerCarYOffset),
             left: playerCarXAnim,
             zIndex: 5,
           }}
@@ -716,234 +695,232 @@ export default function DrivingGame() {
             zIndex: 3,
           }}
         />
-      )}
-
-      {/* Question Overlay */}
-      {showQuestion && (
-        <View style={styles.questionOverlay}>
-          <Image
-            source={require("../../../../../assets/dialog/LTO.png")}
-            style={styles.ltoImage}
-          />
-          <View style={styles.questionBox}>
-            <View style={styles.questionTextContainer}>
-              <Text style={styles.questionText}>
-                {questions[questionIndex].question}
-              </Text>
-            </View>
-          </View>
+        )}
+        {/* Question Overlay */}
+  {showQuestion && (
+    <View style={styles.questionOverlay}>
+      <Image
+        source={require("../../../../../assets/dialog/LTO.png")}
+        style={styles.ltoImage}
+      />
+      <View style={styles.questionBox}>
+        <View style={styles.questionTextContainer}>
+          <Text style={styles.questionText}>
+            {questions[questionIndex].question}
+          </Text>
         </View>
-      )}
-
-      {/* Answers */}
-      {showAnswers && (
-        <View style={styles.answersContainer}>
-          {questions[questionIndex].options.map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={styles.answerButton}
-              onPress={() => handleAnswer(option)}
-            >
-              <Text style={styles.answerText}>{option}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      {/* Feedback */}
-      {(animationType === "correct" || animationType === "wrong") && (
-        <Animated.View style={styles.feedbackOverlay}>
-          <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
-          <View style={styles.feedbackBox}>
-            <Text style={styles.feedbackText}>{feedbackMessage}</Text>
-          </View>
-        </Animated.View>
-      )}
-
-      {/* Next Button */}
-      {showNext && (
-        <View style={styles.nextButtonContainer}>
-          <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-            <Text style={styles.nextButtonText}>Next</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      </View>
     </View>
-  );
-}
+  )}
 
+  {/* Answers */}
+  {showAnswers && (
+    <View style={styles.answersContainer}>
+      {questions[questionIndex].options.map((option) => (
+        <TouchableOpacity
+          key={option}
+          style={styles.answerButton}
+          onPress={() => handleAnswer(option)}
+        >
+          <Text style={styles.answerText}>{option}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  )}
+
+  {/* Feedback */}
+  {(animationType === "correct" || animationType === "wrong") && (
+    <Animated.View style={styles.feedbackOverlay}>
+      <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
+      <View style={styles.feedbackBox}>
+        <Text style={styles.feedbackText}>{feedbackMessage}</Text>
+      </View>
+    </Animated.View>
+  )}
+
+  {/* Next Button */}
+  {showNext && (
+    <View style={styles.nextButtonContainer}>
+      <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+        <Text style={styles.nextButtonText}>Next</Text>
+      </TouchableOpacity>
+    </View>
+  )}
+</View>
+);
+}
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: "black",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    color: "white",
-    fontSize: 18,
-    marginTop: 20,
-  },
-  introContainer: {
-    flex: 1,
-    backgroundColor: "black",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: width * 0.05,
-  },
-  introLTOImage: {
-    width: width * 0.6,
-    height: height * 0.25,
-    resizeMode: "contain",
-    marginBottom: height * 0.03,
-  },
-  introTextBox: {
-    backgroundColor: "rgba(8, 8, 8, 0.7)",
-    padding: width * 0.06,
-    borderRadius: 15,
-    alignItems: "center",
-    maxWidth: width * 0.85,
-    minHeight: height * 0.3,
-    justifyContent: "center",
-  },
-  introTitle: {
-    color: "white",
-    fontSize: Math.min(width * 0.07, 32),
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: height * 0.02,
-  },
-  introText: {
-    color: "white",
-    fontSize: Math.min(width * 0.045, 20),
-    textAlign: "center",
-    marginBottom: height * 0.04,
-    lineHeight: Math.min(width * 0.06, 26),
-    paddingHorizontal: width * 0.02,
-  },
-  startButton: {
-    backgroundColor: "#007bff",
-    paddingVertical: height * 0.02,
-    paddingHorizontal: width * 0.08,
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
-    minWidth: width * 0.4,
-    alignItems: "center",
-  },
-  startButtonText: {
-    color: "white",
-    fontSize: Math.min(width * 0.055, 24),
-    fontWeight: "bold",
-  },
-  questionOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    width: width,
-    height: overlayHeight,
-    backgroundColor: "rgba(8, 8, 8, 0.43)",
-    flexDirection: "row",
-    alignItems: "flex-end",
-    paddingBottom: 0,
-    zIndex: 10,
-  },
-  ltoImage: {
-    width: ltoWidth,
-    height: ltoHeight,
-    resizeMode: "contain",
-    marginLeft: -width * 0.03,
-    marginBottom: -height * 0.12,
-  },
-  questionBox: {
-    flex: 1,
-    bottom: height * 0.1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  questionTextContainer: {
-    padding: -height * 0.04,
-    maxWidth: width * 0.7,
-  },
-  questionText: {
-    flexWrap: "wrap",
-    color: "white",
-    fontSize: Math.min(width * 0.045, 24),
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  answersContainer: {
-    position: "absolute",
-    top: height * 0.15,
-    right: sideMargin,
-    width: width * 0.35,
-    height: height * 0.21,
-    zIndex: 11,
-  },
-  answerButton: {
-    backgroundColor: "#333",
-    padding: height * 0.015,
-    borderRadius: 8,
-    marginBottom: height * 0.015,
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  answerText: {
-    color: "white",
-    fontSize: Math.min(width * 0.04, 18),
-    textAlign: "center",
-  },
-  feedbackOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    width: width,
-    height: overlayHeight,
-    backgroundColor: "rgba(8, 8, 8, 0.43)",
-    flexDirection: "row",
-    alignItems: "flex-end",
-    paddingBottom: height * 0.01,
-    zIndex: 10,
-  },
-  feedbackBox: {
-    flex: 1,
-    bottom: height * 0.1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  feedbackText: {
-    color: "white",
-    fontSize: Math.min(width * 0.06, 24),
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  nextButtonContainer: {
-    position: "absolute",
-    top: height * 0.50,
-    right: sideMargin,
-    width: width * 0.2,
-    alignItems: "center",
-    zIndex: 11,
-  },
-  nextButton: {
-    backgroundColor: "#007bff",
-    paddingVertical: height * 0.015,
-    paddingHorizontal: width * 0.06,
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    minWidth: width * 0.15,
-    alignItems: "center",
-  },
-  nextButtonText: {
-    color: "white",
-    fontSize: Math.min(width * 0.045, 20),
-    fontWeight: "bold",
-  },
+loadingContainer: {
+flex: 1,
+backgroundColor: "black",
+justifyContent: "center",
+alignItems: "center",
+},
+loadingText: {
+color: "white",
+fontSize: 18,
+marginTop: 20,
+},
+introContainer: {
+flex: 1,
+backgroundColor: "black",
+justifyContent: "center",
+alignItems: "center",
+padding: width * 0.05,
+},
+introLTOImage: {
+width: width * 0.6,
+height: height * 0.25,
+resizeMode: "contain",
+marginBottom: height * 0.03,
+},
+introTextBox: {
+backgroundColor: "rgba(8, 8, 8, 0.7)",
+padding: width * 0.06,
+borderRadius: 15,
+alignItems: "center",
+maxWidth: width * 0.85,
+minHeight: height * 0.3,
+justifyContent: "center",
+},
+introTitle: {
+color: "white",
+fontSize: Math.min(width * 0.07, 32),
+fontWeight: "bold",
+textAlign: "center",
+marginBottom: height * 0.02,
+},
+introText: {
+color: "white",
+fontSize: Math.min(width * 0.045, 20),
+textAlign: "center",
+marginBottom: height * 0.04,
+lineHeight: Math.min(width * 0.06, 26),
+paddingHorizontal: width * 0.02,
+},
+startButton: {
+backgroundColor: "#007bff",
+paddingVertical: height * 0.02,
+paddingHorizontal: width * 0.08,
+borderRadius: 10,
+shadowColor: "#000",
+shadowOffset: { width: 0, height: 4 },
+shadowOpacity: 0.3,
+shadowRadius: 5,
+elevation: 8,
+minWidth: width * 0.4,
+alignItems: "center",
+},
+startButtonText: {
+color: "white",
+fontSize: Math.min(width * 0.055, 24),
+fontWeight: "bold",
+},
+questionOverlay: {
+position: "absolute",
+bottom: 0,
+left: 0,
+width: width,
+height: overlayHeight,
+backgroundColor: "rgba(8, 8, 8, 0.43)",
+flexDirection: "row",
+alignItems: "flex-end",
+paddingBottom: 0,
+zIndex: 10,
+},
+ltoImage: {
+width: ltoWidth,
+height: ltoHeight,
+resizeMode: "contain",
+marginLeft: -width * 0.03,
+marginBottom: -height * 0.12,
+},
+questionBox: {
+flex: 1,
+bottom: height * 0.1,
+alignItems: "center",
+justifyContent: "center",
+},
+questionTextContainer: {
+padding: -height * 0.04,
+maxWidth: width * 0.7,
+},
+questionText: {
+flexWrap: "wrap",
+color: "white",
+fontSize: Math.min(width * 0.045, 24),
+fontWeight: "bold",
+textAlign: "center",
+},
+answersContainer: {
+position: "absolute",
+top: height * 0.15,
+right: sideMargin,
+width: width * 0.35,
+height: height * 0.21,
+zIndex: 11,
+},
+answerButton: {
+backgroundColor: "#333",
+padding: height * 0.015,
+borderRadius: 8,
+marginBottom: height * 0.015,
+borderWidth: 1,
+borderColor: "#555",
+},
+answerText: {
+color: "white",
+fontSize: Math.min(width * 0.04, 18),
+textAlign: "center",
+},
+feedbackOverlay: {
+position: "absolute",
+bottom: 0,
+left: 0,
+width: width,
+height: overlayHeight,
+backgroundColor: "rgba(8, 8, 8, 0.43)",
+flexDirection: "row",
+alignItems: "flex-end",
+paddingBottom: height * 0.01,
+zIndex: 10,
+},
+feedbackBox: {
+flex: 1,
+bottom: height * 0.1,
+alignItems: "center",
+justifyContent: "center",
+},
+feedbackText: {
+color: "white",
+fontSize: Math.min(width * 0.06, 24),
+fontWeight: "bold",
+textAlign: "center",
+},
+nextButtonContainer: {
+position: "absolute",
+top: height * 0.50,
+right: sideMargin,
+width: width * 0.2,
+alignItems: "center",
+zIndex: 11,
+},
+nextButton: {
+backgroundColor: "#007bff",
+paddingVertical: height * 0.015,
+paddingHorizontal: width * 0.06,
+borderRadius: 8,
+shadowColor: "#000",
+shadowOffset: { width: 0, height: 2 },
+shadowOpacity: 0.25,
+shadowRadius: 3.84,
+elevation: 5,
+minWidth: width * 0.15,
+alignItems: "center",
+},
+nextButtonText: {
+color: "white",
+fontSize: Math.min(width * 0.045, 20),
+fontWeight: "bold",
+},
 });
