@@ -245,8 +245,8 @@ export default function DrivingGame() {
       const animateTraffic = () => {
         // Very slow movement - 0.3 tiles over 5 seconds
         Animated.timing(npcCarPositions[car.id], {
-          toValue: car.initialRow * tileSize - tileSize * 0.3,
-          duration: 5000,
+          toValue: car.initialRow * tileSize - tileSize * 3,
+          duration: 20000,
           useNativeDriver: true,
         }).start(() => {
           // Reset and loop

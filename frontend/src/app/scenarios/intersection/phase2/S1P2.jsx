@@ -77,6 +77,39 @@ const npcCarSprites = {
   ],
 };
 
+// Additional NPC cars with different colors
+const npcCars2Sprites = {
+  black: {
+    NORTH: [
+      require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_000.png"),
+      require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_001.png"),
+    ],
+  },
+  brown: {
+    NORTH: [
+      require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
+      require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_001.png"),
+    ],
+  },
+  green: {
+    NORTH: [
+      require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
+      require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
+    ],
+  },
+  white: {
+    NORTH: [
+      require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_000.png"),
+      require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_001.png"),
+    ],
+  },
+  yellow: {
+    NORTH: [
+      require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_000.png"),
+      require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_001.png"),
+    ],
+  },
+};
 
 const questions = [
   {
@@ -152,10 +185,20 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
 
-  // NPC Car - stationary at row 7
+  // NPC Car - stationary at row 7 (original red car)
   const [npcCarFrame, setNpcCarFrame] = useState(0);
   const [showNpcCar, setShowNpcCar] = useState(true);
   const npcCarYAnim = useRef(new Animated.Value(0)).current;
+
+  // NPC Cars 2 - additional colored cars
+  const [npcCars2] = useState([
+    { color: 'black', row: 4, column: 0, frame: 0 },
+    { color: 'brown', row: 5, column: 3, frame: 0 },
+    { color: 'green', row: 8, column: 1, frame: 0 },
+    { color: 'white', row: 10, column: 4, frame: 0 },
+    { color: 'yellow', row: 12, column: 1, frame: 0 },
+  ]);
+  const [npcCars2Frames, setNpcCars2Frames] = useState(npcCars2.map(() => 0));
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -197,7 +240,7 @@ export default function DrivingGame() {
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
 
-  // NPC Car sprite frame loop
+  // NPC Car sprite frame loop (original red car)
   useEffect(() => {
     let iv;
     if (showNpcCar) {
@@ -207,6 +250,21 @@ export default function DrivingGame() {
     }
     return () => clearInterval(iv);
   }, [showNpcCar]);
+
+  // NPC Cars 2 sprite frame loops
+  useEffect(() => {
+    const intervals = npcCars2.map((car, index) => {
+      return setInterval(() => {
+        setNpcCars2Frames(prev => {
+          const newFrames = [...prev];
+          newFrames[index] = (newFrames[index] + 1) % npcCars2Sprites[car.color]["NORTH"].length;
+          return newFrames;
+        });
+      }, 200);
+    });
+
+    return () => intervals.forEach(iv => clearInterval(iv));
+  }, []);
 
   // Update map tiles when tollgates open
   useEffect(() => {
@@ -533,7 +591,7 @@ export default function DrivingGame() {
         />
       )}
 
-      {/* NPC Car - stationary at row 6, moves forward when activated */}
+      {/* NPC Car - stationary at row 6, moves forward when activated (original red car) */}
       {showNpcCar && (
         <Animated.Image
           source={npcCarSprites["NORTH"][npcCarFrame]}
@@ -551,6 +609,23 @@ export default function DrivingGame() {
           }}
         />
       )}
+
+      {/* NPC Cars 2 - Additional colored cars */}
+      {npcCars2.map((car, index) => (
+        <Animated.Image
+          key={`npc2-${car.color}-${index}`}
+          source={npcCars2Sprites[car.color]["NORTH"][npcCars2Frames[index]]}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            top: car.row * tileSize,
+            left: car.column * tileSize + (tileSize - carWidth) / 2,
+            transform: [{ translateY: scrollY }],
+            zIndex: 6,
+          }}
+        />
+      ))}
 
       {/* Question overlay - moved to bottom */}
       {showQuestion && (
