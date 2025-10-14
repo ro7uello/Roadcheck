@@ -563,33 +563,39 @@ const handleNext = async () => {
   setIsPlayerCarVisible(true);
   setIsJeepneyVisible(true);
 
-  if (questionIndex < questions.length - 1) {
-    // More questions in current scenario
-    setQuestionIndex(questionIndex + 1);
-    startScrollAnimation();
-  } else if (currentScenario === 10) {
-    // Last scenario in phase - complete session
-    try {
-      const sessionResults = await completeSession();
-      router.push({
-        pathname: '/result',
-        params: {
-          ...sessionResults,
-          userAttempts: JSON.stringify(sessionResults.attempts)
+    if (questionIndex < questions.length - 1) {
+      // Next question in current scenario
+      setQuestionIndex(questionIndex + 1);
+      startScrollAnimation();
+    } else if (currentScenario === 10) {
+      // Last scenario - complete session
+      try {
+        console.log('🔍 Completing session for scenario 10...');
+        const sessionResults = await completeSession();
+
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session.');
+          return;
         }
-      });
-    } catch (error) {
-      console.error('Error completing session:', error);
-      Alert.alert('Error', 'Failed to save session results');
+
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
+    } else {
+      // Move to next scenario (S1P2 → S2P2 → ... → S10P2)
+    moveToNextScenario();
+    const nextScreen = `S${currentScenario + 1}P2`;
+    router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
     }
-  } else {
-      // Go to next scenario
-     // moveToNextScenario();
-      // Don't add 1 here - moveToNextScenario() already incremented currentScenario
-      const nextScreen = `S${currentScenario +1  }P2`;
-     // router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-      router.push(`/scenarios/road-markings/phase2/S2P2`);
-    }
+    
 
   setShowQuestion(false);
   if (scrollAnimationRef.current) {

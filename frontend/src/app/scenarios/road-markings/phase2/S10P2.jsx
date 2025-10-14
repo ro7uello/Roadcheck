@@ -8,13 +8,14 @@ const { width, height } = Dimensions.get("window");
 // Responsive calculations
 const carWidth = Math.min(width * 0.25, 280);
 const carHeight = carWidth * (350/280);
-const pedestrianWidth = Math.min(width * 0.08, 60);
-const pedestrianHeight = pedestrianWidth * (80/60);
-const overlayTop = height * 0.4;
 const overlayHeight = height * 0.35;
 const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
+
+// Pedestrian sprite dimensions
+const spriteWidth = Math.min(width * 0.15, 120);
+const spriteHeight = spriteWidth * 1.2;
 
 const roadTiles = {
   road3: require("../../../../../assets/road/road3.png"),
@@ -75,9 +76,15 @@ const carSprites = {
   ],
 };
 
-// Pedestrian sprites - using simple colored circles as placeholders
-// In a real implementation, you'd have actual pedestrian sprites
-const pedestrianColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'];
+// Male pedestrian sprites facing EAST
+const maleSprites = {
+  EAST: [
+    require("../../../../../assets/character/sprites/east/east_walk1.png"),
+    require("../../../../../assets/character/sprites/east/east_walk2.png"),
+    require("../../../../../assets/character/sprites/east/east_walk3.png"),
+    require("../../../../../assets/character/sprites/east/east_walk4.png"),
+  ],
+};
 
 const questions = [
   {
@@ -88,7 +95,8 @@ const questions = [
       "Turn quickly before more pedestrians enter the crosswalk"
     ],
     correct: "Stop at the stop line, yield to pedestrians, then complete your turn when safe",
-    wrongExplanation: {
+    correctExplanation: "Correct! You must observe stop lines, yield to pedestrians at crossings, and proceed only when safe.",
+    wrongExplanations: {
       "Proceed with your turn since vehicles have right of way over pedestrians": "Wrong! Pedestrians have right of way at designated crossings, even when vehicles are turning.",
       "Turn quickly before more pedestrians enter the crosswalk": "Accident Prone! Rushing through crosswalks endangers pedestrians and violates their right of way."
     }
@@ -96,18 +104,16 @@ const questions = [
 ];
 
 export default function DrivingGame() {
-
   const {
-  updateScenarioProgress,
-  moveToNextScenario,
-  completeSession,
-  currentScenario,
-  sessionData
-} = useSession();
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    currentScenario,
+  } = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
-      const scenarioId = 10 + currentScenario;
+      const scenarioId = 10 + (currentScenario || 0);
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -117,11 +123,8 @@ export default function DrivingGame() {
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
-
-  const [isCarVisible, setIsCarVisible] = useState(true);
-  const [showPedestrians, setShowPedestrians] = useState(false);
-
   const startOffset = -(mapHeight - height);
+
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
@@ -139,127 +142,69 @@ export default function DrivingGame() {
   const [animationType, setAnimationType] = useState(null);
   const [showNext, setShowNext] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
+  const [isCarVisible, setIsCarVisible] = useState(true);
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
 
-  // Pedestrians state
-  const [pedestrians, setPedestrians] = useState([
-    {
-      id: 1,
-      xAnim: useRef(new Animated.Value(-pedestrianWidth)).current,
-      yPos: height * 0.32, // Crosswalk level
-      color: pedestrianColors[0],
-      moving: false,
-    },
-    {
-      id: 2,
-      xAnim: useRef(new Animated.Value(-pedestrianWidth * 2)).current,
-      yPos: height * 0.32,
-      color: pedestrianColors[1],
-      moving: false,
-    },
-    {
-      id: 3,
-      xAnim: useRef(new Animated.Value(-pedestrianWidth * 3)).current,
-      yPos: height * 0.34,
-      color: pedestrianColors[2],
-      moving: false,
-    },
-  ]);
+  // Pedestrian state
+  const [pedestrianVisible, setPedestrianVisible] = useState(true);
+  const [pedestrianDirection, setPedestrianDirection] = useState("EAST");
+  const [pedestrianFrame, setPedestrianFrame] = useState(0);
+  const [pedestrianAnimating, setPedestrianAnimating] = useState(true);
+  const pedestrianInitialX = width * 0.10; // Start on left side
+  const pedestrianXAnim = useRef(new Animated.Value(pedestrianInitialX)).current;
 
-  // Car positioning
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
-  const correctAnim = useRef(new Animated.Value(0)).current;
-  const wrongAnim = useRef(new Animated.Value(0)).current;
 
   // Car animation frame cycling
   useEffect(() => {
     let iv;
-    if (!carPaused && isCarVisible) {
+    if (!carPaused) {
       iv = setInterval(() => {
         setCarFrame((p) => (p + 1) % carSprites[carDirection].length);
       }, 200);
     }
     return () => clearInterval(iv);
-  }, [carPaused, carDirection, isCarVisible]);
+  }, [carPaused, carDirection]);
 
-  const scrollAnimationRef = useRef(null);
+  // Pedestrian animation frame cycling
+  useEffect(() => {
+    let iv;
+    if (pedestrianAnimating) {
+      iv = setInterval(() => {
+        setPedestrianFrame((p) => (p + 1) % maleSprites[pedestrianDirection].length);
+      }, 150);
+    }
+    return () => clearInterval(iv);
+  }, [pedestrianAnimating, pedestrianDirection]);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
 
-    // Reset car position
-    const centerX = width / 2 - carWidth / 2;
-    carXAnim.setValue(centerX);
+    const stopRow = 5;
+    const stopOffset = startOffset + stopRow * tileSize;
 
-    // Start continuous map scrolling
-    scrollAnimationRef.current = Animated.timing(scrollY, {
-      toValue: startOffset + 5 * tileSize, // Stop before intersection
-      duration: 4000,
+    Animated.timing(scrollY, {
+      toValue: stopOffset,
+      duration: 3000,
       useNativeDriver: true,
-    });
-
-    scrollAnimationRef.current.start(() => {
-      // Show pedestrians starting to cross
-      setShowPedestrians(true);
-      startPedestrianCrossing();
-
-      // Show question after pedestrians start crossing
+    }).start(() => {
+      setShowQuestion(true);
       setTimeout(() => {
-        setShowQuestion(true);
-        setTimeout(() => {
-          setShowAnswers(true);
-        }, 1000);
-      }, 1500);
+        setShowAnswers(true);
+      }, 1000);
     });
   }
 
-  const startPedestrianCrossing = () => {
-    // Animate pedestrians crossing from left to right
-    pedestrians.forEach((ped, index) => {
-      setTimeout(() => {
-        Animated.timing(ped.xAnim, {
-          toValue: width + pedestrianWidth,
-          duration: 6000 + (index * 500), // Staggered timing
-          useNativeDriver: true,
-        }).start();
-      }, index * 800);
-    });
-  };
-
   useEffect(() => {
     startScrollAnimation();
-    return () => {
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-    };
   }, []);
 
   const handleFeedback = (answerGiven) => {
-    const currentQuestion = questions[questionIndex];
-    if (answerGiven === currentQuestion.correct) {
-      setIsCorrectAnswer(true);
-      setAnimationType("correct");
-      Animated.timing(correctAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }).start(() => {
-        correctAnim.setValue(0);
-        setShowNext(true);
-      });
-    } else {
-      setIsCorrectAnswer(false);
-      setAnimationType("wrong");
-      Animated.timing(wrongAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }).start(() => {
-        wrongAnim.setValue(0);
-        setShowNext(true);
-      });
-    }
+    setIsCorrectAnswer(answerGiven === questions[questionIndex].correct);
+    setAnimationType(answerGiven === questions[questionIndex].correct ? "correct" : "wrong");
+    setTimeout(() => setShowNext(true), 500);
   };
 
   const handleAnswer = async (answer) => {
@@ -267,67 +212,92 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
-    const currentQuestion = questions[questionIndex];
-    const isCorrect = answer === currentQuestion.correct;
+    const isCorrect = answer === questions[questionIndex].correct;
     await updateProgress(answer, isCorrect);
 
+    const currentRow = Math.abs(currentScroll.current - startOffset) / tileSize;
+
 if (answer === "Proceed with your turn since vehicles have right of way over pedestrians") {
-      // Animation: Car proceeds north into intersection, turns east, then goes east
-      // Step 1: Move north into intersection
+      // WRONG: Car proceeds and turns without yielding - pedestrian is crossing
+      // Step 1: Start pedestrian crossing animation
+      const rightX = width * 0.75;
+      Animated.timing(pedestrianXAnim, {
+        toValue: rightX,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start();
+
+      // Step 2: Move north into intersection
       Animated.timing(scrollY, {
         toValue: currentScroll.current + tileSize * 1.5,
-        duration: 1000,
+        duration: 1200,
         useNativeDriver: true,
       }).start(() => {
-        // Step 2: Turn to face east
+        // Step 3: Turn to face east
         setCarDirection("EAST");
         setTimeout(() => {
-          // Step 3: Move east (only horizontal movement, no map scroll)
+          // Step 4: Move east (while pedestrian is still crossing - dangerous!)
           Animated.timing(carXAnim, {
             toValue: (width / 2 - carWidth / 2) + tileSize * 2,
-            duration: 1500,
+            duration: 800,
             useNativeDriver: false,
           }).start(() => {
-            // Show danger - car didn't yield to pedestrians
-            setTimeout(() => {
-              handleFeedback(answer);
-            }, 500);
+            handleFeedback(answer);
           });
         }, 300);
       });
 
     } else if (answer === "Stop at the stop line, yield to pedestrians, then complete your turn when safe") {
-      // Animation: Car stops, waits for pedestrians to clear, then turns properly
-      setCarPaused(true);
+      // CORRECT: Stop, let pedestrian cross, then proceed
+      const stopAtCrossingRow = 5;
+      const rowsToMove = stopAtCrossingRow - currentRow;
+      const stopTarget = currentScroll.current + rowsToMove * tileSize;
 
-      // Wait for pedestrians to cross (simulate waiting)
-      setTimeout(() => {
-        // After pedestrians clear, proceed with turn
-        setCarPaused(false);
+      Animated.timing(scrollY, {
+        toValue: stopTarget,
+        duration: 1500,
+        useNativeDriver: true,
+      }).start(() => {
+        setCarPaused(true);
 
-        // Step 1: Move north into intersection
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 1.5,
-          duration: 1200,
+        // Animate pedestrian crossing from left to right
+        const rightX = width * 0.75;
+        Animated.timing(pedestrianXAnim, {
+          toValue: rightX,
+          duration: 3000,
           useNativeDriver: true,
         }).start(() => {
-          // Step 2: Turn to face east
-          setCarDirection("EAST");
+          setPedestrianVisible(false);
+          setPedestrianAnimating(false);
+          
           setTimeout(() => {
-            // Step 3: Move east (only horizontal movement, no map scroll)
-            Animated.timing(carXAnim, {
-              toValue: (width / 2 - carWidth / 2) + tileSize * 2,
-              duration: 2000,
-              useNativeDriver: false,
+            setCarPaused(false);
+            
+            // Step 1: Move north into intersection
+            Animated.timing(scrollY, {
+              toValue: stopTarget + tileSize * 1.5,
+              duration: 1200,
+              useNativeDriver: true,
             }).start(() => {
-              handleFeedback(answer);
+              // Step 2: Turn to face east
+              setCarDirection("EAST");
+              setTimeout(() => {
+                // Step 3: Move east
+                Animated.timing(carXAnim, {
+                  toValue: (width / 2 - carWidth / 2) + tileSize * 2,
+                  duration: 2000,
+                  useNativeDriver: false,
+                }).start(() => {
+                  handleFeedback(answer);
+                });
+              }, 300);
             });
-          }, 300);
+          }, 500);
         });
-      }, 4000); // Wait for pedestrians
+      });
 
     } else if (answer === "Turn quickly before more pedestrians enter the crosswalk") {
-      // Animation: Car rushes through turn dangerously fast
+      // WRONG: Rush through dangerously
       // Step 1: Quick move north into intersection
       Animated.timing(scrollY, {
         toValue: currentScroll.current + tileSize * 1.5,
@@ -337,19 +307,18 @@ if (answer === "Proceed with your turn since vehicles have right of way over ped
         // Step 2: Quick turn to face east
         setCarDirection("EAST");
         setTimeout(() => {
-          // Step 3: Rush east (only horizontal movement, no map scroll)
+          // Step 3: Rush east
           Animated.timing(carXAnim, {
             toValue: (width / 2 - carWidth / 2) + tileSize * 2,
             duration: 1000,
             useNativeDriver: false,
           }).start(() => {
-            // Show near-miss or accident warning
             handleFeedback(answer);
           });
         }, 200);
       });
     }
-  }
+  };
 
   const handleNext = async () => {
     setAnimationType(null);
@@ -359,63 +328,63 @@ if (answer === "Proceed with your turn since vehicles have right of way over ped
     setCarFrame(0);
     setCarPaused(false);
 
-    // Reset positions
-    const centerX = width / 2 - carWidth / 2;
-    carXAnim.setValue(centerX);
+    // Reset pedestrian
+    setPedestrianVisible(true);
+    setPedestrianAnimating(true);
+    pedestrianXAnim.setValue(pedestrianInitialX);
+
+    carXAnim.setValue(width / 2 - carWidth / 2);
     setCarDirection("NORTH");
     setIsCarVisible(true);
-    setShowPedestrians(false);
 
-    // Reset pedestrians
-    pedestrians.forEach(ped => {
-      ped.xAnim.setValue(-pedestrianWidth);
-    });
-
-    if (questionIndex < questions.length - 1) {
+if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else if (currentScenario >= 10) {
-             // Last scenario in phase - complete session
-             try {
-               const sessionResults = await completeSession();
-               router.push({
-                 pathname: '/result-page',
-                 params: {
-                   ...sessionResults,
-                   userAttempts: JSON.stringify(sessionResults.attempts)
-                 }
-               });
-             } catch (error) {
-               console.error('Error completing session:', error);
-               Alert.alert('Error', 'Failed to save session results');
-             }
-           } else {
-             moveToNextScenario();
-             const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
-             router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-           }
-     };
+      // Last scenario in phase - complete session
+      try {
+        const sessionResults = await completeSession();
+        router.push({
+          pathname: '/result-page',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
+    } else {
+      try {
+        await moveToNextScenario();
+        const nextScreen = `S${currentScenario + 1}P2`;
+        console.log('Navigating to:', nextScreen);
+        router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+      } catch (error) {
+        console.error('Navigation error:', error);
+        Alert.alert('Error', 'Failed to navigate to next scenario');
+      }
+    }
+  };
 
-  // Feedback message
-  let feedbackMessage = "Wrong answer!";
-
-  if (isCorrectAnswer) {
-    feedbackMessage = "Correct! You must observe stop lines, yield to pedestrians at crossings, and proceed only when safe.";
-  } else if (selectedAnswer === "Proceed with your turn since vehicles have right of way over pedestrians") {
-    feedbackMessage = "Wrong! Pedestrians have right of way at designated crossings, even when vehicles are turning.";
-  } else if (selectedAnswer === "Turn quickly before more pedestrians enter the crosswalk") {
-    feedbackMessage = "Accident Prone! Rushing through crosswalks endangers pedestrians and violates their right of way.";
-  }
+  const getFeedbackMessage = () => {
+    if (!selectedAnswer || isCorrectAnswer === null) return "";
+    
+    if (isCorrectAnswer) {
+      return questions[questionIndex]?.correctExplanation || "";
+    }
+    
+    return questions[questionIndex]?.wrongExplanations?.[selectedAnswer] || "Wrong answer!";
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
-      {/* Map */}
       <Animated.View
         style={{
           position: "absolute",
           width: width,
           height: mapHeight,
-          left: 0,
           transform: [{ translateY: scrollY }],
           zIndex: 1,
         }}
@@ -436,44 +405,28 @@ if (answer === "Proceed with your turn since vehicles have right of way over ped
             />
           ))
         )}
+        
+        {/* Pedestrian positioned on the map */}
+        {pedestrianVisible && (
+          <Animated.View
+            style={{
+              position: "absolute",
+              width: spriteWidth,
+              height: spriteHeight,
+              top: 9 * tileSize,
+              transform: [{ translateX: pedestrianXAnim }],
+              zIndex: 6,
+            }}
+          >
+            <Image
+              source={maleSprites[pedestrianDirection][pedestrianFrame]}
+              style={{ width: '100%', height: '100%' }}
+              resizeMode="contain"
+            />
+          </Animated.View>
+        )}
       </Animated.View>
 
-      {/* Pedestrians */}
-      {showPedestrians && pedestrians.map((ped) => (
-        <Animated.View
-          key={ped.id}
-          style={{
-            position: "absolute",
-            width: pedestrianWidth,
-            height: pedestrianHeight,
-            backgroundColor: ped.color,
-            borderRadius: pedestrianWidth / 2,
-            top: ped.yPos,
-            transform: [{ translateX: ped.xAnim }],
-            zIndex: 6,
-            // Simple pedestrian representation
-            borderWidth: 2,
-            borderColor: 'white',
-          }}
-        >
-          {/* Simple pedestrian icon */}
-          <View style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}>
-            <Text style={{
-              color: 'white',
-              fontSize: pedestrianWidth * 0.3,
-              fontWeight: 'bold',
-            }}>
-              🚶
-            </Text>
-          </View>
-        </Animated.View>
-      ))}
-
-      {/* Blue Car (player car) */}
       {isCarVisible && (
         <Animated.Image
           source={carSprites[carDirection][carFrame]}
@@ -482,13 +435,12 @@ if (answer === "Proceed with your turn since vehicles have right of way over ped
             height: carHeight,
             position: "absolute",
             bottom: height * 0.1,
-            transform: [{ translateX: carXAnim }],
+            left: carXAnim,
             zIndex: 5,
           }}
         />
       )}
 
-      {/* Question Overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -505,12 +457,11 @@ if (answer === "Proceed with your turn since vehicles have right of way over ped
         </View>
       )}
 
-      {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
-          {questions[questionIndex].options.map((option) => (
+          {questions[questionIndex].options.map((option, idx) => (
             <TouchableOpacity
-              key={option}
+              key={`${option}-${idx}`}
               style={styles.answerButton}
               onPress={() => handleAnswer(option)}
             >
@@ -520,17 +471,17 @@ if (answer === "Proceed with your turn since vehicles have right of way over ped
         </View>
       )}
 
-      {/* Feedback */}
       {(animationType === "correct" || animationType === "wrong") && (
-        <Animated.View style={styles.feedbackOverlay}>
+        <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
-            <Text style={styles.feedbackText}>{feedbackMessage}</Text>
+            <Text style={styles.feedbackText}>
+              {getFeedbackMessage()}
+            </Text>
           </View>
-        </Animated.View>
+        </View>
       )}
 
-      {/* Next Button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
@@ -653,7 +604,7 @@ ltoImage: {
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.175,
+    top: height * 0.12,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,

@@ -291,6 +291,9 @@ export default function DrivingGame() {
     setShowAnswers(false);
     setPlayerPaused(false); // Enable walking animation
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    updateProgress(answer, isCorrect);
 
     // Capture current scroll value at the moment of answer
     const scrollAtAnswer = currentScroll.current;
@@ -549,13 +552,13 @@ export default function DrivingGame() {
       {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
-          {questions[questionIndex].options.map((option) => (
+          {questions[questionIndex].options.map((answer) => (
             <TouchableOpacity
-              key={option}
+              key={answer}
               style={styles.answerButton}
-              onPress={() => handleAnswer(option)}
+              onPress={() => handleAnswer(answer)}
             >
-              <Text style={styles.answerText}>{option}</Text>
+              <Text style={styles.answerText}>{answer}</Text>
             </TouchableOpacity>
           ))}
         </View>

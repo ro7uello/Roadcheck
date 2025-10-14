@@ -261,6 +261,9 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    updateProgress(answer, isCorrect);
 
     if (answer === "Cross immediately while you still feel okay") {
       // Player runs west alone and gets hit
@@ -509,14 +512,14 @@ export default function DrivingGame() {
       {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
-          {questions[questionIndex].options.map((option, index) => (
+          {questions[questionIndex].options.map((answer, index) => (
             <TouchableOpacity
-              key={option}
+              key={answer}
               style={styles.answerButton}
-              onPress={() => handleAnswer(option)}
+              onPress={() => handleAnswer(answer)}
             >
               <Text style={styles.answerText}>
-                {String.fromCharCode(65 + index)}. {option}
+                {String.fromCharCode(65 + index)}. {answer}
               </Text>
             </TouchableOpacity>
           ))}

@@ -181,10 +181,11 @@ export default function DrivingGame() {
   const npcCarXAnim = useRef(new Animated.Value(2 * tileSize + (tileSize / 2 - npcCarWidth / 2))).current;
   const npcCarYAnim = useRef(new Animated.Value(-height)).current;
 
-  const trafficCars = useRef([
+const trafficCars = useRef([
     { id: 'traffic1', type: 'RED_SEDAN', lane: 0, yAnim: new Animated.Value(height * 0.3), frame: 0 },
-    { id: 'traffic3', type: 'BLACK_CIVIC', lane: 2, yAnim: new Animated.Value(height * 0.7), frame: 0 },
-    { id: 'traffic4', type: 'RED_SEDAN', lane: 0, yAnim: new Animated.Value(height * 0.1), frame: 0 },
+    { id: 'traffic3', type: 'BLACK_CIVIC', lane: 2, yAnim: new Animated.Value(height * 0.1), frame: 0 },
+    { id: 'traffic5', type: 'TAXI', lane: 2, yAnim: new Animated.Value(height * 4), frame: 0 },
+    { id: 'traffic4', type: 'RED_SEDAN', lane: 0, yAnim: new Animated.Value(height * 0.6), frame: 0 },
   ]).current;
 
   const correctAnim = useRef(new Animated.Value(0)).current;
@@ -451,7 +452,7 @@ export default function DrivingGame() {
     });
   };
 
-  const animateTrafficJam = async () => {
+const animateTrafficJam = async () => {
     return new Promise(async (resolve) => {
       try {
         if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
@@ -459,50 +460,38 @@ export default function DrivingGame() {
         setShowTrafficJam(true);
 
         trafficCars.forEach((car, index) => {
-          car.yAnim.setValue(height * (0.1 + index * 0.15));
+          car.yAnim.setValue(height * (0.1 + index * 0.30));
         });
 
+        // Slow continuous crawl for traffic cars
         const crawlAnimations = trafficCars.map(car =>
-          Animated.timing(car.yAnim, {
-            toValue: car.yAnim._value + 50,
-            duration: 5000,
-            easing: Easing.linear,
-            useNativeDriver: true,
-          })
+          Animated.loop(
+            Animated.timing(car.yAnim, {
+              toValue: car.yAnim._value - 400,
+              duration: 10000,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            })
+          )
         );
 
         crawlAnimations.forEach(anim => anim.start());
+
         await new Promise(res => setTimeout(res, 2000));
 
         setShowHonking(true);
 
-        for (let i = 0; i < 5; i++) {
-          const playerShake = Animated.sequence([
-            Animated.timing(carXAnim, { toValue: carXAnim._value + 10, duration: 100, useNativeDriver: false }),
-            Animated.timing(carXAnim, { toValue: carXAnim._value - 10, duration: 100, useNativeDriver: false }),
-          ]);
+        // Show honking for a period
+        await new Promise(res => setTimeout(res, 5000));
 
-          await new Promise(res => playerShake.start(res));
-
-          const trafficShakes = trafficCars.slice(0, 3).map(car =>
-            Animated.sequence([
-              Animated.timing(car.yAnim, { toValue: car.yAnim._value + 15, duration: 120, useNativeDriver: true }),
-              Animated.timing(car.yAnim, { toValue: car.yAnim._value - 15, duration: 120, useNativeDriver: true }),
-            ])
-          );
-
-          await Promise.all(trafficShakes.map(shake => new Promise(res => shake.start(res))));
-          await new Promise(res => setTimeout(res, 800));
-        }
-
-        await new Promise(res => setTimeout(res, 2000));
-
+        // Stop all animations before finishing
         crawlAnimations.forEach(anim => anim.stop());
+        
         setShowHonking(false);
         setShowTrafficJam(false);
 
-        const centerX = width / 2 - carWidth / 2;
-        carXAnim.setValue(centerX);
+        const currentX = carXAnim._value;
+        carXAnim.setValue(currentX);
 
         resolve();
       } catch (error) {
@@ -513,7 +502,6 @@ export default function DrivingGame() {
       }
     });
   };
-
   const handleAnswer = async (answer) => {
     setSelectedAnswer(answer);
     setShowQuestion(false);
@@ -590,6 +578,11 @@ export default function DrivingGame() {
       moveToNextScenario();
       const nextScreen = `S${currentScenario + 1}P2`;
       router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+
+
+   
+
+
     }
 
     // Cleanup
