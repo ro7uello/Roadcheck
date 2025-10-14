@@ -40,29 +40,6 @@ export default function PhaseSelectionScreen() {
   const carBounce = useRef(new Animated.Value(0)).current;
   const phaseScales = useRef<Animated.Value[]>([]).current;
 
-  useEffect(() => {
-      loadPhaseAttempts();
-    }, [categoryId]);
-
-    const loadPhaseAttempts = async () => {
-      try {
-        // 🆕 Load attempts for specific category/phase (cached!)
-        const result = await CachedApiService.getUserAttempts(
-          userId,
-          categoryId,
-          1 // phase 1
-        );
-
-        console.log('From cache?', result.fromCache ? '✅ Yes!' : '🌐 Fresh from API');
-
-        setAttempts(result.data);
-      } catch (error) {
-        console.error('Error loading attempts:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
   // Initialize animation values for phases
   useEffect(() => {
     if (phases.length > 0 && phaseScales.length !== phases.length) {
@@ -121,31 +98,6 @@ export default function PhaseSelectionScreen() {
         console.log('=== PHASE FETCH END ===');
       }
     };
-
-    const getPhaseIcon = (phaseId: number, categoryId: string) => {
-        let phaseNumber = 1;
-
-        // Same mapping logic as your navigation function
-        if (categoryId === '1') {
-          phaseNumber = phaseId; // Road Markings: direct mapping
-        } else if (categoryId === '2') {
-          phaseNumber = phaseId - 3; // Traffic Signs: 4,5,6 → 1,2,3
-        } else if (categoryId === '3') {
-          phaseNumber = phaseId - 6; // Intersection: 7,8,9 → 1,2,3
-        }
-
-        // Return the appropriate icon based on phase number
-        switch (phaseNumber) {
-          case 1:
-            return require('../../assets/icon/1.png');
-          case 2:
-            return require('../../assets/icon/2.png');
-          case 3:
-            return require('../../assets/icon/3.png');
-          default:
-            return require('../../assets/icon/1.png');
-        }
-      };
 
     fetchPhases();
   }, [categoryId]);
