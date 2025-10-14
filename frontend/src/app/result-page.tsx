@@ -5,25 +5,15 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Animated, Dimensions, Image, ImageBackground, SafeAreaView,
   StyleSheet, Text, TouchableOpacity, View, ActivityIndicator,
-  Alert, ScrollView, Linking, Platform,
+  Alert, ScrollView, Linking,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../../config/api';
 import CachedApiService from '../contexts/CachedApiService';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 const BACKGROUND_SPEED = 12000;
-
-// Responsive sizing helpers
-const isSmallDevice = width < 375;
-const isMediumDevice = width >= 375 && width < 414;
-const isLargeDevice = width >= 414;
-
-const scale = (size) => {
-  if (isSmallDevice) return size * 0.85;
-  if (isMediumDevice) return size * 0.95;
-  return size;
-};
 
 export default function ResultPage() {
   const [fontsLoaded] = useFonts({
@@ -44,6 +34,7 @@ export default function ResultPage() {
   } = params;
 
   const [sessionData, setSessionData] = useState(null);
+  const [settingsVisible, setSettingsVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showDetailedView, setShowDetailedView] = useState(false);
@@ -62,6 +53,7 @@ export default function ResultPage() {
 
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
   const carBounce = useRef(new Animated.Value(0)).current;
+  const modalScale = useRef(new Animated.Value(0)).current;
   const resultPanelScale = useRef(new Animated.Value(0)).current;
   const libraryModalScale = useRef(new Animated.Value(0)).current;
 
@@ -75,6 +67,7 @@ export default function ResultPage() {
     return () => {
       backgroundAnimation.stopAnimation();
       carBounce.stopAnimation();
+      modalScale.stopAnimation();
       resultPanelScale.stopAnimation();
       libraryModalScale.stopAnimation();
     };
@@ -93,6 +86,10 @@ export default function ResultPage() {
     try {
       setLoading(true);
       console.log('🔍 DEBUG: Starting calculateResults');
+      console.log('🔍 DEBUG: Params received:', {
+        sessionId, categoryId, phaseId, categoryName,
+        userAttempts, totalTime, scenarioProgress
+      });
 
       if (sessionId) {
         console.log('📦 Attempting to load session from cache...');
@@ -100,11 +97,107 @@ export default function ResultPage() {
         return;
       }
 
-      calculateResultsFromParams();
+      let attempts = [];
+      let detailedProgress = [];
+
+      try {
+        if (userAttempts && typeof userAttempts === 'string') {
+          attempts = JSON.parse(userAttempts);
+          console.log('🔍 DEBUG: Parsed attempts:', attempts);
+        } else if (Array.isArray(userAttempts)) {
+          attempts = userAttempts;
+        }
+      } catch (parseError) {
+        console.error('❌ Error parsing userAttempts:', parseError);
+        attempts = [];
+      }
+
+      try {
+        if (scenarioProgress && typeof scenarioProgress === 'string') {
+          detailedProgress = JSON.parse(scenarioProgress);
+          console.log('🔍 DEBUG: Parsed scenarioProgress:', detailedProgress);
+        } else if (Array.isArray(scenarioProgress)) {
+          detailedProgress = scenarioProgress;
+        }
+      } catch (parseError) {
+        console.error('❌ Error parsing scenarioProgress:', parseError);
+        detailedProgress = [];
+      }
+
+      console.log('🔍 DEBUG: Calculating from passed data, attempts count:', attempts.length);
+
+      if (attempts.length === 0) {
+        console.log('⚠️ No attempts data, creating default results');
+        const scenarioDetails = Array.from({ length: parseInt(scenarioCount) || 10 }, (_, index) => ({
+          scenarioNumber: index + 1,
+          scenarioId: index + 1,
+          isAttempted: false,
+          isCorrect: false,
+          selectedAnswer: null,
+          timeTaken: '00:00',
+          status: 'NOT ATTEMPTED'
+        }));
+
+        const newResultData = {
+          status: 'FAIL',
+          correctActs: 0,
+          violations: 0,
+          totalTimeSpent: '00:00',
+          totalScore: '0%',
+          accuracy: 0,
+          averageTime: '00:00',
+          scenarioDetails
+        };
+
+        setResultData(newResultData);
+        showResultPanel();
+        return;
+      }
+
+      const correctAnswers = attempts.filter(attempt => attempt.is_correct).length;
+      const incorrectAnswers = attempts.length - correctAnswers;
+      const accuracy = attempts.length > 0 ? Math.round((correctAnswers / attempts.length) * 100) : 0;
+      const passingScore = 70;
+      const status = accuracy >= passingScore ? 'PASS' : 'FAIL';
+
+      const totalTimeNum = parseInt(totalTime) || 0;
+      const formattedTime = formatTime(totalTimeNum);
+      const averageTimePerScenario = attempts.length > 0 ?
+        formatTime(Math.round(totalTimeNum / attempts.length)) : '00:00';
+
+      console.log('🔍 DEBUG: Calculated results:', {
+        correctAnswers, incorrectAnswers, accuracy, status, totalTimeNum
+      });
+
+      const scenarioDetails = attempts.map((attempt, index) => ({
+        scenarioNumber: index + 1,
+        scenarioId: attempt.scenario_id || index + 1,
+        isAttempted: true,
+        isCorrect: attempt.is_correct,
+        selectedAnswer: attempt.chosen_option || attempt.selected_answer || attempt.selected_option,
+        timeTaken: formatTime(attempt.time_taken_seconds || attempt.time_taken || 0),
+        status: attempt.is_correct ? 'CORRECT' : 'WRONG'
+      }));
+
+      const newResultData = {
+        status,
+        correctActs: correctAnswers,
+        violations: incorrectAnswers,
+        totalTimeSpent: formattedTime,
+        totalScore: `${accuracy}%`,
+        accuracy,
+        averageTime: averageTimePerScenario,
+        scenarioDetails
+      };
+
+      console.log('🔍 DEBUG: Final result data:', newResultData);
+      setResultData(newResultData);
+      showResultPanel();
 
     } catch (error) {
       console.error('❌ Error calculating results:', error);
       Alert.alert('Error', 'Failed to calculate results. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -123,12 +216,6 @@ export default function ResultPage() {
 
       if (result.success && result.data) {
         const { session, scenarios, summary } = result.data;
-
-        if (!scenarios || !Array.isArray(scenarios)) {
-          console.log('⚠️ No scenarios in cached data, falling back');
-          calculateResultsFromParams();
-          return;
-        }
 
         const scenarioDetails = scenarios.map(scenario => ({
           scenarioNumber: scenario.scenario_number,
@@ -171,91 +258,7 @@ export default function ResultPage() {
   };
 
   const calculateResultsFromParams = () => {
-    try {
-      console.log('📊 Calculating from params as fallback');
-
-      let attempts = [];
-
-      try {
-        if (userAttempts && typeof userAttempts === 'string') {
-          attempts = JSON.parse(userAttempts);
-        } else if (Array.isArray(userAttempts)) {
-          attempts = userAttempts;
-        }
-      } catch (parseError) {
-        console.error('❌ Error parsing userAttempts:', parseError);
-        attempts = [];
-      }
-
-      if (attempts.length === 0) {
-        console.log('⚠️ No attempts data, creating default results');
-        const scenarioDetails = Array.from({ length: parseInt(scenarioCount) || 10 }, (_, index) => ({
-          scenarioNumber: index + 1,
-          scenarioId: index + 1,
-          isAttempted: false,
-          isCorrect: false,
-          selectedAnswer: null,
-          timeTaken: '00:00',
-          status: 'NOT ATTEMPTED'
-        }));
-
-        const newResultData = {
-          status: 'FAIL',
-          correctActs: 0,
-          violations: 0,
-          totalTimeSpent: '00:00',
-          totalScore: '0%',
-          accuracy: 0,
-          averageTime: '00:00',
-          scenarioDetails
-        };
-
-        setResultData(newResultData);
-        showResultPanel();
-        setLoading(false);
-        return;
-      }
-
-      const correctAnswers = attempts.filter(attempt => attempt.is_correct).length;
-      const incorrectAnswers = attempts.length - correctAnswers;
-      const accuracy = attempts.length > 0 ? Math.round((correctAnswers / attempts.length) * 100) : 0;
-      const passingScore = 70;
-      const status = accuracy >= passingScore ? 'PASS' : 'FAIL';
-
-      const totalTimeNum = parseInt(totalTime) || 0;
-      const formattedTime = formatTime(totalTimeNum);
-      const averageTimePerScenario = attempts.length > 0 ?
-        formatTime(Math.round(totalTimeNum / attempts.length)) : '00:00';
-
-      const scenarioDetails = attempts.map((attempt, index) => ({
-        scenarioNumber: index + 1,
-        scenarioId: attempt.scenario_id || index + 1,
-        isAttempted: true,
-        isCorrect: attempt.is_correct,
-        selectedAnswer: attempt.chosen_option || attempt.selected_answer || attempt.selected_option,
-        timeTaken: formatTime(attempt.time_taken_seconds || attempt.time_taken || 0),
-        status: attempt.is_correct ? 'CORRECT' : 'WRONG'
-      }));
-
-      const newResultData = {
-        status,
-        correctActs: correctAnswers,
-        violations: incorrectAnswers,
-        totalTimeSpent: formattedTime,
-        totalScore: `${accuracy}%`,
-        accuracy,
-        averageTime: averageTimePerScenario,
-        scenarioDetails
-      };
-
-      console.log('✅ Calculated results from params:', newResultData);
-      setResultData(newResultData);
-      showResultPanel();
-      setLoading(false);
-    } catch (error) {
-      console.error('❌ Error in calculateResultsFromParams:', error);
-      setLoading(false);
-    }
+    console.log('📊 Calculating from params as fallback');
   };
 
   const formatTime = (seconds) => {
@@ -317,6 +320,10 @@ export default function ResultPage() {
     setLibraryVisible(true);
   };
 
+  const goBack = () => {
+    router.back();
+  };
+
   const handleFinishPress = () => {
     router.push('/optionPage');
   };
@@ -370,7 +377,6 @@ export default function ResultPage() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Animated Background */}
       <View style={styles.backgroundContainer}>
         <Animated.View
           style={[
@@ -404,7 +410,6 @@ export default function ResultPage() {
 
       <View style={styles.skyOverlay} />
 
-      {/* Animated Car */}
       <Animated.View
         style={[styles.carContainer, { transform: [{ translateY: carVerticalBounce }] }]}
       >
@@ -415,7 +420,6 @@ export default function ResultPage() {
         />
       </Animated.View>
 
-      {/* Top Right Icons */}
       <View style={styles.topRightIcons}>
         <TouchableOpacity style={styles.iconButton} onPress={handleSettingsPress}>
           <Image
@@ -434,318 +438,234 @@ export default function ResultPage() {
         </TouchableOpacity>
       </View>
 
-      {/* Loading Overlay */}
       {loading && (
         <View style={styles.loadingOverlay}>
-          <View style={styles.loadingCard}>
-            <ActivityIndicator size="large" color="#4CAF50" />
-            <Text style={styles.loadingText}>Calculating Results...</Text>
-          </View>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>Calculating Results...</Text>
         </View>
       )}
 
-      {/* Main Result Panel - Pixel Art Style */}
-      {!loading && (
-        <Animated.View
-          style={[
-            styles.resultPanel,
-            { transform: [{ scale: resultPanelScale }] },
-          ]}
-        >
-          {/* Beige/Tan Container with Pixel Border */}
-          <View style={styles.pixelContainer}>
-            {/* Top Border Decoration */}
-            <View style={styles.topBorder} />
+      <Animated.View
+        style={[
+          styles.resultPanel,
+          { transform: [{ scale: resultPanelScale }] },
+        ]}
+      >
+        {/* Custom Container replacing settings-tab.png */}
+        <View style={styles.customContainer}>
+          <View style={styles.containerBorder} />
+        </View>
 
-            <ScrollView
-              style={styles.scrollableContent}
-              contentContainerStyle={styles.scrollContentContainer}
-              showsVerticalScrollIndicator={false}
-              bounces={true}
-            >
-              {!showDetailedView ? (
-                <>
-                  {/* Header */}
-                  <View style={styles.resultHeader}>
-                    <Text style={styles.resultTitle}>RESULT</Text>
-                  </View>
+        {!showDetailedView ? (
+          <>
+            <View style={styles.resultHeader}>
+              <Text style={styles.resultTitle}>RESULT</Text>
+            </View>
 
-                  {/* Status Badge */}
-                  <View style={styles.statusContainer}>
-                    <Text style={[
-                      styles.resultStatus,
-                      { color: resultData.status === 'PASS' ? '#4CAF50' : '#F44336' }
-                    ]}>
-                      {resultData.status}
-                    </Text>
-                  </View>
+            <View style={styles.statusContainer}>
+              <Text style={[
+                styles.resultStatus,
+                { color: resultData.status === 'PASS' ? '#4CAF50' : '#F44336' }
+              ]}>
+                {resultData.status}
+              </Text>
+            </View>
 
-                  {/* Stats Section */}
-                  <View style={styles.resultStats}>
-                    {/* Correct Acts */}
-                    <View style={styles.statRow}>
-                      <Text style={styles.statLabel}>CORRECT ACTS:</Text>
-                      <Text style={[styles.statValue, {color: '#4CAF50'}]}>
-                        {resultData.correctActs}
-                      </Text>
-                    </View>
-
-                    {/* Violations */}
-                    <View style={styles.statRow}>
-                      <Text style={styles.statLabel}>VIOLATIONS:</Text>
-                      <Text style={[styles.statValue, {color: '#F44336'}]}>
-                        {resultData.violations}
-                      </Text>
-                    </View>
-
-                    {/* Total Time */}
-                    <View style={styles.statRow}>
-                      <Text style={styles.statLabel}>TOTAL TIME:</Text>
-                      <Text style={styles.statValue}>{resultData.totalTimeSpent}</Text>
-                    </View>
-
-                    {/* Average Time */}
-                    <View style={styles.statRow}>
-                      <Text style={styles.statLabel}>AVG TIME:</Text>
-                      <Text style={styles.statValue}>{resultData.averageTime}</Text>
-                    </View>
-
-                    {/* Accuracy */}
-                    <View style={styles.statRow}>
-                      <Text style={styles.statLabel}>ACCURACY:</Text>
-                      <Text style={[
-                        styles.statValue,
-                        {color: resultData.accuracy >= 70 ? '#4CAF50' : '#F44336'}
-                      ]}>
-                        {resultData.totalScore}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Buttons */}
-                  <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                      style={styles.detailToggleButton}
-                      onPress={toggleDetailedView}
-                    >
-                      <Text style={styles.detailToggleText}>VIEW{'\n'}DETAILS</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[
-                        styles.finishButton,
-                        { backgroundColor: resultData.status === 'PASS' ? '#4CAF50' : '#FF9800' }
-                      ]}
-                      onPress={handleFinishPress}
-                      disabled={loading || saving}
-                    >
-                      <Text style={styles.finishButtonText}>
-                        {loading ? 'LOADING...' : saving ? 'SAVING...' : 'FINISH'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              ) : (
-                <>
-                  {/* Detailed View Header */}
-                  <View style={styles.detailedHeader}>
-                    <TouchableOpacity
-                      style={styles.backButton}
-                      onPress={toggleDetailedView}
-                    >
-                      <Text style={styles.backButtonText}>← BACK</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.detailedTitle}>SCENARIO DETAILS</Text>
-                  </View>
-
-                  {/* Detailed Scenarios List */}
-                  <View style={styles.detailedContentWrapper}>
-                    {resultData.scenarioDetails.map((item, index) => (
-                      <View key={`scenario-${index}`}>
-                        {renderScenarioDetail({ item, index })}
-                      </View>
-                    ))}
-                  </View>
-                </>
-              )}
-
-              {saving && (
-                <View style={styles.savingIndicator}>
-                  <ActivityIndicator size="small" color="#666" />
-                  <Text style={styles.savingText}>Saving progress...</Text>
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        </Animated.View>
-      )}
-
-      {/* Library Modal with Backdrop */}
-      {libraryVisible && (
-        <>
-          <TouchableOpacity
-            style={styles.modalBackdrop}
-            activeOpacity={1}
-            onPress={() => setLibraryVisible(false)}
-          />
-          <Animated.View
-            style={[
-              styles.libraryPanel,
-              { transform: [{ scale: libraryModalScale }] },
-            ]}
-          >
-            <View style={styles.libraryContainer}>
-              <View style={styles.topBorder} />
-
-              <Text style={styles.libraryTitle}>REFERENCES</Text>
-
-              <View style={styles.libraryContent}>
-                <ScrollView
-                  style={styles.scrollView}
-                  contentContainerStyle={styles.scrollContent}
-                  showsVerticalScrollIndicator={true}
-                >
-                  <View style={styles.referenceContainer}>
-                    <Text style={styles.sectionTitle}>Some Basic Signs and Markings to Remember</Text>
-
-                    <Text style={styles.subsectionTitle}>Traffic Signs</Text>
-                    <Text style={styles.referenceText}>
-                      • Red Signal - means bring your vehicle to a stop at a marked line.{'\n\n'}
-                      • Flashing Red - means bring your vehicle to a STOP and proceed only when it is safe.{'\n\n'}
-                      • Yellow Signal - means the red signal is about to appear. Prepare to stop.{'\n\n'}
-                      • Flashing Yellow - means slow down and proceed with caution.{'\n\n'}
-                      • Green Signal - means you can proceed, yield if needed.{'\n\n'}
-                      • Flashing Green - proceed with caution. yield for pedestrian.{'\n'}
-                    </Text>
-
-                    <Text style={styles.subsectionTitle}>Road Markings</Text>
-                    <Text style={styles.referenceText}>
-                      • Solid White line - Crossing is discouraged and requires special care when doing so.{'\n\n'}
-                      • Broken White line - Changing of lane is allowed provided with care.{'\n\n'}
-                      • Double Solid Yellow line - No overtaking and No crossing{'\n\n'}
-                      • Single Solid Yellow line - Crossing is allowed but no overtaking{'\n\n'}
-                      • Broken Yellow line - Crossing and overtaking is allowed with necessary care.{'\n\n'}
-                      • Edge Line - Used to separate the outside edge of the road from the shoulder.{'\n'}
-                    </Text>
-                  </View>
-
-                  <View style={styles.referenceContainer}>
-                    <Text style={styles.referenceText}>
-                      Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
-                      <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
-                        <Text style={[styles.referenceText, styles.linkText]}>
-                          https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
-                        </Text>
-                      </TouchableOpacity>
-                    </Text>
-                  </View>
-
-                  <View style={styles.referenceContainer}>
-                    <Text style={styles.sectionTitle}>Basic Pedestrian Safety Tips</Text>
-                    <Text style={styles.referenceText}>
-                      • Follow the rules of the road and obey signs and signals{'\n\n'}
-                      • Walk on sidewalks whenever possible. If there are no sidewalk, walk facing and as far from traffic as possible{'\n'}
-                      • Cross streets at crosswalks.{'\n\n'}
-                      • If a crosswalk is not available, walk at a well lit area where you have the best view of traffic. Wait for a gap in traffic that allows enough time to cross safely but continue to watch for traffic as you cross.{'\n\n'}
-                      • Watch for cars entering or exiting driveways or backing up.{'\n\n'}
-                      • When crossing the street, stay alert: <Text style={[styles.referenceText, { textDecorationLine: 'underline' }]}>check for signals, signs, and actions of drivers, cyclists, and pedestrians around you</Text>.{'\n\n'}
-                      • Do not rely on others to keep you safe.{'\n'}
-                    </Text>
-                  </View>
-
-                  <View style={styles.referenceContainer}>
-                    <Text style={styles.referenceText}>
-                      National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
-                      <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
-                        <Text style={[styles.referenceText, styles.linkText]}>
-                          https://www.nhtsa.gov/road-safety/pedestrian-safety
-                        </Text>
-                      </TouchableOpacity>
-                    </Text>
-                  </View>
-                </ScrollView>
+            <View style={styles.resultStats}>
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>CORRECT ACTS:</Text>
+                <Text style={[styles.statValue, {color: '#4CAF50'}]}>{resultData.correctActs}</Text>
               </View>
 
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>VIOLATIONS:</Text>
+                <Text style={[styles.statValue, {color: '#F44336'}]}>{resultData.violations}</Text>
+              </View>
+
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>TOTAL TIME:</Text>
+                <Text style={styles.statValue}>{resultData.totalTimeSpent}</Text>
+              </View>
+
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>AVG TIME:</Text>
+                <Text style={styles.statValue}>{resultData.averageTime}</Text>
+              </View>
+
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>ACCURACY:</Text>
+                <Text style={[
+                  styles.statValue,
+                  {color: resultData.accuracy >= 70 ? '#4CAF50' : '#F44336'}
+                ]}>
+                  {resultData.totalScore}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.buttonContainer}>
               <TouchableOpacity
-                style={styles.libraryBackButton}
-                onPress={() => setLibraryVisible(false)}
+                style={styles.detailToggleButton}
+                onPress={toggleDetailedView}
               >
-                <Text style={styles.libraryBackButtonText}>CLOSE</Text>
+                <Text style={styles.detailToggleText}>VIEW SCENARIO DETAILS</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.finishButton,
+                  { backgroundColor: resultData.status === 'PASS' ? '#4CAF50' : '#FF9800' }
+                ]}
+                onPress={handleFinishPress}
+                disabled={loading || saving}
+              >
+                <Text style={styles.finishButtonText}>
+                  {loading ? 'CALCULATING...' : saving ? 'SAVING...' : 'FINISH'}
+                </Text>
               </TouchableOpacity>
             </View>
-          </Animated.View>
-        </>
+          </>
+        ) : (
+          <>
+            <View style={styles.detailedHeader}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={toggleDetailedView}
+              >
+                <Text style={styles.backButtonText}>← BACK</Text>
+              </TouchableOpacity>
+              <Text style={styles.detailedTitle}>SCENARIO DETAILS</Text>
+            </View>
+
+            <ScrollView style={styles.detailedContent} showsVerticalScrollIndicator={false}>
+              {resultData.scenarioDetails.map((item, index) => (
+                <View key={index}>
+                  {renderScenarioDetail({ item, index })}
+                </View>
+              ))}
+            </ScrollView>
+          </>
+        )}
+
+        {saving && (
+          <View style={styles.savingIndicator}>
+            <ActivityIndicator size="small" color="#666" />
+            <Text style={styles.savingText}>Saving progress...</Text>
+          </View>
+        )}
+      </Animated.View>
+
+      {libraryVisible && (
+        <Animated.View
+          style={[
+            styles.libraryPanel,
+            { transform: [{ scale: libraryModalScale }] },
+          ]}
+        >
+          {/* Custom Container for Library */}
+          <View style={styles.customContainer}>
+            <View style={styles.containerBorder} />
+          </View>
+
+          <Text style={styles.libraryTitle}>REFERENCES</Text>
+
+          <View style={styles.libraryContent}>
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={true}
+            >
+              <View style={styles.referenceContainer}>
+                <Text style={styles.sectionTitle}>Some Basic Signs and Markings to Remember</Text>
+
+                <Text style={styles.subsectionTitle}>Traffic Signs</Text>
+                <Text style={styles.referenceText}>
+                  • Red Signal - means bring your vehicle to a stop at a marked line.{'\n\n'}
+                  • Flashing Red - means bring your vehicle to a STOP and proceed only when it is safe.{'\n\n'}
+                  • Yellow Signal - means the red signal is about to appear. Prepare to stop.{'\n\n'}
+                  • Flashing Yellow - means slow down and proceed with caution.{'\n\n'}
+                  • Green Signal - means you can proceed, yield if needed.{'\n\n'}
+                  • Flashing Green - proceed with caution. yield for pedestrian.{'\n'}
+                </Text>
+
+                <Text style={styles.subsectionTitle}>Road Markings</Text>
+                <Text style={styles.referenceText}>
+                  • Solid White line - Crossing is discouraged and requires special care when doing so.{'\n\n'}
+                  • Broken White line - Changing of lane is allowed provided with care.{'\n\n'}
+                  • Double Solid Yellow line - No overtaking and No crossing{'\n\n'}
+                  • Single Solid Yellow line - Crossing is allowed but no overtaking{'\n\n'}
+                  • Broken Yellow line - Crossing and overtaking is allowed with necessary care.{'\n\n'}
+                  • Edge Line - Used to separate the outside edge of the road from the shoulder.{'\n'}
+                </Text>
+              </View>
+              <View style={styles.referenceContainer}>
+                <Text style={styles.referenceText}>
+                  Land Transportation Office. (2023). Road and traffic rules, signs, signals, and markings (RO102).{'\n'}
+                  <TouchableOpacity onPress={() => Linking.openURL('https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf')}>
+                    <Text style={[styles.referenceText, styles.linkText]}>
+                      https://lto.gov.ph/wp-content/uploads/2023/09/RO102_CDE_Road_and_Traffic_Rules_Signs-Signals-Markings.pdf
+                    </Text>
+                  </TouchableOpacity>
+                </Text>
+              </View>
+
+              <View style={styles.referenceContainer}>
+                <Text style={styles.sectionTitle}>Basic Pedestrian Safety Tips</Text>
+                <Text style={styles.referenceText}>
+                  • Follow the rules of the road and obey signs and signals{'\n\n'}
+                  • Walk on sidewalks whenever possible. If there are no sidewalk, walk facing and as far from traffic as possible{'\n'}
+                  • Cross streets at crosswalks.{'\n\n'}
+                  • If a crosswalk is not available, walk at a well lit area where you have the best view of traffic. Wait for a gap in traffic that allows enough time to cross safely but continue to watch for traffic as you cross.{'\n\n'}
+                  • Watch for cars entering or exiting driveways or backing up.{'\n\n'}
+                  • When crossing the street, stay alert: <Text style={[styles.referenceText, { textDecorationLine: 'underline' }]}>check for signals, signs, and actions of drivers, cyclists, and pedestrians around you</Text>.{'\n\n'}
+                  • Do not rely on others to keep you safe.{'\n'}
+                </Text>
+              </View>
+
+              <View style={styles.referenceContainer}>
+                <Text style={styles.referenceText}>
+                  National Highway Traffic Safety Administration. Pedestrian Safety{'\n'}
+                  <TouchableOpacity onPress={() => Linking.openURL('https://www.nhtsa.gov/road-safety/pedestrian-safety')}>
+                    <Text style={[styles.referenceText, styles.linkText]}>
+                      https://www.nhtsa.gov/road-safety/pedestrian-safety
+                    </Text>
+                  </TouchableOpacity>
+                </Text>
+              </View>
+            </ScrollView>
+          </View>
+
+          <TouchableOpacity
+            style={styles.libraryBackButton}
+            onPress={() => setLibraryVisible(false)}
+          >
+            <Image
+              source={require('../../assets/background/back.png')}
+              style={styles.backButtonImage}
+            />
+          </TouchableOpacity>
+        </Animated.View>
       )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#87CEEB'
-  },
-  backgroundContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0
-  },
-  backgroundWrapper: {
-    position: 'absolute',
-    width,
-    height
-  },
-  backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%'
-  },
-  backgroundImageStyle: {
-    width: '100%',
-    height: '100%',
-    transform: [{ scale: 1.3 }]
-  },
-  skyOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height,
-    backgroundColor: 'rgba(0,0,0,0)',
-    zIndex: 0
-  },
-  carContainer: {
-    position: 'absolute',
-    bottom: -25,
-    left: width * 0.05,
-    zIndex: 2
-  },
-  carImage: {
-    width: scale(400),
-    height: scale(210)
-  },
-  topRightIcons: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    flexDirection: 'row',
-    zIndex: 5
-  },
+  container: { flex: 1, backgroundColor: '#87CEEB' },
+  backgroundContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  backgroundWrapper: { position: 'absolute', width, height },
+  backgroundImage: { flex: 1, width: '100%', height: '100%' },
+  backgroundImageStyle: { width: '100%', height: '100%', transform: [{ scale: 1.3 }] },
+  skyOverlay: { position: 'absolute', top: 0, left: 0, right: 0, height, backgroundColor: 'rgba(0,0,0,0)', zIndex: 0 },
+  carContainer: { position: 'absolute', bottom: -25, left: width * 0.05, zIndex: 2 },
+  carImage: { width: 400, height: 210 },
+  topRightIcons: { position: 'absolute', top: 40, right: 20, flexDirection: 'row', zIndex: 5 },
   iconButton: {
     backgroundColor: 'rgba(0,0,0,0.6)',
-    width: scale(40),
-    height: scale(40),
-    borderRadius: scale(20),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 10,
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center', marginLeft: 10,
   },
-  topIcon: {
-    width: scale(24),
-    height: scale(24)
-  },
+  topIcon: { width: 24, height: 24 },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.7)',
@@ -753,375 +673,325 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 15,
   },
-  loadingCard: {
-    backgroundColor: '#E8D4A0',
-    padding: scale(30),
-    borderRadius: 5,
-    alignItems: 'center',
-    borderWidth: 4,
-    borderColor: '#8B7355',
-  },
   loadingText: {
-    fontSize: scale(14),
-    color: '#000',
+    fontSize: 14,
+    color: 'white',
     fontFamily: 'pixel',
-    marginTop: 15,
+    marginTop: 10,
     textAlign: 'center',
   },
-
-  // Main Result Panel - FIXED
   resultPanel: {
     position: 'absolute',
-    top: height * 0.15,
+    top: height * 0.12,
     alignSelf: 'center',
-    width: isSmallDevice ? width * 0.90 : isMediumDevice ? width * 0.85 : width * 0.82,
-    maxWidth: 650,
-    maxHeight: height * 0.68,
+    width: Math.min(width * 0.82, 400),
+    height: Math.min(height * 0.65, 460),
+    alignItems: 'center',
+    justifyContent: 'flex-start',
     zIndex: 6,
   },
-  pixelContainer: {
-    backgroundColor: '#E8D4A0',
-    borderRadius: 5,
+  // NEW: Custom Container Styles
+  customContainer: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20,
     borderWidth: 4,
-    borderColor: '#8B7355',
+    borderColor: '#2c3e50',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 10,
-    flex: 1,
   },
-  scrollableContent: {
-    flex: 1,
-  },
-  scrollContentContainer: {
-    paddingHorizontal: scale(16),
-    paddingTop: scale(20),
-    paddingBottom: scale(24),
-  },
-  topBorder: {
+  containerBorder: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: scale(15),
-    backgroundColor: '#D4C090',
-    borderTopLeftRadius: 2,
-    borderTopRightRadius: 2,
-    zIndex: 1,
+    top: 8,
+    left: 8,
+    right: 8,
+    bottom: 8,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#34495e',
   },
   resultHeader: {
     alignItems: 'center',
-    marginBottom: scale(8),
+    marginTop: 25,
+    marginBottom: 8,
   },
   resultTitle: {
-    fontSize: scale(26),
-    color: '#000',
+    fontSize: 26,
+    color: '#2c3e50',
     fontFamily: 'pixel',
     textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.1)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 2,
   },
   statusContainer: {
     alignItems: 'center',
-    marginBottom: scale(16),
+    marginBottom: 18,
   },
   resultStatus: {
-    fontSize: scale(28),
+    fontSize: 22,
     fontFamily: 'pixel',
     textAlign: 'center',
     fontWeight: 'bold',
     textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 0,
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   resultStats: {
-    width: '100%',
-    marginBottom: scale(16),
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 8,
-    padding: scale(8),
+    width: '85%',
+    paddingVertical: 10,
+    gap: 12,
   },
   statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: scale(8),
-    paddingHorizontal: scale(10),
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(139, 115, 85, 0.2)',
+    paddingHorizontal: 15,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(52, 73, 94, 0.05)',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3498db',
   },
   statLabel: {
-    fontSize: scale(13),
-    color: '#000',
+    fontSize: 12,
+    color: '#2c3e50',
     fontFamily: 'pixel',
+    fontWeight: '600',
   },
   statValue: {
-    fontSize: scale(16),
-    color: '#000',
+    fontSize: 14,
+    color: '#2c3e50',
     fontFamily: 'pixel',
     textAlign: 'right',
     fontWeight: 'bold',
   },
   buttonContainer: {
     flexDirection: 'row',
-    width: '100%',
-    marginTop: scale(12),
-    gap: scale(10),
+    width: '88%',
+    marginTop: 22,
+    marginBottom: 20,
+    gap: 10,
   },
   detailToggleButton: {
-    backgroundColor: '#2196F3',
-    paddingHorizontal: scale(14),
-    paddingVertical: scale(16),
-    borderRadius: 8,
+    backgroundColor: '#3498db',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderRadius: 10,
     flex: 1,
-    borderWidth: 3,
-    borderColor: '#1565C0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
+    elevation: 3,
   },
   detailToggleText: {
-    fontSize: scale(11),
+    fontSize: 10,
     color: 'white',
     fontFamily: 'pixel',
     textAlign: 'center',
-    lineHeight: scale(16),
+    fontWeight: 'bold',
   },
   finishButton: {
-    paddingHorizontal: scale(16),
-    paddingVertical: scale(16),
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 0,
     flex: 1,
-    borderWidth: 3,
-    borderColor: '#2E7D32',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
+    elevation: 3,
   },
   finishButtonText: {
-    fontSize: scale(14),
+    fontSize: 12,
     color: 'white',
     fontFamily: 'pixel',
     textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    fontWeight: 'bold',
   },
-
-  // Detailed View Styles
   detailedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
-    marginBottom: scale(16),
+    width: '90%',
+    marginTop: 25,
+    marginBottom: 15,
   },
   backButton: {
-    backgroundColor: '#666',
-    paddingHorizontal: scale(14),
-    paddingVertical: scale(10),
-    borderRadius: 5,
-    marginRight: scale(12),
-    borderWidth: 2,
-    borderColor: '#444',
+    backgroundColor: '#7f8c8d',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
   backButtonText: {
-    fontSize: scale(11),
+    fontSize: 10,
     color: 'white',
     fontFamily: 'pixel',
+    fontWeight: 'bold',
   },
   detailedTitle: {
-    fontSize: scale(16),
-    color: '#000',
+    fontSize: 16,
+    color: '#2c3e50',
     fontFamily: 'pixel',
     fontWeight: 'bold',
-    flex: 1,
   },
-  detailedContentWrapper: {
-    width: '100%',
+  detailedContent: {
+    width: '90%',
+    flex: 1,
+    marginBottom: 20,
   },
   scenarioDetailItem: {
-    backgroundColor: 'rgba(212, 192, 144, 0.6)',
-    borderRadius: 8,
-    padding: scale(14),
-    marginBottom: scale(12),
+    backgroundColor: 'rgba(52, 73, 94, 0.08)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
     borderWidth: 2,
-    borderColor: '#8B7355',
+    borderColor: '#ecf0f1',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   scenarioDetailHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: scale(8),
+    marginBottom: 8,
   },
   scenarioDetailNumber: {
-    fontSize: scale(13),
-    color: '#000',
+    fontSize: 12,
+    color: '#2c3e50',
     fontFamily: 'pixel',
     fontWeight: 'bold',
   },
   scenarioStatusBadge: {
-    paddingHorizontal: scale(12),
-    paddingVertical: scale(6),
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'rgba(0,0,0,0.2)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   scenarioStatusText: {
-    fontSize: scale(9),
+    fontSize: 9,
     color: 'white',
     fontFamily: 'pixel',
     fontWeight: 'bold',
   },
   scenarioDetailContent: {
-    marginTop: scale(8),
-    paddingTop: scale(8),
+    marginTop: 6,
+    paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(139, 115, 85, 0.4)',
+    borderTopColor: '#dfe6e9',
   },
   scenarioDetailText: {
-    fontSize: scale(11),
-    color: '#000',
+    fontSize: 10,
+    color: '#2c3e50',
     fontFamily: 'space-mono',
-    marginBottom: scale(4),
+    marginBottom: 3,
   },
   scenarioDetailAnswer: {
-    fontSize: scale(11),
-    color: '#333',
+    fontSize: 10,
+    color: '#34495e',
     fontFamily: 'pixel',
     fontStyle: 'italic',
-    marginTop: scale(3),
   },
   savingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: scale(16),
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: scale(16),
-    paddingVertical: scale(10),
-    borderRadius: 15,
-    alignSelf: 'center',
+    marginBottom: 10,
   },
   savingText: {
-    fontSize: scale(11),
-    color: '#000',
+    fontSize: 10,
+    color: '#7f8c8d',
     fontFamily: 'pixel',
-    marginLeft: scale(8),
+    marginLeft: 8,
   },
-
-  // Library Modal Styles - FIXED
-  modalBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    zIndex: 9,
+  backButtonImage: {
+    width: 100,
+    height: 30,
+    resizeMode: 'contain',
+    marginBottom: 5
+  },
+  linkText: {
+    color: '#0066CC',
+    textDecorationLine: 'underline',
   },
   libraryPanel: {
     position: 'absolute',
-    top: height * 0.06,
+    top: height * 0.1,
     alignSelf: 'center',
-    width: isSmallDevice ? width * 0.92 : isMediumDevice ? width * 0.88 : width * 0.85,
-    maxWidth: 700,
-    maxHeight: height * 0.85,
+    width: Math.min(width * 0.9, 450),
+    height: Math.min(height * 0.75, 500),
+    alignItems: 'center',
     zIndex: 10,
   },
-  libraryContainer: {
-    backgroundColor: '#E8D4A0',
-    borderRadius: 5,
-    borderWidth: 4,
-    borderColor: '#8B7355',
-    padding: scale(20),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 15,
-    elevation: 10,
-    maxHeight: height * 0.85,
-    flex: 1,
-  },
   libraryTitle: {
-    fontSize: scale(22),
-    color: '#000',
+    fontSize: 18,
+    color: '#2c3e50',
     fontFamily: "pixel",
-    marginBottom: scale(16),
-    marginTop: scale(8),
+    marginTop: 20,
+    marginBottom: 15,
     textAlign: 'center',
-    paddingBottom: scale(12),
-    borderBottomWidth: 3,
-    borderBottomColor: '#8B7355',
+    fontWeight: 'bold',
   },
   libraryContent: {
     flex: 1,
-    width: '100%',
+    width: '85%',
+    marginBottom: 20,
   },
   scrollView: {
     flex: 1,
     width: '100%',
   },
   scrollContent: {
-    paddingVertical: scale(10),
-    paddingHorizontal: scale(8),
+    paddingVertical: 10,
+    paddingHorizontal: 15,
   },
   referenceContainer: {
-    marginBottom: scale(24),
-    paddingHorizontal: scale(8),
+    marginBottom: 20,
+    paddingHorizontal: 5,
   },
   referenceText: {
-    fontSize: scale(11),
-    color: '#000',
+    fontSize: 11,
+    color: '#2c3e50',
     fontFamily: 'space-mono',
-    lineHeight: scale(17),
+    lineHeight: 16,
     textAlign: 'justify',
   },
   libraryBackButton: {
-    backgroundColor: '#666',
-    paddingVertical: scale(14),
-    paddingHorizontal: scale(40),
-    borderRadius: 8,
-    marginTop: scale(16),
-    alignSelf: 'center',
-    borderWidth: 3,
-    borderColor: '#444',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  libraryBackButtonText: {
-    fontSize: scale(15),
-    color: 'white',
-    fontFamily: 'pixel',
-    textAlign: 'center',
-  },
-  linkText: {
-    color: '#0066CC',
-    textDecorationLine: 'underline',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 25,
   },
   sectionTitle: {
-    fontSize: scale(14),
-    color: '#000',
+    fontSize: 13,
+    color: '#2c3e50',
     fontFamily: "pixel",
-    marginBottom: scale(12),
+    marginBottom: 10,
     textAlign: 'center',
     fontWeight: 'bold',
   },
   subsectionTitle: {
-    fontSize: scale(12),
-    color: '#000',
+    fontSize: 11,
+    color: '#34495e',
     fontFamily: "pixel",
-    marginTop: scale(12),
-    marginBottom: scale(8),
+    marginTop: 10,
+    marginBottom: 5,
     textDecorationLine: 'underline',
+    fontWeight: 'bold',
   },
 });

@@ -122,13 +122,14 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
         console.log(`✅ Loaded ${result.data.length} scenarios`);
         return true;
       } else {
-        console.error('❌ No scenarios data received');
+        // Check if it's actually an error or just empty data
+        if (result.success && result.data && result.data.length === 0) {
+          console.log('ℹ️ No scenarios available for this category yet');
+        } else {
+          console.error('❌ Failed to load scenarios');
+        }
         return false;
       }
-    } catch (error) {
-      console.error('❌ Error loading scenarios:', error);
-      return false;
-    }
   };
 
   // 🆕 OPTIMIZED: Load session progress with caching
