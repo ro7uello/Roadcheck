@@ -301,9 +301,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     color: "white",
-    fontFamily: "pixel",
+    fontFamily: 'spaceMono',
     marginBottom: 12,
-    fontSize: 14,
+    fontSize: 16,
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -318,8 +318,8 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 10,
     color: "white",
-    fontFamily: "pixel",
-    fontSize: 14,
+    fontFamily: 'spaceMono',
+    fontSize: 16,
   },
   eyeIcon: {
     padding: 10,
