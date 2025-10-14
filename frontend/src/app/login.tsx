@@ -140,7 +140,7 @@ export default function LoginPage() {
       await AsyncStorage.setItem('refresh_token', data.refresh_token);
 
       // Save user data
-      await AsyncStorage.setItem('user_id', data.user.id);
+      await AsyncStorage.setItem('userId', data.user.id);
       await AsyncStorage.setItem('user_email', data.user.email);
 
       console.log('✅ Tokens and user data saved to storage');
@@ -194,7 +194,7 @@ export default function LoginPage() {
         await AsyncStorage.setItem('refresh_token', data.refresh_token);
 
         // Save user data
-        await AsyncStorage.setItem('user_id', data.user.id);
+        await AsyncStorage.setItem('userId', data.user.id);
         await AsyncStorage.setItem('user_email', data.user.email);
 
         console.log('✅ Other device logged out, new session created');

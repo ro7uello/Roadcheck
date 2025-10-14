@@ -52,6 +52,17 @@ export default function OptionPage() {
     };
   }, [fontsLoaded]);
 
+  useEffect(() => {
+    const checkStorage = async () => {
+      const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('userId');
+      console.log('🔍 DEBUG - Token exists:', !!token);
+      console.log('🔍 DEBUG - UserId exists:', userId);
+      console.log('🔍 DEBUG - Token preview:', token?.substring(0, 50));
+    };
+    checkStorage();
+  }, []);
+
   // Load user profile from backend
   const loadUserProfile = async () => {
     try {

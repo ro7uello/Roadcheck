@@ -593,7 +593,7 @@ class CacheManager {
      }
    }
 
-   // ============================================
+// ============================================
    // 🆕 BULK INVALIDATION HELPERS
    // ============================================
 
@@ -605,6 +605,47 @@ class CacheManager {
        this.invalidateAttempts(userId)
      ]);
      console.log(`🗑️ All user data cache invalidated for user ${userId}`);
+   }
+
+   // ============================================
+   // 🆕 GENERIC CACHE METHODS (for CachedApiService)
+   // ============================================
+
+   async get(key) {
+     try {
+       const cached = await AsyncStorage.getItem(key);
+       if (cached) {
+         const cacheData = JSON.parse(cached);
+         return cacheData;
+       }
+       return null;
+     } catch (error) {
+       console.error('Error getting generic cache:', error);
+       return null;
+     }
+   }
+
+   async set(key, data, duration = 5 * 60 * 1000) {
+     try {
+       const cacheData = {
+         data: data,
+         timestamp: Date.now(),
+         duration: duration
+       };
+       await AsyncStorage.setItem(key, JSON.stringify(cacheData));
+       console.log(`✅ Generic cache set for key: ${key}`);
+     } catch (error) {
+       console.error('Error setting generic cache:', error);
+     }
+   }
+
+   async invalidate(key) {
+     try {
+       await AsyncStorage.removeItem(key);
+       console.log(`🗑️ Cache invalidated for key: ${key}`);
+     } catch (error) {
+       console.error('Error invalidating cache:', error);
+     }
    }
  } // ✅ This closes the class *after* invalidateUserData()
 
