@@ -7,20 +7,20 @@ const CACHE_KEYS = {
   SCENARIOS: 'cache_scenarios',
   CATEGORIES: 'cache_categories',
   PHASES: 'cache_phases',
-  USER_PROGRESS: 'cache_user_progress',        // 🆕 NEW
-  USER_ATTEMPTS: 'cache_user_attempts',        // 🆕 NEW
-  SESSION_PROGRESS: 'cache_session_progress',  // 🆕 NEW
+  USER_PROGRESS: 'cache_user_progress',
+  USER_ATTEMPTS: 'cache_user_attempts',
+  SESSION_PROGRESS: 'cache_session_progress',
 };
 
 const CACHE_DURATION = {
   PROFILE: 5 * 60 * 1000,      // 5 minutes
   STATS: 2 * 60 * 1000,        // 2 minutes
-  SCENARIOS: 60 * 60 * 1000,   // 1 hour (scenarios rarely change)
+  SCENARIOS: 60 * 60 * 1000,   // 1 hour
   CATEGORIES: 24 * 60 * 60 * 1000, // 24 hours
-  PHASES: 24 * 60 * 60 * 1000,     // 24 hours
-  PROGRESS: 3 * 60 * 1000,     // 🆕 3 minutes (updates frequently)
-  ATTEMPTS: 5 * 60 * 1000,     // 🆕 5 minutes
-  SESSION: 2 * 60 * 1000,      // 🆕 2 minutes (very dynamic)
+  PHASES: 24 * 60 * 60 * 1000,
+  PROGRESS: 3 * 60 * 1000,
+  ATTEMPTS: 5 * 60 * 1000,
+  SESSION: 2 * 60 * 1000,
 };
 
 class CacheManager {
@@ -32,9 +32,9 @@ class CacheManager {
       scenarios: {},
       categories: null,
       phases: {},
-      progress: null,          // 🆕 NEW
-      attempts: {},            // 🆕 NEW
-      sessions: {},            // 🆕 NEW
+      progress: null,
+      attempts: {},
+      sessions: {},
     };
   }
 
@@ -155,7 +155,7 @@ class CacheManager {
   }
 
   // ============================================
-  // 🆕 USER PROGRESS CACHING
+  // USER PROGRESS CACHING
   // ============================================
 
   async cacheProgress(userId, progressData) {
@@ -180,7 +180,6 @@ class CacheManager {
 
   async getProgress(userId) {
     try {
-      // Check memory cache
       if (this.memoryCache.progress &&
           this.memoryCache.progress.userId === userId &&
           !this.isCacheExpired(this.memoryCache.progress.timestamp, CACHE_DURATION.PROGRESS)) {
@@ -188,7 +187,6 @@ class CacheManager {
         return this.memoryCache.progress.data;
       }
 
-      // Check AsyncStorage
       const cached = await AsyncStorage.getItem(`${CACHE_KEYS.USER_PROGRESS}_${userId}`);
       if (cached) {
         const cacheData = JSON.parse(cached);
@@ -214,7 +212,7 @@ class CacheManager {
   }
 
   // ============================================
-  // 🆕 USER ATTEMPTS CACHING (by category/phase)
+  // USER ATTEMPTS CACHING
   // ============================================
 
   async cacheAttempts(userId, categoryId, phaseId, attemptsData) {
@@ -244,7 +242,6 @@ class CacheManager {
     try {
       const cacheKey = `${userId}_${categoryId}_${phaseId}`;
 
-      // Check memory cache
       if (this.memoryCache.attempts[cacheKey] &&
           !this.isCacheExpired(
             this.memoryCache.attempts[cacheKey].timestamp,
@@ -254,7 +251,6 @@ class CacheManager {
         return this.memoryCache.attempts[cacheKey].data;
       }
 
-      // Check AsyncStorage
       const cached = await AsyncStorage.getItem(`${CACHE_KEYS.USER_ATTEMPTS}_${cacheKey}`);
       if (cached) {
         const cacheData = JSON.parse(cached);
@@ -276,13 +272,11 @@ class CacheManager {
   async invalidateAttempts(userId, categoryId = null, phaseId = null) {
     try {
       if (categoryId && phaseId) {
-        // Invalidate specific category/phase
         const cacheKey = `${userId}_${categoryId}_${phaseId}`;
         delete this.memoryCache.attempts[cacheKey];
         await AsyncStorage.removeItem(`${CACHE_KEYS.USER_ATTEMPTS}_${cacheKey}`);
         console.log(`🗑️ Attempts cache invalidated for ${cacheKey}`);
       } else {
-        // Invalidate all attempts for user
         const keys = await AsyncStorage.getAllKeys();
         const attemptsKeys = keys.filter(key =>
           key.startsWith(`${CACHE_KEYS.USER_ATTEMPTS}_${userId}_`)
@@ -292,7 +286,6 @@ class CacheManager {
           await AsyncStorage.multiRemove(attemptsKeys);
         }
 
-        // Clear memory cache for this user
         Object.keys(this.memoryCache.attempts).forEach(key => {
           if (key.startsWith(`${userId}_`)) {
             delete this.memoryCache.attempts[key];
@@ -307,7 +300,7 @@ class CacheManager {
   }
 
   // ============================================
-  // 🆕 SESSION PROGRESS CACHING
+  // SESSION PROGRESS CACHING
   // ============================================
 
   async cacheSessionProgress(sessionId, progressData) {
@@ -332,7 +325,6 @@ class CacheManager {
 
   async getSessionProgress(sessionId) {
     try {
-      // Check memory cache
       if (this.memoryCache.sessions[sessionId] &&
           !this.isCacheExpired(
             this.memoryCache.sessions[sessionId].timestamp,
@@ -342,7 +334,6 @@ class CacheManager {
         return this.memoryCache.sessions[sessionId].data;
       }
 
-      // Check AsyncStorage
       const cached = await AsyncStorage.getItem(`${CACHE_KEYS.SESSION_PROGRESS}_${sessionId}`);
       if (cached) {
         const cacheData = JSON.parse(cached);
@@ -539,7 +530,6 @@ class CacheManager {
 
   async clearAllCache() {
     try {
-      // Clear memory cache
       this.memoryCache = {
         profile: null,
         stats: null,
@@ -551,7 +541,6 @@ class CacheManager {
         sessions: {},
       };
 
-      // Clear AsyncStorage cache
       const keys = await AsyncStorage.getAllKeys();
       const cacheKeys = keys.filter(key =>
         key.startsWith('cache_')
@@ -567,87 +556,96 @@ class CacheManager {
     }
   }
 
-   async getCacheInfo() {
-     try {
-       const keys = await AsyncStorage.getAllKeys();
-       const cacheKeys = keys.filter(key => key.startsWith('cache_'));
+  async getCacheInfo() {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const cacheKeys = keys.filter(key => key.startsWith('cache_'));
 
-       const info = {
-         totalCacheItems: cacheKeys.length,
-         memoryCache: {
-           hasProfile: !!this.memoryCache.profile,
-           hasStats: !!this.memoryCache.stats,
-           scenarioCount: Object.keys(this.memoryCache.scenarios).length,
-           hasCategories: !!this.memoryCache.categories,
-           phaseCount: Object.keys(this.memoryCache.phases).length,
-           hasProgress: !!this.memoryCache.progress,
-           attemptsCount: Object.keys(this.memoryCache.attempts).length,
-           sessionsCount: Object.keys(this.memoryCache.sessions).length,
-         }
-       };
+      const info = {
+        totalCacheItems: cacheKeys.length,
+        memoryCache: {
+          hasProfile: !!this.memoryCache.profile,
+          hasStats: !!this.memoryCache.stats,
+          scenarioCount: Object.keys(this.memoryCache.scenarios).length,
+          hasCategories: !!this.memoryCache.categories,
+          phaseCount: Object.keys(this.memoryCache.phases).length,
+          hasProgress: !!this.memoryCache.progress,
+          attemptsCount: Object.keys(this.memoryCache.attempts).length,
+          sessionsCount: Object.keys(this.memoryCache.sessions).length,
+        }
+      };
 
-       return info;
-     } catch (error) {
-       console.error('Error getting cache info:', error);
-       return null;
-     }
-   }
+      return info;
+    } catch (error) {
+      console.error('Error getting cache info:', error);
+      return null;
+    }
+  }
 
-// ============================================
-   // 🆕 BULK INVALIDATION HELPERS
-   // ============================================
+  // ============================================
+  // BULK INVALIDATION HELPERS
+  // ============================================
 
-   async invalidateUserData(userId) {
-     await Promise.all([
-       this.invalidateProfile(userId),
-       this.invalidateStats(userId),
-       this.invalidateProgress(userId),
-       this.invalidateAttempts(userId)
-     ]);
-     console.log(`🗑️ All user data cache invalidated for user ${userId}`);
-   }
+  async invalidateUserData(userId) {
+    await Promise.all([
+      this.invalidateProfile(userId),
+      this.invalidateStats(userId),
+      this.invalidateProgress(userId),
+      this.invalidateAttempts(userId)
+    ]);
+    console.log(`🗑️ All user data cache invalidated for user ${userId}`);
+  }
 
-   // ============================================
-   // 🆕 GENERIC CACHE METHODS (for CachedApiService)
-   // ============================================
+  // ============================================
+  // ✅ FIXED: GENERIC CACHE METHODS
+  // ============================================
 
-   async get(key) {
-     try {
-       const cached = await AsyncStorage.getItem(key);
-       if (cached) {
-         const cacheData = JSON.parse(cached);
-         return cacheData;
-       }
-       return null;
-     } catch (error) {
-       console.error('Error getting generic cache:', error);
-       return null;
-     }
-   }
+  async get(key) {
+    try {
+      const cached = await AsyncStorage.getItem(key);
+      if (cached) {
+        const cacheData = JSON.parse(cached);
 
-   async set(key, data, duration = 5 * 60 * 1000) {
-     try {
-       const cacheData = {
-         data: data,
-         timestamp: Date.now(),
-         duration: duration
-       };
-       await AsyncStorage.setItem(key, JSON.stringify(cacheData));
-       console.log(`✅ Generic cache set for key: ${key}`);
-     } catch (error) {
-       console.error('Error setting generic cache:', error);
-     }
-   }
+        // ✅ Check if cache is expired
+        if (cacheData.duration && cacheData.timestamp) {
+          if (this.isCacheExpired(cacheData.timestamp, cacheData.duration)) {
+            console.log(`⏰ Cache expired for key: ${key}`);
+            await AsyncStorage.removeItem(key);
+            return null;
+          }
+        }
 
-   async invalidate(key) {
-     try {
-       await AsyncStorage.removeItem(key);
-       console.log(`🗑️ Cache invalidated for key: ${key}`);
-     } catch (error) {
-       console.error('Error invalidating cache:', error);
-     }
-   }
- } // ✅ This closes the class *after* invalidateUserData()
+        return cacheData;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting generic cache:', error);
+      return null;
+    }
+  }
 
- // Export singleton instance
- export default new CacheManager();
+  async set(key, data, duration = 5 * 60 * 1000) {
+    try {
+      const cacheData = {
+        data: data,
+        timestamp: Date.now(),
+        duration: duration
+      };
+      await AsyncStorage.setItem(key, JSON.stringify(cacheData));
+      console.log(`✅ Generic cache set for key: ${key}`);
+    } catch (error) {
+      console.error('Error setting generic cache:', error);
+    }
+  }
+
+  async invalidate(key) {
+    try {
+      await AsyncStorage.removeItem(key);
+      console.log(`🗑️ Cache invalidated for key: ${key}`);
+    } catch (error) {
+      console.error('Error invalidating cache:', error);
+    }
+  }
+}
+
+export default new CacheManager();

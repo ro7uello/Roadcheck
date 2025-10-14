@@ -49,7 +49,7 @@ class CachedApiService {
     return this.backendReady;
   }
 
-  // Unified request handler (includes caching, 401 handling, and fallback)
+  // ✅ FIXED: Unified request handler with proper cache handling
   async makeRequest(endpoint, options = {}, cacheKey = null, forceRefresh = false) {
     try {
       const token = await AsyncStorage.getItem('access_token');
@@ -64,9 +64,9 @@ class CachedApiService {
       // Try cache first (unless force refresh)
       if (cacheKey && !forceRefresh) {
         const cached = await CacheManager.get(cacheKey);
-        if (cached) {
+        if (cached && cached.data) {
           console.log(`📦 Using cached data for ${endpoint}`);
-          return { success: true, data: cached, fromCache: true };
+          return { success: true, data: cached.data, fromCache: true };
         }
       }
 
@@ -93,9 +93,10 @@ class CachedApiService {
 
       const result = await response.json();
 
-      // Cache the successful result
-      if (cacheKey && result?.data) {
+      // ✅ FIX: Cache the data properly
+      if (cacheKey && result?.success && result?.data) {
         await CacheManager.set(cacheKey, result.data, this.CACHE_DURATION);
+        console.log(`✅ Cached data for ${cacheKey}`);
       }
 
       return { ...result, fromCache: false };
@@ -105,9 +106,9 @@ class CachedApiService {
       // Return stale cache if available
       if (cacheKey) {
         const cached = await CacheManager.get(cacheKey);
-        if (cached) {
+        if (cached && cached.data) {
           console.log(`⚠️ Using stale cache for ${endpoint}`);
-          return { success: true, data: cached, fromCache: true, stale: true };
+          return { success: true, data: cached.data, fromCache: true, stale: true };
         }
       }
 

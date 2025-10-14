@@ -53,8 +53,10 @@ export default function ProfileScreen() {
         const userEmail = await AsyncStorage.getItem("user_email");
         const token = await AsyncStorage.getItem("access_token");
 
+        console.log('📋 === PROFILE LOAD DEBUG ===');
         console.log('📋 Stored userId:', storedUserId);
         console.log('📋 Has token:', !!token);
+        console.log('📋 Force refresh:', forceRefresh);
 
         if (!storedUserId || !token) {
           Alert.alert("Session Expired", "Please login again", [
@@ -66,38 +68,74 @@ export default function ProfileScreen() {
         setUserId(storedUserId);
         const startTime = Date.now();
 
+        // ✅ ENHANCED: Call with proper error handling
         const [profileResult, statsResult] = await Promise.all([
-          CachedApiService.getProfile(storedUserId, forceRefresh),
-          CachedApiService.getStats(storedUserId, forceRefresh),
+          CachedApiService.getProfile(storedUserId, forceRefresh).catch(err => {
+            console.error('❌ Profile fetch error:', err);
+            return { success: false, error: err.message };
+          }),
+          CachedApiService.getStats(storedUserId, forceRefresh).catch(err => {
+            console.error('❌ Stats fetch error:', err);
+            return { success: false, error: err.message };
+          }),
         ]);
 
         const loadTime = Date.now() - startTime;
         console.log(`⏱️ Profile data loaded in ${loadTime}ms`);
 
+        // ✅ DEBUG: Log the raw results
+        console.log('📊 Profile result:', JSON.stringify(profileResult, null, 2));
+        console.log('📊 Stats result:', JSON.stringify(statsResult, null, 2));
+
         const isFromCache = profileResult.fromCache || statsResult.fromCache;
         setFromCache(isFromCache);
         console.log(isFromCache ? '📦 Data loaded from cache!' : '🌐 Data loaded from API');
 
+        // ✅ PROFILE HANDLING
         if (profileResult.success && profileResult.data) {
+          console.log('✅ Profile data received:', profileResult.data);
           setProfile({
             username: profileResult.data.username,
             email: userEmail || profileResult.data.email || "N/A"
           });
         } else {
+          console.error('❌ Profile failed:', profileResult.error || 'Unknown error');
           Alert.alert("Error", "Unable to load profile");
         }
 
-        if (statsResult.success) {
+        // ✅ STATS HANDLING WITH DETAILED LOGGING
+        if (statsResult.success && statsResult.data) {
+          console.log('✅ Stats data received:', JSON.stringify(statsResult.data, null, 2));
+
+          // Verify stats structure
+          const statsKeys = Object.keys(statsResult.data);
+          console.log('📊 Stats keys:', statsKeys);
+
+          // Check each category
+          statsKeys.forEach(key => {
+            console.log(`📊 ${key}:`, statsResult.data[key]);
+          });
+
           setStats(statsResult.data);
         } else {
-          setStats({
+          console.warn('⚠️ Stats failed, using defaults:', statsResult.error || 'Unknown error');
+          const defaultStats = {
             road_markings: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
             traffic_signs: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
             intersection_and_others: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
             pedestrian: { total_scenarios: 10, completed_scenarios: 0, correct_answers: 0 }
-          });
+          };
+          console.log('📊 Setting default stats:', defaultStats);
+          setStats(defaultStats);
         }
+
+        console.log('✅ === PROFILE LOAD COMPLETE ===');
       } catch (apiError) {
+        console.error('❌ === PROFILE LOAD ERROR ===');
+        console.error('Error type:', apiError.constructor.name);
+        console.error('Error message:', apiError.message);
+        console.error('Error stack:', apiError.stack);
+
         const wasHandled = await handleApiError(apiError, router);
         if (!wasHandled) {
           console.error("Error loading data:", apiError);
