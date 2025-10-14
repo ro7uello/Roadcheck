@@ -486,30 +486,36 @@ else if (answer === "Honk at the vehicle ahead to move forward") {
     setTrafficLightState('normal');
     setLightChangeTriggered(false);
 
-    if (questionIndex < questions.length - 1) {
+       if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else if (currentScenario >= 10) {
-              // Last scenario in phase - complete session
-              try {
-                const sessionResults = await completeSession();
-                router.push({
-                  pathname: '/result',
-                  params: {
-                    ...sessionResults,
-                    userAttempts: JSON.stringify(sessionResults.attempts)
-                  }
-                });
-              } catch (error) {
-                console.error('Error completing session:', error);
-                Alert.alert('Error', 'Failed to save session results');
-              }
-            } else {
-              moveToNextScenario();
-              const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
-              router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-            }
-      };
+      // Last scenario in phase - complete session
+      try {
+        const sessionResults = await completeSession();
+        router.push({
+          pathname: '/result',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
+          }
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
+    } else {
+      try {
+        await moveToNextScenario();
+        const nextScreen = `S${currentScenario + 1}P2`;
+        console.log('Navigating to:', nextScreen);
+        router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+      } catch (error) {
+        console.error('Navigation error:', error);
+        Alert.alert('Error', 'Failed to navigate to next scenario');
+      }
+    }
+  };
 
   // Calculate traffic light position
   const trafficLightLeft = trafficLightColIndex * tileSize + trafficLightXOffset;

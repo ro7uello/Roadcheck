@@ -22,6 +22,8 @@ const { width, height } = Dimensions.get("window");
 // Responsive calculations
 const playerCarWidth = Math.min(width * 0.25, 280);
 const playerCarHeight = playerCarWidth * (350/280);
+const npcCarWidth = playerCarWidth;
+const npcCarHeight = playerCarHeight;
 const overlayHeight = height * 0.35;
 const ltoWidth = Math.min(width * 0.25, 200);
 const ltoHeight = ltoWidth * (300/240);
@@ -99,6 +101,9 @@ const trafficCarSprites = {
   BROWN_NORTH: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
   ],
+  WHITE_NORTH: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_000.png"),
+  ],
 };
 
 // Fallback question for speed limit scenario
@@ -144,9 +149,26 @@ export default function DrivingGame() {
   const mapHeight = mapLayout.length * tileSize;
 
   const [isPlayerCarVisible, setIsPlayerCarVisible] = useState(true);
+  const [areNPCCarsVisible, setAreNPCCarsVisible] = useState(true);
 
-  // Traffic cars state
-  const [trafficCars, setTrafficCars] = useState([]);
+
+  // --- NPC Car Animations (FIXED) ---
+  const npcCars = useRef([
+    {
+      id: 'npc1',
+      sprite: 'BROWN_NORTH',
+      lane: 1, // Left lane
+      yAnim: new Animated.Value(0), // Start at 0 for translateY
+      frame: 0,
+    },
+    {
+      id: 'npc2',
+      sprite: 'WHITE_NORTH',
+      lane: 3, // Right lane
+      yAnim: new Animated.Value(-100), // Offset for variety
+      frame: 0,
+    },
+  ]).current;
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const currentScroll = useRef(0);
@@ -245,7 +267,55 @@ export default function DrivingGame() {
     }
   }, [showQuestion, isPlayerCarVisible]);
 
+  // NPC Car Animation Effect (No Loop - Single Pass)
+  useEffect(() => {
+    const animateNPCCar = (car, speedMultiplier = 1.4) => {
+      const baseSpeed = 400000;
+      const totalDistance = height + npcCarHeight * -200;
+      
+      return Animated.timing(car.yAnim, {
+        toValue: totalDistance,
+        duration: baseSpeed * speedMultiplier,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      });
+    };
+
+    const npcAnimations = [
+      animateNPCCar(npcCars[0], 1.0),
+      animateNPCCar(npcCars[1], 1.2),
+    ];
+
+    npcAnimations.forEach(anim => anim.start());
+
+    return () => {
+      npcAnimations.forEach(anim => anim.stop());
+    };
+  }, []);
+
   const scrollAnimationRef = useRef(null);
+  const npcAnimationsRef = useRef([]);
+
+  // Function to control NPC speed dynamically (No Loop)
+  const setNPCSpeed = (speedMultiplier) => {
+    npcAnimationsRef.current.forEach(anim => anim.stop());
+    npcAnimationsRef.current = [];
+    
+    npcCars.forEach((car) => {
+      const baseSpeed = 4000;
+      const totalDistance = height + npcCarHeight * 2;
+      
+      const anim = Animated.timing(car.yAnim, {
+        toValue: totalDistance,
+        duration: baseSpeed * speedMultiplier,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      });
+      
+      anim.start();
+      npcAnimationsRef.current.push(anim);
+    });
+  };
 
   function startScrollAnimation() {
     scrollY.setValue(0);
@@ -323,42 +393,19 @@ export default function DrivingGame() {
     try {
       if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
 
+      setNPCSpeed(2.0); // Normal NPC speed
       setPlayerCarFrame(0);
 
-      // Spawn traffic cars ahead in same lane
-      const trafficDistance = height * 0.5;
-      setTrafficCars([
-        {
-          id: 1,
-          x: playerCarInitialX,
-          y: height * 0.1 + trafficDistance,
-        },
-        {
-          id: 2,
-          x: playerCarInitialX,
-          y: height * 0.1 + trafficDistance + (tileSize * 3),
-        },
-        {
-          id: 3,
-          x: playerCarInitialX,
-          y: height * 0.1 + trafficDistance + (tileSize * 6),
-        },
-      ]);
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Continue at normal speed (70 KPH) with traffic visible
       await new Promise(resolve => {
         Animated.timing(scrollY, {
-          toValue: scrollY._value - (tileSize * 2),
-          duration: 3500, // Slightly slower to show traffic flow
+          toValue: scrollY._value - (tileSize * 3),
+          duration: 1500,
           easing: Easing.linear,
           useNativeDriver: true,
         }).start(resolve);
       });
-
-      // Clear traffic cars after animation
-      setTrafficCars([]);
 
     } catch (error) {
       console.error('Error in animateContinue70KPH:', error);
@@ -369,11 +416,12 @@ export default function DrivingGame() {
     try {
       if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
 
+      setNPCSpeed(2.0); // Slow down NPC cars
+
       setPlayerCarFrame(0);
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Reduce speed to 60 KPH - slower, controlled movement
       await new Promise(resolve => {
         Animated.timing(scrollY, {
           toValue: scrollY._value - (tileSize * 1.5),
@@ -392,16 +440,17 @@ export default function DrivingGame() {
     try {
       if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
 
+      setNPCSpeed(2.0); // Speed up NPC cars
+
       setPlayerCarFrame(0);
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 400));
 
-      // Speed up to 80 KPH - faster, aggressive movement
       await new Promise(resolve => {
         Animated.timing(scrollY, {
-          toValue: scrollY._value - (tileSize * 2.8),
-          duration: 2000,
-          easing: Easing.in(Easing.ease),
+          toValue: scrollY._value - (tileSize * 4),
+          duration: 1500,
+          easing: Easing.in(Easing.quad),
           useNativeDriver: true,
         }).start(resolve);
       });
@@ -437,7 +486,6 @@ export default function DrivingGame() {
     setSelectedAnswer(null);
     setIsCorrectAnswer(null);
     setPlayerCarFrame(0);
-    setTrafficCars([]); // Clear traffic cars
 
     playerCarXAnim.setValue(playerCarInitialX);
     setPlayerCarDirection("NORTH");
@@ -452,9 +500,8 @@ export default function DrivingGame() {
            userAttempts: JSON.stringify(sessionResults.attempts)
          });
        } else {
-         moveToNextScenario();
-         const nextScreen = `S${currentScenario + 1}P3`;
-         navigation.navigate(nextScreen);
+      moveToNextScenario();
+      router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
        }
     };
 
@@ -503,21 +550,32 @@ export default function DrivingGame() {
         ))}
       </Animated.View>
 
-      {/* Traffic Cars */}
-      {trafficCars.map((car) => (
-        <Animated.Image
-          key={car.id}
-          source={trafficCarSprites.BROWN_NORTH[0]}
-          style={{
-            width: playerCarWidth,
-            height: playerCarHeight,
-            position: "absolute",
-            bottom: car.y,
-            left: car.x,
-            zIndex: 4,
-          }}
-        />
-      ))}
+      {/* NPC Cars - Fixed with translateY */}
+      {npcCars.map((car) => {
+        const laneX = car.lane * tileSize + (tileSize / 2 - npcCarWidth / 2);
+        return (
+          <Animated.Image
+            key={car.id}
+            source={trafficCarSprites[car.sprite][0]}
+            style={{
+              width: npcCarWidth,
+              height: npcCarHeight,
+              position: "absolute",
+              bottom: height * 0.4,
+              left: laneX,
+              zIndex: 4,
+              transform: [
+                {
+                  translateY: car.yAnim.interpolate({
+                    inputRange: [0, height + npcCarHeight * 2],
+                    outputRange: [0, -(height + npcCarHeight * 2)],
+                  })
+                }
+              ],
+            }}
+          />
+        );
+      })}
 
       {isPlayerCarVisible && (
         <Animated.Image
@@ -650,7 +708,7 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
- questionOverlay: {
+  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -758,5 +816,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
-//s7

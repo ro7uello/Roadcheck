@@ -362,13 +362,13 @@ export default function DrivingGame() {
   // Move car to column 3 (shoulder area)
   Animated.parallel([
     Animated.timing(carXAnim, {
-      toValue: 3 * tileSize + tileSize/2 - carWidth/2,
-      duration: 700,
+      toValue: 2.8 * tileSize + tileSize/2 - carWidth/2,
+      duration: 1800,
       useNativeDriver: true,
     }),
     Animated.timing(scrollY, {
       toValue: currentScroll.current + 4 * tileSize,
-      duration: 2000,
+      duration: 1200,
       useNativeDriver: true,
     })
   ]).start(() => {

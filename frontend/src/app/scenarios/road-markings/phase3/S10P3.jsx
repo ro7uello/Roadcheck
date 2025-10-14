@@ -307,14 +307,13 @@ else if (answer === " Park there and display a makeshift disability sign") {
          setQuestionIndex(questionIndex + 1);
        } else if (currentScenario >= 10) {
          const sessionResults = await completeSession();
-         navigation.navigate('/result-page', {
+          router.navigate('/result-page', {
            ...sessionResults,
            userAttempts: JSON.stringify(sessionResults.attempts)
          });
        } else {
-         moveToNextScenario();
-         const nextScreen = `S${currentScenario + 1}P3`;
-         navigation.navigate(nextScreen);
+        moveToNextScenario();
+        router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
        }
     };
 
