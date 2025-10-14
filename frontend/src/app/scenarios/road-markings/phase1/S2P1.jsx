@@ -430,7 +430,6 @@ const animateOvertake = async (targetX) => {
     if (jeepneyAnimationRef.current) {
       jeepneyAnimationRef.current.stop();
     }
-    npcCarAnimationsRef.current.forEach(anim => anim.stop());
   }
 };
 
