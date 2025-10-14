@@ -60,7 +60,7 @@ export default function ResultPage() {
     if (fontsLoaded) {
       startBackgroundAnimation();
       startCarAnimation();
-      calculateResults(); // This will handle everything
+      calculateResults();
     }
 
     return () => {
@@ -81,7 +81,6 @@ export default function ResultPage() {
     }).start();
   }, [libraryVisible]);
 
-  // 🆕 OPTIMIZED: Now with caching!
   const calculateResults = async () => {
     try {
       setLoading(true);
@@ -91,14 +90,12 @@ export default function ResultPage() {
         userAttempts, totalTime, scenarioProgress
       });
 
-      // 🚀 If we have sessionId, fetch from cache first!
       if (sessionId) {
         console.log('📦 Attempting to load session from cache...');
         await fetchSessionDetailsOptimized(sessionId);
         return;
       }
 
-      // Otherwise, calculate from passed data
       let attempts = [];
       let detailedProgress = [];
 
@@ -204,12 +201,10 @@ export default function ResultPage() {
     }
   };
 
-  // 🆕 OPTIMIZED: Using CachedApiService instead of direct fetch!
   const fetchSessionDetailsOptimized = async (sessionId) => {
     try {
       console.log('🚀 Fetching session details with caching...');
 
-      // ✨ Use cached API service - will load from cache if available!
       const result = await CachedApiService.getSessionProgress(sessionId);
 
       if (result.fromCache) {
@@ -251,24 +246,18 @@ export default function ResultPage() {
         showResultPanel();
       } else {
         console.log('⚠️ No session data, falling back to calculation');
-        // Fallback to calculating from params
         calculateResultsFromParams();
       }
     } catch (error) {
       console.error('❌ Error fetching session details:', error);
-      // Fallback to calculating from params
       calculateResultsFromParams();
     } finally {
       setLoading(false);
     }
   };
 
-  // 🆕 Helper function for fallback calculation
   const calculateResultsFromParams = () => {
-    // Reuse the calculation logic from calculateResults
-    // This is the same code as in calculateResults but extracted
     console.log('📊 Calculating from params as fallback');
-    // ... (same calculation logic)
   };
 
   const formatTime = (seconds) => {
@@ -461,10 +450,11 @@ export default function ResultPage() {
           { transform: [{ scale: resultPanelScale }] },
         ]}
       >
-        {/* Custom Container Background - Replacing settings-tab.png */}
-        <View style={styles.customContainerBg}>
-          <View style={styles.customContainerInner} />
-        </View>
+        <Image
+          source={require('../../assets/background/settings-tab.png')}
+          style={styles.resultTab}
+          resizeMode="stretch"
+        />
 
         {!showDetailedView ? (
           <>
@@ -546,18 +536,19 @@ export default function ResultPage() {
               </TouchableOpacity>
               <Text style={styles.detailedTitle}>SCENARIO DETAILS</Text>
             </View>
-            
+
             <View style={styles.scrollWrapper}>
-            <ScrollView style={{ flex: 1 }}
-              showsVerticalScrollIndicator={true}
-              contentContainerStyle={{ paddingBottom: 20 }}
-            >
-              {resultData.scenarioDetails.map((item, index) => (
-                <View key={index}>
-                  {renderScenarioDetail({ item, index })}
-                </View>
-              ))}
-            </ScrollView>
+              <ScrollView
+                style={styles.scrollViewStyle}
+                contentContainerStyle={styles.scrollContentContainer}
+                showsVerticalScrollIndicator={true}
+              >
+                {resultData.scenarioDetails.map((item, index) => (
+                  <View key={index}>
+                    {renderScenarioDetail({ item, index })}
+                  </View>
+                ))}
+              </ScrollView>
             </View>
           </>
         )}
@@ -577,7 +568,6 @@ export default function ResultPage() {
             { transform: [{ scale: libraryModalScale }] },
           ]}
         >
-          {/* Custom Container Background for Library - Replacing settings-tab.png */}
           <Image
             source={require('../../assets/background/settings-tab.png')}
             style={styles.settingsTab}
@@ -698,92 +688,71 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   resultPanel: {
-      position: 'absolute',
-      top: height * 0.12,
-      alignSelf: 'center',
-      width: Math.min(width * 0.82, 400),
-      height: Math.min(height * 0.65, 460),
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      zIndex: 6,
-  },
-  // Custom Container Styles - Replacing settings-tab.png
-  customContainerBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 20,
-    borderWidth: 4,
-    borderColor: '#000',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  customContainerInner: {
     position: 'absolute',
-    top: 6,
-    left: 6,
-    right: 6,
-    bottom: 6,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#333',
+    top: height * 0.12,
+    alignSelf: 'center',
+    width: Math.min(width * 0.82, 400),
+    height: Math.min(height * 0.65, 460),
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    zIndex: 6,
+  },
+  resultTab: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
   },
   resultHeader: {
-      alignItems: 'center',
-      marginTop: 15,
-      marginBottom: 8,
-    },
+    alignItems: 'center',
+    marginTop: 18,
+    marginBottom: 2,
+  },
   resultTitle: {
-      fontSize: 20,
-      color: 'black',
-      fontFamily: 'pixel',
-      textAlign: 'center',
-    },
-    statusContainer: {
-      alignItems: 'center',
-      marginBottom: 15,
-    },
+    fontSize: 24,
+    color: 'black',
+    fontFamily: 'pixel',
+    textAlign: 'center',
+  },
+  statusContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   resultStatus: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: 'pixel',
     textAlign: 'center',
     fontWeight: 'bold',
   },
   resultStats: {
-      width: '85%',
-      paddingVertical: 0,
-      gap: 8,
-      alignItems: 'center',
-    },
-    statRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 15,
-      width: '100%',
-      marginVertical: 2,
-    },
+    width: '80%',
+    paddingVertical: 0,
+    gap: 10,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
   statLabel: {
-    fontSize: 11,
+    fontSize: 12,
     color: 'black',
     fontFamily: 'pixel',
   },
   statValue: {
-    fontSize: 12,
+    fontSize: 13,
     color: 'black',
     fontFamily: 'pixel',
     textAlign: 'right',
     fontWeight: 'bold',
   },
   buttonContainer: {
-      flexDirection: 'row',
-      width: '88%',
-      marginTop: 20,
-      marginBottom: 18,
-      gap: 10,
-    },
+    flexDirection: 'row',
+    width: '88%',
+    marginTop: 20,
+    marginBottom: 18,
+    gap: 10,
+  },
   detailToggleButton: {
     backgroundColor: '#2196F3',
     paddingHorizontal: 15,
@@ -818,9 +787,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '90%',
-    marginTop: 15, // Reduced
-    marginBottom: 10, // Reduced
-    minHeight: 25,
+    marginTop: 15,
+    marginBottom: 10,
+    flexShrink: 0,
   },
   backButton: {
     backgroundColor: '#666',
@@ -840,24 +809,31 @@ const styles = StyleSheet.create({
     fontFamily: 'pixel',
     fontWeight: 'bold',
   },
-  detailedContent: {
+  scrollWrapper: {
     width: '90%',
-    maxHeight: height * 0.35,
-    marginBottom: 20,
+    flex: 1,
+    marginBottom: 15,
+  },
+  scrollViewStyle: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    paddingVertical: 5,
+    paddingBottom: 20,
   },
   scenarioDetailItem: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
+    padding: 10,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#ddd',
   },
   scenarioDetailHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between', // Add this to spread items
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   scenarioDetailNumber: {
     fontSize: 11,
@@ -907,6 +883,11 @@ const styles = StyleSheet.create({
     height: 30,
     resizeMode: 'contain',
     marginBottom: 5
+  },
+  settingsTab: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
   },
   linkText: {
     color: '#0066CC',
@@ -973,14 +954,4 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     textDecorationLine: 'underline',
   },
-    settingsTab: {
-    ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
-  },
-  scrollWrapper: {
-  width: '90%',
-    flex: 1, // Use flex instead of fixed height
-    marginBottom: 15,
-},
 });
