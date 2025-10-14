@@ -421,7 +421,7 @@ export default function DrivingGame() {
           Alert.alert('Error', 'Failed to save session results');
         }
       } else {
-        // FIXED: Navigate to the NEXT scenario (S8P1) instead of current (S7P1)
+        moveToNextScenario();
         const nextScenario = currentScenario + 1;
         router.push(`/scenarios/road-markings/phase1/S${nextScenario}P1`);
       }

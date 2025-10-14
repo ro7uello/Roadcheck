@@ -596,6 +596,7 @@ export default function DrivingGame() {
       const currentFileScenario = 9;
 
       if (currentFileScenario >= 10) {
+        // Complete session logic
         try {
           const sessionResults = await completeSession();
           if (sessionResults) {
@@ -613,6 +614,8 @@ export default function DrivingGame() {
           Alert.alert('Error', 'Failed to save session results');
         }
       } else {
+        moveToNextScenario();
+        
         const nextScenarioNumber = currentFileScenario + 1;
         const nextScreen = `S${nextScenarioNumber}P1`;
         router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
@@ -627,7 +630,7 @@ export default function DrivingGame() {
       }
       npcAnimationsRef.current.forEach(anim => anim && anim.stop());
     }
-  };
+};
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer

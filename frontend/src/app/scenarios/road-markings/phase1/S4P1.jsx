@@ -274,34 +274,29 @@ export default function DrivingGame() {
 
   // FIXED: Player stays in lane - properly restart the loop animation
   const animateStayInLane = async () => {
-      // Stop all existing animations first (just like sudden/careful overtake)
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-      if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
-
-      setPlayerCarDirection("NORTH");
-      setPlayerCarFrame(0);
-      setJeepneyFrame(0);
-      setIsPlayerCarVisible(true);
-      setIsJeepneyVisible(true);
-
-      // Create and start new scroll animation
-      await new Promise(resolve => {
+      scrollAnimationRef.current = Animated.loop(
           Animated.timing(scrollY, {
-              toValue: scrollY._value - (tileSize * 10), // Move forward
-              duration: 3000,
-              easing: Easing.linear,
-              useNativeDriver: true,
-          }).start(resolve);
-      });
+            toValue: scrollY._value - mapHeight,
+            duration: mapHeight * 10,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          })
+      );
+      scrollAnimationRef.current.start();
 
-      // Pause briefly before showing feedback
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Let it run for 3 seconds, then stop and show feedback
+      await new Promise(resolve => {
+          setTimeout(() => {
+              if (scrollAnimationRef.current) {
+                scrollAnimationRef.current.stop();
+              }
+              resolve();
+          }, 3000);
+      });
 
       handleFeedback(selectedAnswer);
   };
 
-  // NEW ANIMATION: Sudden Overtake (for "Change lanes without signaling")
-  // FIXED: Sudden Overtake - No drifting effect
   const animateSuddenOvertake = async () => {
       if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
       if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
@@ -452,29 +447,10 @@ export default function DrivingGame() {
       const actualCorrectAnswer = questions[questionIndex].correct;
 
       if (option === actualCorrectAnswer) {
-        if (option === "Signal, check mirrors and blind spots, then change lanes when safe") {
           await animateCarefulOvertake();
         } else if (option === "Stay in your current lane to avoid any violations") {
-          // Recreate the loop animation like in startScrollAnimation
-          scrollAnimationRef.current = Animated.loop(
-            Animated.timing(scrollY, {
-              toValue: scrollY._value - mapHeight,
-              duration: mapHeight * 10,
-              easing: Easing.linear,
-              useNativeDriver: true,
-            })
-          );
-          scrollAnimationRef.current.start();
-
-          // Let it run for 3 seconds, then stop and show feedback
-          setTimeout(() => {
-            if (scrollAnimationRef.current) {
-              scrollAnimationRef.current.stop();
-            }
-            handleFeedback(option);
-          }, 3000);
-        }
-      } else if (option === "Change lanes without signaling since the lines are broken") {
+          await animateStayInLane();
+        } else if (option === "Change lanes without signaling since the lines are broken") {
         await animateSuddenOvertake();
       } else {
         // Other wrong answers
@@ -549,7 +525,7 @@ export default function DrivingGame() {
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
     ? "Correct! Broken white lines allow lane changes. Always signal and check your surroundings before changing lanes."
-    : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
+    : currentQuestionData.wrongExplanation[selectedAnswer] ;
 
 
   return (

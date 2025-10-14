@@ -154,7 +154,7 @@ const initialNpcCars = [
   { id: 1, row: 2.5, color: 'red', startDelay: 0, speed: 9800 },
   { id: 2, row: 2.5, color: 'green', startDelay: 1500, speed: 10000 },
   { id: 3, row: 3.5, color: 'yellow', startDelay: 0, speed: 10000 },
-  { id: 4, row: 3.5, color: 'blue', startDelay: 1500, speed: 9000 },
+  { id: 4, row: 3.5, color: 'blue', startDelay: 4000, speed: 13000 },
 ];
 
 export default function DrivingGame() {
@@ -255,7 +255,7 @@ export default function DrivingGame() {
         }).start(({ finished }) => {
           // Only continue loop if animation finished naturally and should still be running
           if (finished && npcRunningAnimations.current[car.id]) {
-            loopAnimation();
+            setTimeout(loopAnimation, 1000);
           }
         });
       };
@@ -509,7 +509,7 @@ export default function DrivingGame() {
 
         Animated.timing(scrollY, {
           toValue: initialScrollTarget,
-          duration: 2000,
+          duration: 1000,
           useNativeDriver: true,
         }).start(() => {
           setTimeout(() => {

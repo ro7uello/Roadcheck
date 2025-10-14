@@ -303,7 +303,7 @@ export default function DrivingGame() {
           setCarPaused(false);
           Animated.timing(scrollY, {
             toValue: passTarget,
-            duration: 2000,
+            duration: 1000,
             useNativeDriver: true,
           }).start(() => {
             setCarDirection("NORTHWEST");
@@ -316,7 +316,7 @@ export default function DrivingGame() {
             Animated.parallel([
               Animated.timing(carXAnim, {
                 toValue: currentCarX - tileSize * 0.8, // Move to LEFT lane
-                duration: 1200,
+                duration: 1000,
                 useNativeDriver: false,
               }),
               Animated.timing(scrollY, {
