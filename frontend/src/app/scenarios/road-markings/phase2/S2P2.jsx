@@ -269,17 +269,13 @@ export default function DrivingGame() {
   // Reckless overtake before curve animation - purely educational demonstration
   const animateRecklessOvertakeBeforeCurve = async () => {
     try {
-      // Stop continuous scroll
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-
-      setPlayerCarFrame(0);
-      setJeepneyFrame(0);
-
-      // 1. Show curve warning first
+      // DON'T stop animations - keep everything moving
+      
+      // 1. Show curve warning first - background keeps scrolling
       setShowCurveWarning(true);
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // 2. Player car starts aggressive overtaking maneuver
+      // 2. Player car starts aggressive overtaking maneuver WITH continuous background
       await new Promise(resolve => {
           setPlayerCarDirection("NORTHWEST");
           Animated.parallel([
@@ -292,54 +288,71 @@ export default function DrivingGame() {
               Animated.timing(scrollY, {
                   toValue: scrollY._value - (tileSize * 2),
                   duration: 800,
-                  easing: Easing.easeOut,
+                  easing: Easing.linear,
                   useNativeDriver: true,
               })
           ]).start(resolve);
       });
 
-      // 3. Continue moving forward in opposite lane (dangerous position)
+      // 3. Continue moving forward in opposite lane with continuous scroll
       await new Promise(resolve => {
           setPlayerCarDirection("NORTH");
           Animated.parallel([
               Animated.timing(scrollY, {
-                  toValue: scrollY._value - (tileSize * 2),
-                  duration: 600,
+                  toValue: scrollY._value - (tileSize * 3),
+                  duration: 1000,
                   easing: Easing.linear,
                   useNativeDriver: true,
               }),
               Animated.timing(jeepneyYAnim, {
-                  toValue: height * 1,
-                  duration: 800,
+                  toValue: jeepneyYAnim._value + (tileSize * 2),
+                  duration: 1000,
                   easing: Easing.linear,
                   useNativeDriver: true,
               })
           ]).start(resolve);
       });
 
-      // 4. Show warning about dangerous visibility
+      // 4. Show warning with continuous movement
       setShowDangerWarning(true);
-      await new Promise(resolve => setTimeout(resolve, 600));
-      setShowDangerWarning(false);
-
-      // 5. Hide curve warning
-      setShowCurveWarning(false);
-    setShowDangerWarning(false);
-    setShowTailgatingWarning(false);
-    setShowClearVisibility(false);
-
-      // 6. Return to proper lane after completing unsafe maneuver
       await new Promise(resolve => {
-          setPlayerCarDirection("NORTHEAST");
-          Animated.timing(carXAnim, {
-              toValue: width / 2 - carWidth / 2,
-              duration: 400,
-              easing: Easing.easeOut,
-              useNativeDriver: false,
-          }).start(resolve);
+          Animated.timing(scrollY, {
+              toValue: scrollY._value - (tileSize * 1.5),
+              duration: 600,
+              easing: Easing.linear,
+              useNativeDriver: true,
+          }).start(() => {
+              setShowDangerWarning(false);
+              resolve();
+          });
       });
 
-      // 7. Reset everything
+      // 5. Hide warnings
+      setShowCurveWarning(false);
+      setShowDangerWarning(false);
+      setShowTailgatingWarning(false);
+      setShowClearVisibility(false);
+
+      // 6. Return to proper lane with continuous scroll
+      await new Promise(resolve => {
+          setPlayerCarDirection("NORTHEAST");
+          Animated.parallel([
+              Animated.timing(carXAnim, {
+                  toValue: width / 2 - carWidth / 2,
+                  duration: 400,
+                  easing: Easing.easeOut,
+                  useNativeDriver: false,
+              }),
+              Animated.timing(scrollY, {
+                  toValue: scrollY._value - (tileSize * 1),
+                  duration: 400,
+                  easing: Easing.linear,
+                  useNativeDriver: true,
+              })
+          ]).start(resolve);
+      });
+
+      // 7. Reset direction - background continues
       setPlayerCarDirection("NORTH");
 
     } catch (error) {
@@ -349,8 +362,7 @@ export default function DrivingGame() {
   };
 
   // Simplified collision animation (without NPC car)
-  const animateCollision = async () => {
-    if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+const animateCollision = async () => {
 
     // First animation: Move to side lane
     await new Promise(resolve => {
@@ -416,29 +428,35 @@ export default function DrivingGame() {
 
   const animateSafeOvertake = async () => {
     try {
-      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-
-      // 1. Show curve warning to establish the hazard
+      // DON'T stop animations - keep background scrolling
+      
+      // 1. Show curve warning to establish the hazard with continuous scroll
       setShowCurveWarning(true);
       setPlayerCarDirection("NORTH");
 
       // Player car maintains safe following distance behind jeepney
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => {
+          Animated.timing(scrollY, {
+              toValue: scrollY._value - (tileSize * 0.1),
+              duration: 500,
+              easing: Easing.linear,
+              useNativeDriver: true,
+          }).start(resolve);
+      });
 
       // 2. Player demonstrates patience - stays behind jeepney through the curve
       await new Promise(resolve => {
         Animated.parallel([
-          // Both vehicles move together through the curve
           Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 0.3),
+            toValue: scrollY._value - (tileSize * 2),
             duration: 2000,
-            easing: Easing.easeInOut,
+            easing: Easing.linear,
             useNativeDriver: true,
           }),
           Animated.timing(jeepneyYAnim, {
-            toValue: jeepneyYAnim._value + (tileSize * 0.1),
+            toValue: jeepneyYAnim._value + (tileSize * 0.5),
             duration: 2000,
-            easing: Easing.easeInOut,
+            easing: Easing.linear,
             useNativeDriver: true,
           })
         ]).start(resolve);
@@ -447,20 +465,37 @@ export default function DrivingGame() {
       // 3. Clear the curve - visibility improves
       setShowCurveWarning(false);
 
-      // Show "Clear Road Ahead" indicator
+      // Show "Clear Road Ahead" indicator with continuous scroll
       setShowClearVisibility(true);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setShowClearVisibility(false);
+      await new Promise(resolve => {
+          Animated.timing(scrollY, {
+              toValue: scrollY._value - (tileSize * 1.5),
+              duration: 2000,
+              easing: Easing.linear,
+              useNativeDriver: true,
+          }).start(() => {
+              setShowClearVisibility(false);
+              resolve();
+          });
+      });
 
-      // 4. Signal and move to passing lane safely
+      // 4. Signal and move to passing lane safely with continuous scroll
       await new Promise(resolve => {
         setPlayerCarDirection("NORTHWEST");
-        Animated.timing(carXAnim, {
-          toValue: 1 * tileSize + (tileSize / 2 - carWidth / 2),
-          duration: 1500, // Slower, more deliberate lane change
-          easing: Easing.easeInOut,
-          useNativeDriver: false,
-        }).start(resolve);
+        Animated.parallel([
+            Animated.timing(carXAnim, {
+              toValue: 1 * tileSize + (tileSize / 2 - carWidth / 2),
+              duration: 1500,
+              easing: Easing.easeInOut,
+              useNativeDriver: false,
+            }),
+            Animated.timing(scrollY, {
+              toValue: scrollY._value - (tileSize * 1),
+              duration: 1500,
+              easing: Easing.linear,
+              useNativeDriver: true,
+            })
+        ]).start(resolve);
       });
 
       // 5. Accelerate past the jeepney with clear visibility ahead
@@ -474,9 +509,9 @@ export default function DrivingGame() {
             useNativeDriver: true,
           }),
           Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 2.5),
+            toValue: scrollY._value - (tileSize * 3),
             duration: 2000,
-            easing: Easing.easeOut,
+            easing: Easing.linear,
             useNativeDriver: true,
           })
         ]).start(resolve);
@@ -484,7 +519,7 @@ export default function DrivingGame() {
 
       setIsJeepneyVisible(false);
 
-      // 6. Return to proper lane after safe distance
+      // 6. Return to proper lane after safe distance with continuous scroll
       await new Promise(resolve => {
         setPlayerCarDirection("NORTHEAST");
         Animated.parallel([
@@ -495,9 +530,9 @@ export default function DrivingGame() {
             useNativeDriver: false,
           }),
           Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 0.8),
+            toValue: scrollY._value - (tileSize * 1.5),
             duration: 1200,
-            easing: Easing.easeOut,
+            easing: Easing.linear,
             useNativeDriver: true,
           })
         ]).start(resolve);
@@ -505,10 +540,6 @@ export default function DrivingGame() {
 
       // 7. Continue normal driving
       setPlayerCarDirection("NORTH");
-
-      // Resume normal scroll animation
-      if (scrollAnimationRef.current) scrollAnimationRef.current.start();
-      setIsPlayerCarVisible(true);
 
     } catch (error) {
       console.error('Error in animateSafeOvertake:', error);
@@ -528,10 +559,7 @@ export default function DrivingGame() {
     const isCorrect = answer === currentQuestion.correct;
     await updateProgress(answer, isCorrect);
 
-    if (scrollAnimationRef.current) {
-      scrollAnimationRef.current.start();
-    }
-
+    // DON'T stop or restart scroll - let it continue naturally
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
 
@@ -594,6 +622,8 @@ const handleNext = async () => {
     moveToNextScenario();
     const nextScreen = `S${currentScenario + 1}P2`;
     router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+   
+      
     }
     
 

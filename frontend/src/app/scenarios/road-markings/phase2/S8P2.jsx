@@ -147,7 +147,8 @@ export default function DrivingGame() {
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
-  const [showHornIcon, setShowHornIcon] = useState(false);
+  const [showHonk, setShowHonk] = useState(false);
+  const honkOpacity = useRef(new Animated.Value(0)).current;
 
   const [pedestrianVisible, setPedestrianVisible] = useState(true);
   const [pedestrianDirection, setPedestrianDirection] = useState("WEST");
@@ -180,7 +181,8 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    setShowHornIcon(false);
+    setShowHonk(false);
+    honkOpacity.setValue(0);
 
     const stopRow = 6.7;
     const stopOffset = startOffset + stopRow * tileSize;
@@ -265,7 +267,22 @@ export default function DrivingGame() {
       });
 
     } else if (answer === "Honk to alert pedestrians and proceed carefully") {
-      setShowHornIcon(true);
+      setShowHonk(true);
+      
+      Animated.sequence([
+        Animated.timing(honkOpacity, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(honkOpacity, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        setShowHonk(false);
+      });
 
       const targetRow = 12;
       const rowsToMove = targetRow - currentRow;
@@ -276,7 +293,6 @@ export default function DrivingGame() {
         duration: 3000,
         useNativeDriver: true,
       }).start(() => {
-        setShowHornIcon(false);
         handleFeedback(answer);
       });
     }
@@ -289,7 +305,8 @@ export default function DrivingGame() {
     setIsCorrectAnswer(null);
     setCarFrame(0);
     setCarPaused(false);
-    setShowHornIcon(false);
+    setShowHonk(false);
+    honkOpacity.setValue(0);
 
     setPedestrianVisible(true);
     setPedestrianAnimating(true);
@@ -401,11 +418,30 @@ export default function DrivingGame() {
         />
       )}
 
-      {showHornIcon && (
-        <View style={styles.hornIconContainer}>
-          <Text style={styles.hornIcon}>📯</Text>
-          <Text style={styles.hornText}>HONK!</Text>
-        </View>
+      {/* Honk Animation - "BEEP!" text */}
+      {showHonk && (
+        <Animated.View
+          style={{
+            position: "absolute",
+            bottom: height * 0.1 + carHeight - 20,
+            left: width / 2 - 35,
+            opacity: honkOpacity,
+            zIndex: 6,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 70,
+              fontWeight: "bold",
+              color: "#ffd000ff",
+              textShadowColor: "#000",
+              textShadowOffset: { width: 2, height: 2 },
+              textShadowRadius: 4,
+            }}
+          >
+            BEEP!
+          </Text>
+        </Animated.View>
       )}
 
       {showQuestion && (
@@ -558,24 +594,5 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: Math.min(width * 0.045, 20),
     fontWeight: "bold",
-  },
-  hornIconContainer: {
-    position: "absolute",
-    top: height * 0.35,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    zIndex: 6,
-  },
-  hornIcon: {
-    fontSize: 40,
-  },
-  hornText: {
-    color: "white",
-    fontSize: 20,
-    fontWeight: "bold",
-    textShadowColor: "black",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
   },
 });

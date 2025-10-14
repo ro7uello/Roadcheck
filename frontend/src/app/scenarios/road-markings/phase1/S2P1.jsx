@@ -416,11 +416,11 @@ const animateOvertake = async (targetX) => {
       }
     } else {
       // Move to next scenario in phase 1
-      //moveToNextScenario();
+      moveToNextScenario();
       
-      //const nextScenarioNumber = currentFileScenario + 1;
-      //const nextScreen = `S${nextScenarioNumber}P1`;
-      //router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
+      const nextScenarioNumber = currentFileScenario + 1;
+      const nextScreen = `S${nextScenarioNumber}P1`;
+      router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
       
 
     }

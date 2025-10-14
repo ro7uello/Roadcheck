@@ -377,7 +377,7 @@ export default function DrivingGame() {
 
     if (answer === "Also cross the stop line to keep traffic moving") {
       // Animation: Blue car moves to road4 (2nd column, row 11) then to road57 (column 2, row 10) beside red car
-      setCarDirection("WEST");
+      setCarDirection("NORTHWEST");
 
       const road4Pos = getGridPosition(1, 11); // road4 position (2nd column)
       const road57Pos = getGridPosition(1, 9); // road57 position beside red car
@@ -385,21 +385,24 @@ export default function DrivingGame() {
       // First move to road4 (left lane)
       Animated.timing(carXAnim, {
         toValue: road4Pos.x,
-        duration: 1000,
+        duration: 1500,
+        easing: Easing.linear,
+
         useNativeDriver: false,
       }).start(() => {
         // Then move forward to be beside red car
         setCarDirection("NORTH");
         Animated.timing(carYAnim, {
           toValue: road57Pos.y,
-          duration: 1000,
+          duration: 2000,
+           easing: Easing.linear,
           useNativeDriver: false,
         }).start(() => {
           handleFeedback(answer);
         });
       });
 
-    } else if (answer === "Stop at the proper stop line position even if it creates a gap") {
+} else if (answer === "Stop at the proper stop line position even if it creates a gap") {
   // Animation: Blue car moves forward to stop right before red car
   setCarDirection("NORTH");
   setCarPaused(false); // Keep animation running during movement
@@ -424,20 +427,11 @@ export default function DrivingGame() {
       setTimeout(() => {
         setCarPaused(false);
         setOtherCarPaused(false);
-
-        // Move map forward to simulate cars proceeding
-        Animated.timing(scrollY, {
-          toValue: startOffset - tileSize * 2,
-          duration: 300,
-          useNativeDriver: true,
-        }).start(() => {
-          handleFeedback(answer);
-        });
+        handleFeedback(answer);
       }, 1000);
     }, 1000);
   });
-} // <-- ADD THIS CLOSING BRACE
-
+}
 else if (answer === "Honk at the vehicle ahead to move forward") {
    // Animation: Show honking effect, wait for green light, then proceed
    setCarPaused(true);
