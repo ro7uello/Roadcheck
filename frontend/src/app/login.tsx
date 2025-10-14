@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Alert, Animated, Dimensions, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { API_URL } from '../../config/api';
 import { supabase } from '../../supabaseClient';
+import CachedApiService from '../contexts/CachedApiService';
 
 const { width, height } = Dimensions.get("window");
 const BACKGROUND_SPEED = 12000;
@@ -138,6 +139,7 @@ export default function LoginPage() {
 
       console.log('✅ Login successful!');
 
+      // Save authentication data
       const authData: [string, string][] = [
         ['access_token', data.access_token],
         ['userId', String(data.user?.id || '')],
@@ -158,8 +160,15 @@ export default function LoginPage() {
 
       console.log('🔍 Token verification: ✅ SAVED');
       console.log('🔍 User ID saved:', savedUserId);
-      console.log('🚀 Navigating to optionPage...');
 
+      // 🔥 Warm the cache in background (non-blocking)
+      if (data.user?.id) {
+        CachedApiService.warmCache(data.user.id).catch(err => {
+          console.error('⚠️ Cache warming failed (non-critical):', err);
+        });
+      }
+
+      console.log('🚀 Navigating to optionPage...');
       router.replace('/optionPage');
 
     } catch (error: any) {

@@ -1362,6 +1362,205 @@ app.post('/attempts', authenticate, async (req, res) => {
   }
 });
 
+app.get('/attempts/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { category, phase } = req.query;
+
+    console.log('Fetching attempts for user:', userId, { category, phase });
+
+    let query = supabase
+      .from('user_attempts')
+      .select(`
+        *,
+        scenarios!inner(
+          id,
+          title,
+          phase_id,
+          phases!inner(
+            id,
+            name,
+            category_id
+          )
+        )
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    // Apply filters if provided
+    if (category) {
+      query = query.eq('scenarios.phases.category_id', parseInt(category));
+    }
+
+    if (phase) {
+      query = query.eq('scenarios.phase_id', parseInt(phase));
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching attempts:', error);
+      return res.status(400).json({
+        success: false,
+        message: 'Error fetching user attempts',
+        error: error.message
+      });
+    }
+
+    // Transform data to flatten the structure
+    const transformedData = data.map(attempt => ({
+      id: attempt.id,
+      user_id: attempt.user_id,
+      scenario_id: attempt.scenario_id,
+      chosen_option: attempt.chosen_option,
+      is_correct: attempt.is_correct,
+      created_at: attempt.created_at,
+      scenario_title: attempt.scenarios?.title,
+      phase_id: attempt.scenarios?.phase_id,
+      phase_name: attempt.scenarios?.phases?.name,
+      category_id: attempt.scenarios?.phases?.category_id
+    }));
+
+    res.json({
+      success: true,
+      data: transformedData,
+      count: transformedData.length
+    });
+
+  } catch (error) {
+    console.error('Error in /attempts/user/:userId:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+// ============================================
+// 🆕 ALTERNATIVE: If you want a simpler version without joins
+// ============================================
+
+app.get('/attempts/user/:userId/simple', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { category, phase, scenario_id } = req.query;
+
+    let query = supabase
+      .from('user_attempts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    // Filter by specific scenario if provided
+    if (scenario_id) {
+      query = query.eq('scenario_id', parseInt(scenario_id));
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+
+    // If category/phase filters provided, need to get scenarios first
+    let filteredData = data;
+
+    if (category || phase) {
+      const { data: scenarios } = await supabase
+        .from('scenarios')
+        .select('id, phase_id');
+
+      const scenarioMap = {};
+      scenarios.forEach(s => {
+        scenarioMap[s.id] = s.phase_id;
+      });
+
+      // Get phases for category filtering
+      if (category) {
+        const { data: phases } = await supabase
+          .from('phases')
+          .select('id')
+          .eq('category_id', parseInt(category));
+
+        const phaseIds = phases.map(p => p.id);
+
+        filteredData = data.filter(attempt => {
+          const phaseId = scenarioMap[attempt.scenario_id];
+          return phaseIds.includes(phaseId);
+        });
+      }
+
+      if (phase) {
+        filteredData = data.filter(attempt => {
+          return scenarioMap[attempt.scenario_id] === parseInt(phase);
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: filteredData,
+      count: filteredData.length
+    });
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ============================================
+// 📊 BONUS: Get attempts summary/statistics
+// ============================================
+
+app.get('/attempts/user/:userId/summary', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { category, phase } = req.query;
+
+    let query = supabase
+      .from('user_attempts')
+      .select('is_correct, scenario_id')
+      .eq('user_id', userId);
+
+    const { data: attempts, error } = await query;
+
+    if (error) throw error;
+
+    // Calculate summary statistics
+    const total = attempts.length;
+    const correct = attempts.filter(a => a.is_correct).length;
+    const uniqueScenarios = [...new Set(attempts.map(a => a.scenario_id))].length;
+
+    const summary = {
+      total_attempts: total,
+      correct_attempts: correct,
+      incorrect_attempts: total - correct,
+      accuracy: total > 0 ? Math.round((correct / total) * 100) : 0,
+      unique_scenarios_attempted: uniqueScenarios
+    };
+
+    res.json({
+      success: true,
+      data: summary
+    });
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 app.post('/user-progress/scenario', async (req, res) => {
   try {
     const { user_id, scenario_id, selected_answer, is_correct } = req.body;

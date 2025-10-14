@@ -40,6 +40,29 @@ export default function PhaseSelectionScreen() {
   const carBounce = useRef(new Animated.Value(0)).current;
   const phaseScales = useRef<Animated.Value[]>([]).current;
 
+  useEffect(() => {
+      loadPhaseAttempts();
+    }, [categoryId]);
+
+    const loadPhaseAttempts = async () => {
+      try {
+        // 🆕 Load attempts for specific category/phase (cached!)
+        const result = await CachedApiService.getUserAttempts(
+          userId,
+          categoryId,
+          1 // phase 1
+        );
+
+        console.log('From cache?', result.fromCache ? '✅ Yes!' : '🌐 Fresh from API');
+
+        setAttempts(result.data);
+      } catch (error) {
+        console.error('Error loading attempts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
   // Initialize animation values for phases
   useEffect(() => {
     if (phases.length > 0 && phaseScales.length !== phases.length) {
