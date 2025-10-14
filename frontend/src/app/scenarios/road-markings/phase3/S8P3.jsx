@@ -340,8 +340,8 @@ if (answer === "Follow the turn lines from your current position even if it's no
   setCarPaused(true);
 
   Animated.timing(scrollY, {
-    toValue: currentScroll.current + tileSize * 2,
-    duration: 900,
+    toValue: currentScroll.current + tileSize * 13,
+    duration: 2000,
     useNativeDriver: true,
   }).start(() => {
     handleFeedback(answer);
@@ -385,7 +385,7 @@ if (answer === "Follow the turn lines from your current position even if it's no
     setCarPaused(false);
 
     Animated.sequence([
-      // First: move backward (up) while facing NORTH (Unchanged)
+      // First: move backward (up) while facing NORTH
       Animated.parallel([
         Animated.timing(carXAnim, {
           toValue: width / 2 - carWidth / 2, // Stay centered
@@ -394,33 +394,32 @@ if (answer === "Follow the turn lines from your current position even if it's no
           useNativeDriver: false,
         }),
         Animated.timing(scrollY, {
-          toValue: currentScroll.current - tileSize * 0.35, // Move backward (up)
+          toValue: currentScroll.current - tileSize * 0.50, // Move backward (up)
           duration: 1500,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
       ]),
 
-      // 💥 Second: Player car moves ONLY to the right lane (scrollY removed)
-      // Note: Animated.parallel still works with one item, but is redundant here.
-      // We keep it to fix the syntax error of the extra comma.
-      Animated.parallel([
-        Animated.timing(carXAnim, {
-          toValue: rightLaneX, // Move to the right lane X position
-          duration: 500,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: false,
-        }) // The comma and missing scrollY animation have been removed
-      ]),
+      // Second: Change direction to NORTHWEST, then move to the right lane
+      Animated.timing(carXAnim, {
+        toValue: rightLaneX, // Move to the right lane X position
+        duration: 500,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false,
+      }),
       
     ]).start(() => {
       setCarDirection("NORTH");
       handleFeedback(answer);
     });
   }, 1000);
-} 
-// }
-// }
+  
+  // Set direction to NORTHWEST right before the lane change animation
+  setTimeout(() => {
+    setCarDirection("NORTHWEST");
+  }, 1500); // 1000ms initial delay + 1500ms first animation
+}   
   }
 
   const handleNext = async () => {
@@ -445,6 +444,9 @@ if (answer === "Follow the turn lines from your current position even if it's no
        } else {
         moveToNextScenario();
         router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
+    
+ 
+        
 
        }
     };

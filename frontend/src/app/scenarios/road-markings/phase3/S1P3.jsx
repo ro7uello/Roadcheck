@@ -311,8 +311,8 @@ export default function DrivingGame() {
         }
       });
     } else {
-      moveToNextScenario();
-      router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
+    moveToNextScenario();
+    router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
     }
   };
 

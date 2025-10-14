@@ -14,10 +14,9 @@ const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
-// Cyclist size
-const cyclistWidth = carWidth * 0.15;
-const cyclistHeight = cyclistWidth * 0.75;
-const cyclistCircleSize = Math.max(cyclistWidth, cyclistHeight) * 1.3;
+// Cyclist size - larger to be more visible
+const cyclistWidth = carWidth * 0.35;
+const cyclistHeight = cyclistWidth * 1.2;
 
 const roadTiles = {
   road3: require("../../../../../assets/road/road3.png"),
@@ -46,7 +45,8 @@ const roadTiles = {
 
 // Character sprites
 const characterSprites = {
-  BIKER: require("../../../../../assets/character/sprites/biker/cyclist-40px.png"),
+  biker1: require("../../../../../assets/car/biker/biker1.png"),
+  biker2: require("../../../../../assets/car/biker/biker2.png"),
 };
 
 // Map layout with complex intersection including crosswalks
@@ -149,19 +149,36 @@ export default function S4P3() {
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
+  const [bikerFrame, setBikerFrame] = useState(0);
+  const [showHonk, setShowHonk] = useState(false);
 
   // Car positioning
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
+  const honkOpacity = useRef(new Animated.Value(0)).current;
 
-  // Cyclist positioning - placed on road83, independent of map scroll
+  // Cyclist positioning - placed on road83, positioned on the map (not screen)
   const road83ColumnIndex = 2; // road83 is at column index 2
-  const cyclistXPosition = (width / numColumns) * road83ColumnIndex + (tileSize * 0.9) - (cyclistCircleSize / 2);
+  const cyclistXPosition = (width / numColumns) * road83ColumnIndex + (tileSize * 0.9) - (cyclistWidth / 2);
   
-  // Cyclist starts at row 3 and moves down slowly
-  const cyclistYAnim = useRef(new Animated.Value(tileSize * .2)).current;
+  // Cyclist starts at the same visible position as the car
+  // Calculate the row on the map that corresponds to the car's screen position
+  const carScreenBottomPosition = height * 0.1; // Car is at 10% from bottom
+  const visibleStartRow = useRef(mapLayout.length - (height / tileSize) + (carScreenBottomPosition / tileSize)).current;
+  const cyclistYAnim = useRef(new Animated.Value(tileSize * visibleStartRow)).current;
   const cyclistAnimationRef = useRef(null);
+
+  // Biker animation frame cycling
+  useEffect(() => {
+    let iv;
+    if (cyclistMoving && isCyclistVisible) {
+      iv = setInterval(() => {
+        setBikerFrame((p) => (p === 0 ? 1 : 0));
+      }, 150); // Fast cycling animation
+    }
+    return () => clearInterval(iv);
+  }, [cyclistMoving, isCyclistVisible]);
 
   // Car animation frame cycling
   useEffect(() => {
@@ -176,14 +193,16 @@ export default function S4P3() {
 
   const scrollAnimationRef = useRef(null);
 
-// Start cyclist moving independently
+// Start cyclist moving independently on the map
 function startCyclistAnimation() {
   setCyclistMoving(true);
   
-  // Cyclist moves down slowly on screen
+  // Cyclist moves forward (up on the map) as the map scrolls down
+  // This makes it look like the cyclist is moving forward relative to the car
+  const currentCyclistPosition = tileSize * visibleStartRow;
   cyclistAnimationRef.current = Animated.timing(cyclistYAnim, {
-    toValue: height * .8, // Move to bottom of screen
-    duration: 5000, // Very slow - 15 seconds to move down screen
+    toValue: currentCyclistPosition - (tileSize * 3), // Move forward 3 tiles
+    duration: 5000, // 5 seconds to move forward
     useNativeDriver: false,
   });
   
@@ -197,10 +216,11 @@ function startScrollAnimation() {
   const centerX = width / 2 - carWidth / 2;
   carXAnim.setValue(centerX);
 
-  // Reset cyclist position to top of screen
-  cyclistYAnim.setValue(height * 0.3);
+  // Reset cyclist position on the map to match car's visible position
+  cyclistYAnim.setValue(tileSize * visibleStartRow);
   setIsCyclistVisible(true);
   setIsCarVisible(true);
+  setBikerFrame(0);
   
   // Wait 2 seconds before starting animations so car and cyclist are visible
   setTimeout(() => {
@@ -272,6 +292,7 @@ function startScrollAnimation() {
     if (answer === "Drive into the bike lane to make your turn") {
       // WRONG ANIMATION: Car drives into bike lane dangerously
       setCarPaused(false);
+      setCarDirection("NORTHEAST");
       
       Animated.parallel([
         Animated.timing(carXAnim, {
@@ -285,6 +306,8 @@ function startScrollAnimation() {
           useNativeDriver: true,
         })
       ]).start(() => {
+        // Change direction back to NORTH at the end
+        setCarDirection("NORTH");
         setTimeout(() => {
           handleFeedback(answer);
         }, 500);
@@ -293,13 +316,19 @@ function startScrollAnimation() {
 } else if (answer === "Wait behind the bike lane until the cyclist passes, then turn") {
   // CORRECT ANIMATION: Car stops, waits for cyclist to clear, then turns
   setCarPaused(true);
+  setCyclistMoving(true);
   
-  // Cyclist moves north (up the screen) to clear the intersection
+  // Cyclist continues moving forward (up on the map) to clear the intersection
+  const currentCyclistY = cyclistYAnim._value;
   Animated.timing(cyclistYAnim, {
-    toValue: height * .010, // Move cyclist up and out of the way
-    duration: 1500,
+    toValue: currentCyclistY - (tileSize * 5), // Move forward 5 more tiles
+    duration: 2000,
     useNativeDriver: false,
-  }).start();
+  }).start(() => {
+    // Hide cyclist after animation completes
+    setIsCyclistVisible(false);
+    setCyclistMoving(false);
+  });
   
   // Wait for cyclist to move further away
   setTimeout(() => {
@@ -324,25 +353,65 @@ function startScrollAnimation() {
     });
   }, 3000);
     } else if (answer === "Honk at the cyclist to move out of your way") {
-      // WRONG ANIMATION: Car moves aggressively
+      // WRONG ANIMATION: Car honks and moves aggressively
       setCarPaused(false);
+      setShowHonk(true);
       
-      Animated.timing(scrollY, {
-        toValue: currentScroll.current + tileSize * 1.7,
-        duration: 700,
-        useNativeDriver: true,
-      }).start(() => {
-        // Then turn east
-        setCarDirection("EAST");
-        
-        Animated.timing(carXAnim, {
-          toValue: (width / 2 - carWidth / 2) + carWidth * 1,
-          duration: 900,
-          useNativeDriver: false,
-        }).start(() => {
-          handleFeedback(answer);
-        });
+      // Honk animation - flash 3 times
+      Animated.sequence([
+        Animated.timing(honkOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(honkOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(honkOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(honkOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(honkOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(honkOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShowHonk(false);
       });
+      
+      // Move car after honking
+      setTimeout(() => {
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + tileSize * 1.7,
+          duration: 700,
+          useNativeDriver: true,
+        }).start(() => {
+          // Then turn east
+          setCarDirection("EAST");
+          
+          Animated.timing(carXAnim, {
+            toValue: (width / 2 - carWidth / 2) + carWidth * 1,
+            duration: 900,
+            useNativeDriver: false,
+          }).start(() => {
+            handleFeedback(answer);
+          });
+        });
+      }, 1200);
     }
   }
 
@@ -353,6 +422,10 @@ function startScrollAnimation() {
     setIsCorrectAnswer(null);
     setCarFrame(0);
     setCarPaused(false);
+    setBikerFrame(0);
+    setCyclistMoving(false);
+    setShowHonk(false);
+    honkOpacity.setValue(0);
 
     // Stop cyclist animation
     if (cyclistAnimationRef.current) {
@@ -377,8 +450,8 @@ function startScrollAnimation() {
     } else {
       
       // Uncomment these when ready to move to next scenario:
-     moveToNextScenario();
-     router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
+    moveToNextScenario();
+    router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
 
     }
   };
@@ -426,44 +499,36 @@ function startScrollAnimation() {
         )}
       </Animated.View>
 
-      {/* Cyclist on road83 (bike lane) - with white circle background */}
-      {isCyclistVisible && (
-        <Animated.View
-          style={{
-            position: "absolute",
-            left: cyclistXPosition,
-            top: cyclistYAnim,
-            zIndex: 4,
-          }}
-        >
-          {/* White circle background */}
-          <View
+      {/* Cyclist on road83 (bike lane) - animated biking - positioned on the map */}
+      <Animated.View
+        style={{
+          position: "absolute",
+          width: width,
+          height: mapHeight,
+          left: 0,
+          transform: [{ translateY: scrollY }],
+          zIndex: 4,
+        }}
+      >
+        {isCyclistVisible && (
+          <Animated.View
             style={{
-              width: cyclistCircleSize,
-              height: cyclistCircleSize,
-              borderRadius: cyclistCircleSize / 2,
-              backgroundColor: 'white',
-              justifyContent: 'center',
-              alignItems: 'center',
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.3,
-              shadowRadius: 4,
-              elevation: 5,
+              position: "absolute",
+              left: cyclistXPosition,
+              top: cyclistYAnim,
             }}
           >
-            {/* Cyclist image */}
             <Image
-              source={characterSprites.BIKER}
+              source={bikerFrame === 0 ? characterSprites.biker1 : characterSprites.biker2}
               style={{
                 width: cyclistWidth,
                 height: cyclistHeight,
               }}
               resizeMode="contain"
             />
-          </View>
-        </Animated.View>
-      )}
+          </Animated.View>
+        )}
+      </Animated.View>
 
       {/* Blue Car (player car) */}
       {isCarVisible && (
@@ -478,6 +543,32 @@ function startScrollAnimation() {
             zIndex: 5,
           }}
         />
+      )}
+
+      {/* Honk Animation - "BEEP!" text */}
+      {showHonk && (
+        <Animated.View
+          style={{
+            position: "absolute",
+            bottom: height * 0.05 + carHeight - 20,
+            left: width / 2 - 30,
+            opacity: honkOpacity,
+            zIndex: 6,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 70,
+              fontWeight: "bold",
+              color: "#ffd000ff",
+              textShadowColor: "#000",
+              textShadowOffset: { width: 2, height: 2 },
+              textShadowRadius: 4,
+            }}
+          >
+            BEEP!
+          </Text>
+        </Animated.View>
       )}
 
       {/* Question Overlay */}
