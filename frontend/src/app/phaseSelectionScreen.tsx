@@ -288,7 +288,7 @@ export default function PhaseSelectionScreen() {
 
   const backgroundTranslate = backgroundAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -width],
+    outputRange: [0, -(width - 2)],
   });
 
   const carVerticalBounce = carBounce.interpolate({
@@ -339,7 +339,7 @@ export default function PhaseSelectionScreen() {
         <Animated.View
           style={[
             styles.backgroundWrapper,
-            { transform: [{ translateX: Animated.add(backgroundTranslate, width) }] },
+            { transform: [{ translateX: Animated.add(backgroundTranslate, width - 2) }] },
           ]}
         >
           <ImageBackground
@@ -436,9 +436,9 @@ export default function PhaseSelectionScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#87CEEB' },
-  backgroundContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  backgroundWrapper: { position: 'absolute', width, height },
-  backgroundImage: { flex: 1, width: '100%', height: '100%' },
+  backgroundContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' },
+  backgroundWrapper: { position: 'absolute', width: width + 2, height, top: 0, left: 0, overflow: 'hidden' },
+  backgroundImage: { width: '102%', height: '102%' },
   backgroundImageStyle: { width: '100%', height: '100%', transform: [{ scale: 1.3 }] },
   skyOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0)', zIndex: 0 },
   carContainer: { position: 'absolute', bottom: -25, left: width * 0.05, zIndex: 2 },
