@@ -358,11 +358,12 @@ const trafficCars = useRef([
 
         await new Promise(res => setTimeout(res, 500));
 
-        setIsNpcCarVisible(false);
+        // Keep NPC car visible after collision
+        // setIsNpcCarVisible(false); // REMOVED - car stays visible
 
         const centerX = width / 2 - carWidth / 2;
         carXAnim.setValue(centerX);
-        npcCarXAnim.setValue(2 * tileSize + (tileSize / 2 - npcCarWidth / 2));
+        // npcCarXAnim.setValue(2 * tileSize + (tileSize / 2 - npcCarWidth / 2)); // REMOVED - car stays in place
 
         console.log('Collision animation completed');
         resolve();
@@ -373,89 +374,97 @@ const trafficCars = useRef([
     });
   };
 
-  const animateSafeOvertake = async () => {
-    return new Promise(async (resolve) => {
-      try {
-        console.log('Safe overtake animation started');
-        if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
-
-        setPlayerCarDirection("NORTH");
-        await new Promise(res => setTimeout(res, 1000));
-
-        await new Promise(res => {
-          setPlayerCarDirection("NORTHEAST");
-          Animated.parallel([
-            Animated.timing(carXAnim, {
-              toValue: tileSize + (tileSize / 2 - carWidth / 2),
-              duration: 700,
-              easing: Easing.easeOut,
-              useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-              toValue: scrollY._value - (tileSize * 1),
-              duration: 1000,
-              easing: Easing.easeOut,
-              useNativeDriver: true,
-            })
-          ]).start(res);
-        });
-
-        await new Promise(res => {
-          setPlayerCarDirection("NORTH");
-          Animated.parallel([
-            Animated.timing(jeepneyYAnim, {
-              toValue: height + jeepHeight,
-              duration: 1200,
-              easing: Easing.linear,
-              useNativeDriver: true,
-            }),
-            Animated.timing(scrollY, {
-              toValue: scrollY._value - (tileSize * 2),
-              duration: 1200,
-              easing: Easing.easeOut,
-              useNativeDriver: true,
-            })
-          ]).start(res);
-        });
-
-        setIsJeepneyVisible(false);
-
-        await new Promise(res => {
-          setPlayerCarDirection("NORTHWEST");
-          Animated.parallel([
-            Animated.timing(carXAnim, {
-              toValue: 0,
-              duration: 600,
-              easing: Easing.easeOut,
-              useNativeDriver: false,
-            }),
-            Animated.timing(scrollY, {
-              toValue: scrollY._value - (tileSize * 0.5),
-              duration: 800,
-              easing: Easing.easeOut,
-              useNativeDriver: true,
-            })
-          ]).start(res);
-        });
-
-        setPlayerCarDirection("NORTH");
-        setIsPlayerCarVisible(true);
-
-        await new Promise(res => setTimeout(res, 500));
-
-        console.log('Safe overtake animation completed');
-        resolve();
-      } catch (error) {
-        console.error('Error in animateSafeOvertake:', error);
-        resolve();
+const animateSafeOvertake = async () => {
+  return new Promise(async (resolve) => {
+    try {
+      console.log('Safe overtake animation started');
+      
+      // Stop the scroll animation before overtaking
+      if (scrollAnimationRef.current) {
+        scrollAnimationRef.current.stop();
       }
-    });
-  };
+      
+      // Stop the initial jeepney animation to take control
+      if (jeepneyAnimationRef.current) {
+        jeepneyAnimationRef.current.stop();
+      }
 
+      setPlayerCarDirection("NORTH");
+      
+      // New: Animate both cars moving forward for 7 seconds
+      await new Promise(res => {
+        Animated.parallel([
+          Animated.timing(scrollY, {
+            toValue: scrollY._value - (tileSize * .7),  // Move forward by 7 tiles
+            duration: 800,  // 7 seconds
+            easing: Easing.linear,  // Smooth, constant speed
+            useNativeDriver: true,
+          }),
+          Animated.timing(jeepneyYAnim, {
+            toValue: jeepneyYAnim._value + (tileSize * 0.1),  // Jeepney moves slightly slower relative to player
+            duration: 1000,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          })
+        ]).start(res);
+      });
+      
+      // Shorter pause to avoid feeling stuck
+      await new Promise(res => setTimeout(res, 500));
+
+      // Move to right lane
+      await new Promise(res => {
+        setPlayerCarDirection("NORTHEAST");
+        Animated.timing(carXAnim, {
+          toValue: tileSize + (tileSize / 2 - carWidth / 2),
+          duration: 800,
+          easing: Easing.easeInOut,
+          useNativeDriver: false,
+        }).start(res);
+      });
+
+      // Continue forward in right lane, passing the jeepney
+      await new Promise(res => {
+        setPlayerCarDirection("NORTH");
+        Animated.timing(jeepneyYAnim, {
+          toValue: height + jeepHeight,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }).start(res);
+      });
+
+      setIsJeepneyVisible(false);
+
+      // Return to left lane
+      await new Promise(res => {
+        setPlayerCarDirection("NORTHWEST");
+        Animated.timing(carXAnim, {
+          toValue: 0,
+          duration: 800,
+          easing: Easing.easeInOut,
+          useNativeDriver: false,
+        }).start(res);
+      });
+
+      setPlayerCarDirection("NORTH");
+      setIsPlayerCarVisible(true);
+
+      await new Promise(res => setTimeout(res, 500));
+
+      console.log('Safe overtake animation completed');
+      resolve();
+    } catch (error) {
+      console.error('Error in animateSafeOvertake:', error);
+      resolve();
+    }
+  });
+};
 const animateTrafficJam = async () => {
     return new Promise(async (resolve) => {
       try {
-        if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+        // DON'T stop scroll - keep road moving during traffic jam
+        // if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
 
         setShowTrafficJam(true);
 
@@ -502,6 +511,7 @@ const animateTrafficJam = async () => {
       }
     });
   };
+
   const handleAnswer = async (answer) => {
     setSelectedAnswer(answer);
     setShowQuestion(false);
@@ -511,7 +521,10 @@ const animateTrafficJam = async () => {
     const isCorrect = answer === currentQuestion.correct;
     await updateProgress(answer, isCorrect);
 
-    if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+    // Only stop scroll for collision (option A), not for B and C
+    if (answer === "Overtake immediately since you have a broken white line on your side") {
+      if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+    }
 
     setIsPlayerCarVisible(true);
     setIsJeepneyVisible(true);
@@ -578,11 +591,7 @@ const animateTrafficJam = async () => {
       moveToNextScenario();
       const nextScreen = `S${currentScenario + 1}P2`;
       router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
-
-
-   
-
-
+    
     }
 
     // Cleanup
@@ -721,7 +730,7 @@ const animateTrafficJam = async () => {
           </View>
           <View style={{ position: "absolute", top: height * 0.15, left: width * 0.1, right: width * 0.1, backgroundColor: "rgba(255, 100, 100, 0.8)", padding: 15, borderRadius: 10, alignItems: "center" }}>
             <Text style={{ color: "white", fontSize: 16, fontWeight: "bold", textAlign: "center" }}>Traffic is not moving faster!</Text>
-            <Text style={{ color: "white", fontSize: 14, textAlign: "center", marginTop: 5 }}>Honking causes road rage!</Text>
+            <Text style={{ color: "white", fontSize:14, textAlign: "center", marginTop: 5 }}>Honking causes road rage!</Text>
           </View>
         </View>
       )}
@@ -729,7 +738,7 @@ const animateTrafficJam = async () => {
       {isPlayerCarVisible && (
         <View style={{
           position: "absolute",
-          bottom: height * 0.1,
+          bottom: height * 0.05,
           left: lane1X,
           zIndex: 5
         }}>
