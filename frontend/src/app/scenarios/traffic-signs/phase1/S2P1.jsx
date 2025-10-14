@@ -277,13 +277,13 @@ export default function DrivingGame() {
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
     if (answer === "Stop before the line of the pedestrian lane.") {
-      const targetRow = 6.5;
+      const targetRow = 6.4;
       const rowsToMove = targetRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
       
       Animated.timing(scrollY, {
         toValue: nextTarget,
-        duration: 3000,
+        duration: 1000,
         useNativeDriver: true,
       }).start(() => {
         handleFeedback(answer);
@@ -431,11 +431,11 @@ export default function DrivingGame() {
             key={`npc-${idx}`}
             source={npcCarSpritesSouth[npcConfig.color][npcCarFrames[idx]]}
             style={{
-              width: 280,
-              height: 350,
+              width: 350,
+              height: 420,
               position: "absolute",
               top: npcConfig.row * tileSize,
-              left: 1 * tileSize - 40, // Column 1 with slight offset for centering
+              left: 1 * tileSize - 70, // Column 1 with slight offset for centering
               zIndex: 5,
             }}
             resizeMode="contain"
