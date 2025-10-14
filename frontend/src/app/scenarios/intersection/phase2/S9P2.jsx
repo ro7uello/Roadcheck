@@ -250,7 +250,7 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 7.5;
+    const stopRow = 6.5;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -323,13 +323,13 @@ export default function DrivingGame() {
       // Step 1: Move forward while turning NORTHWEST
       Animated.parallel([
         Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 1.5,
-          duration: 800,
+          toValue: currentScroll.current,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.timing(carXAnim, {
-          toValue: currentCarX - oneLaneWidth,
-          duration: 800,
+          toValue: currentCarX,
+          duration: 1200,
           useNativeDriver: true,
         })
       ]).start(() => {
@@ -337,16 +337,16 @@ export default function DrivingGame() {
         
         // Step 2: Complete lane change and straighten to NORTH
         Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 1,
-          duration: 500,
+          toValue: currentScroll.current + tileSize * 0.8,
+          duration: 1800,
           useNativeDriver: true,
         }).start(() => {
           setCarDirection("NORTH");
           
           // Step 3: Continue forward in left lane
           Animated.timing(scrollY, {
-            toValue: currentScroll.current + tileSize * 3,
-            duration: 1500,
+            toValue: currentScroll.current + tileSize * 2.5,
+            duration: 1200,
             useNativeDriver: true,
           }).start(() => {
             setIsCarVisible(false);
@@ -363,13 +363,13 @@ export default function DrivingGame() {
       // Step 1: Move forward while turning NORTHEAST
       Animated.parallel([
         Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 1.5,
-          duration: 800,
+          toValue: currentScroll.current + tileSize * 1,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.timing(carXAnim, {
           toValue: currentCarX + oneLaneWidth * 2,
-          duration: 800,
+          duration: 600,
           useNativeDriver: true,
         })
       ]).start(() => {
@@ -377,16 +377,16 @@ export default function DrivingGame() {
         
         // Step 2: Complete lane change and straighten to NORTH
         Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 1.5,
-          duration: 500,
+          toValue: currentScroll.current + tileSize * 1,
+          duration: 400,
           useNativeDriver: true,
         }).start(() => {
           setCarDirection("NORTH");
           
           // Step 3: Continue forward in right lane
           Animated.timing(scrollY, {
-            toValue: currentScroll.current + tileSize * 3,
-            duration: 1500,
+            toValue: currentScroll.current + tileSize * 2.5,
+            duration: 1200,
             useNativeDriver: true,
           }).start(() => {
             setIsCarVisible(false);
@@ -403,13 +403,13 @@ export default function DrivingGame() {
       // Step 1: Move forward while turning NORTHWEST
       Animated.parallel([
         Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 1.5,
-          duration: 800,
+          toValue: currentScroll.current + tileSize * 1,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.timing(carXAnim, {
           toValue: currentCarX - oneLaneWidth,
-          duration: 800,
+          duration: 600,
           useNativeDriver: true,
         })
       ]).start(() => {
@@ -417,16 +417,16 @@ export default function DrivingGame() {
         
         // Step 2: Complete lane change and straighten to NORTH
         Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 1,
-          duration: 500,
+          toValue: currentScroll.current + tileSize * 0.8,
+          duration: 400,
           useNativeDriver: true,
         }).start(() => {
           setCarDirection("NORTH");
           
           // Step 3: Continue forward in left lane
           Animated.timing(scrollY, {
-            toValue: currentScroll.current + tileSize * 3,
-            duration: 1500,
+            toValue: currentScroll.current + tileSize * 2.5,
+            duration: 1200,
             useNativeDriver: true,
           }).start(() => {
             setIsCarVisible(false);
@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 18),
+    fontSize: Math.min(width * 0.04, 16),
     textAlign: "center",
   },
   feedbackOverlay: {
