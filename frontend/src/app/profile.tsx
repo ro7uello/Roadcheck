@@ -61,6 +61,36 @@ export default function ProfileScreen() {
       setUserProgress(freshData.data);
     };
 
+  const handleApiError = async (error, router) => {
+    console.error('API Error:', error);
+
+    // Check if it's a 401 error (unauthorized)
+    if (error.message?.includes('401') || error.status === 401) {
+      // Clear local storage
+      await AsyncStorage.multiRemove([
+        'access_token',
+        'refresh_token',
+        'userId',
+        'user_email'
+      ]);
+
+      Alert.alert(
+        'Session Ended',
+        'Your session was ended because you logged in on another device. Please login again.',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/login')
+          }
+        ]
+      );
+      return true;
+    }
+    return false;
+  };
+
+  // Then UPDATE your loadProfileData function to use this error handler:
+
   const loadProfileData = async (forceRefresh = false) => {
     try {
       if (!forceRefresh) {
@@ -69,9 +99,10 @@ export default function ProfileScreen() {
 
       const storedUserId = await AsyncStorage.getItem("userId");
       const userEmail = await AsyncStorage.getItem("user_email");
+      const token = await AsyncStorage.getItem("access_token");
 
-      if (!storedUserId) {
-        console.error("No user ID found - redirecting to login");
+      if (!storedUserId || !token) {
+        console.error("No user ID or token found - redirecting to login");
         Alert.alert("Session Expired", "Please login again", [
           { text: "OK", onPress: () => router.replace("/login") }
         ]);
@@ -80,48 +111,55 @@ export default function ProfileScreen() {
 
       setUserId(storedUserId);
 
-      // 🚀 Use cached API service
       const startTime = Date.now();
 
-      const [profileResult, statsResult] = await Promise.all([
-        CachedApiService.getProfile(storedUserId, forceRefresh),
-        CachedApiService.getStats(storedUserId, forceRefresh)
-      ]);
+      try {
+        const [profileResult, statsResult] = await Promise.all([
+          CachedApiService.getProfile(storedUserId, forceRefresh),
+          CachedApiService.getStats(storedUserId, forceRefresh)
+        ]);
 
-      const loadTime = Date.now() - startTime;
-      console.log(`⏱️ Profile data loaded in ${loadTime}ms`);
+        const loadTime = Date.now() - startTime;
+        console.log(`⏱️ Profile data loaded in ${loadTime}ms`);
 
-      // Check if data came from cache
-      const isFromCache = profileResult.fromCache || statsResult.fromCache;
-      setFromCache(isFromCache);
+        const isFromCache = profileResult.fromCache || statsResult.fromCache;
+        setFromCache(isFromCache);
 
-      if (isFromCache) {
-        console.log('📦 Data loaded from cache!');
-      } else {
-        console.log('🌐 Data loaded from API');
-      }
+        if (isFromCache) {
+          console.log('📦 Data loaded from cache!');
+        } else {
+          console.log('🌐 Data loaded from API');
+        }
 
-      if (profileResult.success && profileResult.data) {
-        setProfile({
-          username: profileResult.data.username,
-          email: userEmail || profileResult.data.email || "N/A"
-        });
-      } else {
-        console.warn("Failed to fetch profile");
-        Alert.alert("Error", "Unable to load profile");
-      }
+        if (profileResult.success && profileResult.data) {
+          setProfile({
+            username: profileResult.data.username,
+            email: userEmail || profileResult.data.email || "N/A"
+          });
+        } else {
+          console.warn("Failed to fetch profile");
+          Alert.alert("Error", "Unable to load profile");
+        }
 
-      if (statsResult.success) {
-        setStats(statsResult.data);
-      } else {
-        console.warn("Failed to fetch stats:", statsResult);
-        // Set empty stats as fallback
-        setStats({
-          road_markings: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
-          traffic_signs: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
-          intersection_and_others: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
-          pedestrian: { total_scenarios: 10, completed_scenarios: 0, correct_answers: 0 }
-        });
+        if (statsResult.success) {
+          setStats(statsResult.data);
+        } else {
+          console.warn("Failed to fetch stats:", statsResult);
+          setStats({
+            road_markings: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
+            traffic_signs: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
+            intersection_and_others: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
+            pedestrian: { total_scenarios: 10, completed_scenarios: 0, correct_answers: 0 }
+          });
+        }
+
+      } catch (apiError) {
+        // Handle session ended error
+        const wasHandled = await handleApiError(apiError, router);
+        if (wasHandled) {
+          return; // Exit early if session was ended
+        }
+        throw apiError; // Re-throw if not a session error
       }
 
     } catch (error) {
