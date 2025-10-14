@@ -452,7 +452,6 @@ export default function DrivingGame() {
       const actualCorrectAnswer = questions[questionIndex].correct;
 
       if (option === actualCorrectAnswer) {
-        if (option === "Signal, check mirrors and blind spots, then change lanes when safe") {
           await animateCarefulOvertake();
         } else if (option === "Stay in your current lane to avoid any violations") {
           // Recreate the loop animation like in startScrollAnimation
@@ -473,8 +472,7 @@ export default function DrivingGame() {
             }
             handleFeedback(option);
           }, 3000);
-        }
-      } else if (option === "Change lanes without signaling since the lines are broken") {
+        } else if (option === "Change lanes without signaling since the lines are broken") {
         await animateSuddenOvertake();
       } else {
         // Other wrong answers
