@@ -37,8 +37,8 @@ export default function ResultPage() {
     phaseId,
     categoryName,
     userAttempts,
-    totalTime,
-    scenarioCount = 10,
+    totalTime = '0',
+    scenarioCount = '10',
     scenarioProgress
   } = params;
 

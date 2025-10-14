@@ -434,7 +434,7 @@ const testBasicConnection = async () => {
               <TouchableOpacity
                 key={category.id}
                 style={styles.categoryButton}
-                onPress={() => handleDriverCategorySelect(category)}
+                onPress={() => handleCategorySelect(category)}
                 disabled={isLoading}
               >
                 <Text style={styles.categoryButtonText}>{category.name}</Text>
