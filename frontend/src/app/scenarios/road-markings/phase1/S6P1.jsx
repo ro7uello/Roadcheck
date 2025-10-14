@@ -243,7 +243,6 @@ export default function DrivingGame() {
     };
   }, []);
 
-  // Updated handleFeedback function from S2P1
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
     if (answerGiven === currentQuestion.correct) {

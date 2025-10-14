@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import CachedApiService from '../contexts/CachedApiService';
 import { API_URL as API_BASE_URL } from '../../config/api';
 const { width, height } = Dimensions.get('window');
 const BACKGROUND_SPEED = 12000;

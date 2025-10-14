@@ -1,4 +1,4 @@
-// src/utils/CacheManager.js
+// src/contexts/CacheManager.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CACHE_KEYS = {

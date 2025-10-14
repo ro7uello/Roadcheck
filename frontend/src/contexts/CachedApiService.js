@@ -1,4 +1,4 @@
-// src/services/CachedApiService.js
+// src/contexts/CachedApiService.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CacheManager from './/CacheManager';
 import NetworkHelper from './/NetworkHelper';
@@ -356,6 +356,294 @@ class CachedApiService {
     } catch (error) {
       console.error('Error updating user progress:', error);
       throw error;
+    }
+  }
+
+  // ============================================
+  // 🆕 ENHANCED USER PROGRESS METHODS WITH CACHING
+  // ============================================
+
+  async getUserProgress(userId, forceRefresh = false) {
+    try {
+      // Try cache first unless force refresh
+      if (!forceRefresh) {
+        const cached = await CacheManager.getProgress(userId);
+        if (cached) {
+          return { success: true, data: cached, fromCache: true };
+        }
+      }
+
+      console.log('🌐 Fetching user progress from API...');
+      const response = await fetch(`${API_URL}/user-progress/${userId}`);
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        // Cache the result
+        await CacheManager.cacheProgress(userId, result.data);
+        return { ...result, fromCache: false };
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error getting user progress:', error);
+
+      // Try to return stale cache on error
+      const cached = await CacheManager.getProgress(userId);
+      if (cached) {
+        console.log('⚠️ Returning stale progress cache due to error');
+        return { success: true, data: cached, fromCache: true, stale: true };
+      }
+
+      throw error;
+    }
+  }
+
+  async updateUserProgress(progressData) {
+    try {
+      const response = await fetch(`${API_URL}/user-progress`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(progressData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // 🆕 Invalidate related caches
+        await Promise.all([
+          CacheManager.invalidateProgress(progressData.user_id),
+          CacheManager.invalidateStats(progressData.user_id),
+          // Also invalidate attempts cache for the specific category/phase
+          CacheManager.invalidateAttempts(
+            progressData.user_id,
+            progressData.current_category_id,
+            progressData.current_phase
+          )
+        ]);
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error updating user progress:', error);
+      throw error;
+    }
+  }
+
+  // ============================================
+  // 🆕 USER ATTEMPTS METHODS WITH CACHING
+  // ============================================
+
+  async getUserAttempts(userId, categoryId = null, phaseId = null, forceRefresh = false) {
+    try {
+      // If specific category/phase provided, try cache
+      if (categoryId && phaseId && !forceRefresh) {
+        const cached = await CacheManager.getAttempts(userId, categoryId, phaseId);
+        if (cached) {
+          return { success: true, data: cached, fromCache: true };
+        }
+      }
+
+      console.log(`🌐 Fetching user attempts from API...`);
+
+      // Build query params
+      let url = `${API_URL}/user-attempts/${userId}`;
+      const params = [];
+      if (categoryId) params.push(`category_id=${categoryId}`);
+      if (phaseId) params.push(`phase_id=${phaseId}`);
+      if (params.length > 0) url += `?${params.join('&')}`;
+
+      const response = await fetch(url);
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        // Cache if specific category/phase
+        if (categoryId && phaseId) {
+          await CacheManager.cacheAttempts(userId, categoryId, phaseId, result.data);
+        }
+        return { ...result, fromCache: false };
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error getting user attempts:', error);
+
+      // Try stale cache on error
+      if (categoryId && phaseId) {
+        const cached = await CacheManager.getAttempts(userId, categoryId, phaseId);
+        if (cached) {
+          console.log('⚠️ Returning stale attempts cache due to error');
+          return { success: true, data: cached, fromCache: true, stale: true };
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  // ============================================
+  // 🆕 SESSION PROGRESS METHODS WITH CACHING
+  // ============================================
+
+  async getSessionProgress(sessionId, forceRefresh = false) {
+    try {
+      if (!forceRefresh) {
+        const cached = await CacheManager.getSessionProgress(sessionId);
+        if (cached) {
+          return { success: true, data: cached, fromCache: true };
+        }
+      }
+
+      console.log(`🌐 Fetching session progress from API...`);
+      const response = await fetch(`${API_URL}/sessions/${sessionId}/progress`);
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        await CacheManager.cacheSessionProgress(sessionId, result.data);
+        return { ...result, fromCache: false };
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error getting session progress:', error);
+
+      const cached = await CacheManager.getSessionProgress(sessionId);
+      if (cached) {
+        console.log('⚠️ Returning stale session cache due to error');
+        return { success: true, data: cached, fromCache: true, stale: true };
+      }
+
+      throw error;
+    }
+  }
+
+  // ============================================
+  // 🆕 ENHANCED SCENARIO COMPLETION WITH CACHE INVALIDATION
+  // ============================================
+
+  async submitScenarioAttempt(userId, scenarioId, selectedAnswer, isCorrect) {
+    try {
+      const token = await AsyncStorage.getItem('access_token');
+      const response = await fetch(`${API_URL}/user-progress/scenario`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          scenario_id: scenarioId,
+          selected_answer: selectedAnswer,
+          is_correct: isCorrect
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // 🆕 Invalidate all related caches
+        await Promise.all([
+          CacheManager.invalidateStats(userId),
+          CacheManager.invalidateProgress(userId),
+          // Invalidate attempts cache for all categories (since we don't know which one)
+          CacheManager.invalidateAttempts(userId)
+        ]);
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error submitting scenario attempt:', error);
+      throw error;
+    }
+  }
+
+  // ============================================
+  // 🆕 ENHANCED PRELOAD WITH NEW CACHE TYPES
+  // ============================================
+
+  async preloadData(userId, categoryId = null, phaseId = null) {
+    try {
+      console.log('🚀 Preloading data...');
+
+      const preloadPromises = [
+        this.getCategories(),
+        this.getProfile(userId),
+        this.getStats(userId),
+        this.getUserProgress(userId),  // 🆕 Preload progress
+      ];
+
+      // If category/phase provided, preload those too
+      if (categoryId) {
+        preloadPromises.push(this.getPhases(categoryId));
+
+        if (phaseId) {
+          preloadPromises.push(
+            this.getScenarios(categoryId, phaseId),
+            this.getUserAttempts(userId, categoryId, phaseId)  // 🆕 Preload attempts
+          );
+        }
+      }
+
+      await Promise.all(preloadPromises);
+
+      console.log('✅ Preload complete');
+    } catch (error) {
+      console.error('Error preloading data:', error);
+    }
+  }
+
+  // ============================================
+  // 🆕 CACHE WARMING (Call this on app start or login)
+  // ============================================
+
+  async warmCache(userId) {
+    try {
+      console.log('🔥 Warming cache for user:', userId);
+
+      // Warm essential caches in background
+      await this.preloadData(userId);
+
+      console.log('✅ Cache warming complete');
+    } catch (error) {
+      console.error('Error warming cache:', error);
+    }
+  }
+
+  // ============================================
+  // 🆕 SMART CACHE REFRESH (Refresh only expired items)
+  // ============================================
+
+  async refreshExpiredCaches(userId) {
+    try {
+      console.log('🔄 Checking for expired caches...');
+
+      const refreshPromises = [];
+
+      // Check and refresh each cache type
+      const cachedProfile = await CacheManager.getProfile(userId);
+      if (!cachedProfile) {
+        refreshPromises.push(this.getProfile(userId, true));
+      }
+
+      const cachedStats = await CacheManager.getStats(userId);
+      if (!cachedStats) {
+        refreshPromises.push(this.getStats(userId, true));
+      }
+
+      const cachedProgress = await CacheManager.getProgress(userId);
+      if (!cachedProgress) {
+        refreshPromises.push(this.getUserProgress(userId, true));
+      }
+
+      if (refreshPromises.length > 0) {
+        await Promise.all(refreshPromises);
+        console.log(`✅ Refreshed ${refreshPromises.length} expired caches`);
+      } else {
+        console.log('✅ All caches are fresh');
+      }
+    } catch (error) {
+      console.error('Error refreshing expired caches:', error);
     }
   }
 

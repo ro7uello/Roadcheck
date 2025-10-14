@@ -89,6 +89,7 @@ const questions = [
     question: "You're on an expressway with broken white lane lines between lanes going in the same direction. You want to move to the faster left lane.",
     options: ["Change lanes without signaling since the lines are broken", "Stay in your current lane to avoid any violations", "Signal, check mirrors and blind spots, then change lanes when safe"],
     correct: "Signal, check mirrors and blind spots, then change lanes when safe",
+    correctExplanation: "Correct! Broken white lines allow lane changes. Always signal and check your surroundings before changing lanes for safety.",
     wrongExplanation: {
       "Change lanes without signaling since the lines are broken": "Accident prone! Always let other drivers know you are changing lanes by turning on your signal and check your side mirrors if it's clear to change.",
       "Stay in your current lane to avoid any violations": "Wrong! Changing lanes on a broken white line is accepted although change lane with care."
@@ -244,7 +245,6 @@ export default function DrivingGame() {
     };
   }, []);
 
-  // Updated handleFeedback function from S2P1
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
     if (answerGiven === currentQuestion.correct) {
@@ -273,7 +273,7 @@ export default function DrivingGame() {
   };
 
   // FIXED: Player stays in lane - properly restart the loop animation
-  const animateStayInLane = async () => {
+  const animateStayInLane = async (answerGiven) => {
       scrollAnimationRef.current = Animated.loop(
           Animated.timing(scrollY, {
             toValue: scrollY._value - mapHeight,
@@ -294,10 +294,10 @@ export default function DrivingGame() {
           }, 3000);
       });
 
-      handleFeedback(selectedAnswer);
+      handleFeedback(answerGiven);
   };
 
-  const animateSuddenOvertake = async () => {
+  const animateSuddenOvertake = async (answerGiven) => {
       if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
       if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
 
@@ -356,11 +356,11 @@ export default function DrivingGame() {
       // Pause briefly before showing feedback
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      handleFeedback(selectedAnswer);
+      handleFeedback(answerGiven);
   };
 
   // NEW ANIMATION: Careful Overtake (for "Signal, check mirrors...")
-  const animateCarefulOvertake = async () => {
+  const animateCarefulOvertake = async (answerGiven) => {
     if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
     if (jeepneyAnimationRef.current) jeepneyAnimationRef.current.stop();
 
@@ -426,7 +426,7 @@ export default function DrivingGame() {
     // Pause briefly before showing feedback
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    handleFeedback(selectedAnswer); // Pass the selected correct answer to feedback
+    handleFeedback(answerGiven); // Pass the selected answer to feedback
   };
 
 
@@ -447,11 +447,11 @@ export default function DrivingGame() {
       const actualCorrectAnswer = questions[questionIndex].correct;
 
       if (option === actualCorrectAnswer) {
-          await animateCarefulOvertake();
+          await animateCarefulOvertake(option);
         } else if (option === "Stay in your current lane to avoid any violations") {
-          await animateStayInLane();
+          await animateStayInLane(option);
         } else if (option === "Change lanes without signaling since the lines are broken") {
-        await animateSuddenOvertake();
+        await animateSuddenOvertake(option);
       } else {
         // Other wrong answers
         if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
@@ -517,14 +517,13 @@ export default function DrivingGame() {
     if (jeepneyAnimationRef.current) {
       jeepneyAnimationRef.current.stop();
     }
-    npcCarAnimationsRef.current.forEach(anim => anim.stop());
   }
 };
 
   // Determine the feedback message based on whether the answer was correct or wrong (from S2P1)
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Broken white lines allow lane changes. Always signal and check your surroundings before changing lanes."
+    ? currentQuestionData.correctExplanation
     : currentQuestionData.wrongExplanation[selectedAnswer] ;
 
 
