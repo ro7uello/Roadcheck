@@ -306,7 +306,7 @@ export default function DrivingGame() {
       // Animate player car at normal speed
       Animated.timing(scrollY, {
         toValue: nextTarget,
-        duration: 2000,
+        duration: 1000,
         useNativeDriver: true,
       }).start(() => {
         handleFeedback(answer);
