@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, } from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
 import { useSession } from '../../../../contexts/SessionManager';
 
@@ -8,7 +8,7 @@ const { width, height } = Dimensions.get("window");
 // Responsive calculations
 const spriteWidth = Math.min(width * 0.08, 64);
 const spriteHeight = spriteWidth * 1.5;
-const carWidth = spriteWidth * 5; // Make cars bigger
+const carWidth = spriteWidth * 5;
 const carHeight = spriteHeight * 5;
 const overlayHeight = height * 0.35;
 const ltoWidth = Math.min(width * 0.3, 240);
@@ -92,7 +92,6 @@ export default function DrivingGame() {
   };
 
   const [showIntro, setShowIntro] = useState(true);
-  const [isPlayerVisible, setIsPlayerVisible] = useState(true);
 
   const startOffset = -(scaledMapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
@@ -121,11 +120,9 @@ export default function DrivingGame() {
 
   // NPC Cars - Initial state with refs
   const carsRef = useRef([
-    // Column 1 cars
     { id: 1, color: 'blue', column: 1, yOffset: 0, frame: 0 },
     { id: 2, color: 'red', column: 1, yOffset: -300, frame: 0 },
     { id: 3, color: 'green', column: 1, yOffset: -600, frame: 0 },
-    // Column 2 cars
     { id: 4, color: 'yellow', column: 2, yOffset: -150, frame: 0 },
     { id: 5, color: 'blue', column: 2, yOffset: -450, frame: 0 },
     { id: 6, color: 'red', column: 2, yOffset: -750, frame: 0 },
@@ -137,10 +134,8 @@ export default function DrivingGame() {
   useEffect(() => {
     const carUpdateInterval = setInterval(() => {
       carsRef.current = carsRef.current.map(car => {
-        // Move cars forward slowly (relative to screen, not map)
-        let newYOffset = car.yOffset - 2; // Slow forward movement
+        let newYOffset = car.yOffset - 2;
         
-        // Reset position when car goes off screen
         if (newYOffset > height + 200) {
           newYOffset = -200;
         }
@@ -153,7 +148,7 @@ export default function DrivingGame() {
       });
       
       setNpcCars([...carsRef.current]);
-    }, 50); // Update every 50ms for smooth movement
+    }, 50);
 
     return () => clearInterval(carUpdateInterval);
   }, []);
@@ -216,13 +211,13 @@ export default function DrivingGame() {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
+    setPlayerPaused(false); // Keep animation running
 
     const currentQuestion = questions[questionIndex];
     const isCorrect = answer === currentQuestion.correct;
     updateProgress(answer, isCorrect);
 
     if (answer === "Wait for a gap in traffic and quickly run across the street") {
-      // Face west and run to the left (west)
       setPlayerDirection("WEST");
       setPlayerFrame(0);
       
@@ -231,7 +226,7 @@ export default function DrivingGame() {
       Animated.parallel([
         Animated.timing(playerXAnim, {
           toValue: leftX,
-          duration: 1500, // Faster for running
+          duration: 1500,
           useNativeDriver: true,
         }),
         Animated.timing(scrollY, {
@@ -240,13 +235,12 @@ export default function DrivingGame() {
           useNativeDriver: true,
         })
       ]).start(() => {
-        setIsPlayerVisible(false);
+        setPlayerPaused(true);
         handleFeedback(answer);
       });
       
       return;
     } else if (answer === "Take a detour where a crosswalk is available or where you can cross the street safely.") {
-      // Walk straight north to pedestrian lane
       setPlayerDirection("NORTH");
       setPlayerFrame(0);
       
@@ -255,12 +249,11 @@ export default function DrivingGame() {
         duration: 4500,
         useNativeDriver: true,
       }).start(() => {
-        setIsPlayerVisible(false);
+        setPlayerPaused(true);
         handleFeedback(answer);
       });
       return;
     } else if (answer === "Cross between the slow-moving vehicles since they're barely moving") {
-      // Face west and walk to the left (west)
       setPlayerDirection("WEST");
       setPlayerFrame(0);
       
@@ -269,7 +262,7 @@ export default function DrivingGame() {
       Animated.parallel([
         Animated.timing(playerXAnim, {
           toValue: leftX,
-          duration: 2000, // Walking speed
+          duration: 2000,
           useNativeDriver: true,
         }),
         Animated.timing(scrollY, {
@@ -278,7 +271,7 @@ export default function DrivingGame() {
           useNativeDriver: true,
         })
       ]).start(() => {
-        setIsPlayerVisible(false);
+        setPlayerPaused(true);
         handleFeedback(answer);
       });
       
@@ -290,19 +283,19 @@ export default function DrivingGame() {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
-    setPlayerFrame(0);
+    setIsCorrectAnswer(null);
     
+    // Reset player state
     const centerX = width * 0.5 - spriteWidth / 2;
     playerXAnim.setValue(centerX);
     setPlayerDirection("NORTH");
-    setIsPlayerVisible(true);
+    setPlayerFrame(0);
     setPlayerPaused(false);
     
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else if (currentScenario >= 10) {
-
       try {
         const sessionResults = await completeSession();
 
@@ -323,7 +316,6 @@ export default function DrivingGame() {
         Alert.alert('Error', 'Failed to save session results');
       }
     } else {
-      // Move to next scenario
       moveToNextScenario();
       const nextScreen = `S${currentScenario + 1}P1`;
       router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
@@ -331,8 +323,8 @@ export default function DrivingGame() {
   };
 
   const handleStartGame = () => {
-      setShowIntro(false);
-    };
+    setShowIntro(false);
+  };
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
@@ -343,12 +335,11 @@ export default function DrivingGame() {
     ? maleSprites[playerDirection][playerFrame] 
     : maleSprites["NORTH"][0];
 
-  // Calculate car positions based on columns
   const getCarXPosition = (column) => {
     if (column === 1) {
-      return width * 0.25; // Column 1 (left lane)
+      return width * 0.25;
     } else {
-      return width * 0.45; // Column 2 (middle-left lane)
+      return width * 0.45;
     }
   };
 
@@ -396,7 +387,7 @@ export default function DrivingGame() {
         />
       </Animated.View>
 
-      {/* NPC Cars - Fixed positioning */}
+      {/* NPC Cars */}
       {npcCars.map(car => (
         <View
           key={car.id}
@@ -420,20 +411,18 @@ export default function DrivingGame() {
         </View>
       ))}
 
-      {/* Player sprite */}
-      {isPlayerVisible && (
-        <Animated.Image
-          source={currentPlayerSprite}
-          style={{
-            width: spriteWidth * 1.5,
-            height: spriteHeight * 1.5,
-            position: "absolute",
-            bottom: 80,
-            transform: [{ translateX: playerXAnim }],
-            zIndex: 8,
-          }}
-        />
-      )}
+      {/* Player sprite - Always visible */}
+      <Animated.Image
+        source={currentPlayerSprite}
+        style={{
+          width: spriteWidth * 1.5,
+          height: spriteHeight * 1.5,
+          position: "absolute",
+          bottom: 80,
+          transform: [{ translateX: playerXAnim }],
+          zIndex: 8,
+        }}
+      />
 
       {/* Question overlay */}
       {showQuestion && (
@@ -482,7 +471,7 @@ export default function DrivingGame() {
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>
-                {feedbackMessage}
+              {feedbackMessage}
             </Text>
           </View>
         </View>
@@ -501,7 +490,6 @@ export default function DrivingGame() {
 }
 
 const styles = StyleSheet.create({
-  // Intro styles (responsive)
   introContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -557,8 +545,6 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
-
-  // In-game responsive styles
   questionOverlay: {
     position: "absolute",
     bottom: 0,
