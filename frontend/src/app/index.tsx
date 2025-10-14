@@ -66,7 +66,7 @@ export default function Home() {
   // Fixed: Changed outputRange to create seamless loop
   const translateX = scrollAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -width],
+    outputRange: [0, -(width - 2)],
   });
 
   const carBounce = carAnimation.interpolate({
@@ -143,7 +143,7 @@ export default function Home() {
               styles.backgroundWrapper,
               {
                 transform: [{
-                  translateX: Animated.add(translateX, width)
+                  translateX: Animated.add(translateX, width - 2)
                 }]
               }
             ]}
@@ -283,14 +283,16 @@ const styles = StyleSheet.create({
   },
   backgroundWrapper: {
     position: 'absolute',
-    width: width,
+    width: width + 2,
     height: height,
     top: 0,
     left: 0,
+    overflow: 'hidden', 
   },
   backgroundImage: {
-    width: width,
-    height: height,
+    width: '102%',
+    height: '102%',
+    transform: [{ scale: 1.02 }],
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
