@@ -270,17 +270,17 @@ export default function DrivingGame() {
   const animateJeepney = (scenario) => {
     setShowJeepney(true);
     
-    // Calculate jeepney starting position
-    const jeepneyStartRow = 7.5;
-    const jeepneyRowPosition = jeepneyStartRow * tileSize;
-    const mapTopPosition = Math.abs(currentScroll.current - startOffset);
-    const jeepneyScreenY = jeepneyRowPosition - mapTopPosition;
-    
-    jeepneyYAnim.setValue(jeepneyScreenY);
-    jeepneyXAnim.setValue(-carWidth * 0.5); // Start slightly visible from left
-    setJeepneyDirection("EAST");
-
     if (scenario === "speed_up") {
+      // Calculate jeepney starting position
+      const jeepneyStartRow = 7.5;
+      const jeepneyRowPosition = jeepneyStartRow * tileSize;
+      const mapTopPosition = Math.abs(currentScroll.current - startOffset);
+      const jeepneyScreenY = jeepneyRowPosition - mapTopPosition;
+      
+      jeepneyYAnim.setValue(jeepneyScreenY);
+      jeepneyXAnim.setValue(-carWidth * 0.5); // Start slightly visible from left
+      setJeepneyDirection("EAST");
+
       // Aggressive entry - jeepney enters quickly but car speeds past
       Animated.parallel([
         Animated.timing(jeepneyXAnim, {
@@ -332,65 +332,34 @@ export default function DrivingGame() {
       });
       
     } else if (scenario === "maintain_speed") {
-      // Concurrent movement - both vehicles reach intersection at similar time
-      Animated.parallel([
-        Animated.timing(jeepneyXAnim, {
-          toValue: tileSize * 1.4,
-          duration: 1400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(jeepneyYAnim, {
-          toValue: jeepneyScreenY,
-          duration: 1400,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setJeepneyDirection("NORTHEAST");
-        
-        setTimeout(() => {
-          Animated.parallel([
-            Animated.timing(jeepneyXAnim, {
-              toValue: tileSize * 1.9,
-              duration: 900,
-              useNativeDriver: true,
-            }),
-            Animated.timing(jeepneyYAnim, {
-              toValue: jeepneyScreenY - tileSize * 0.6,
-              duration: 900,
-              useNativeDriver: true,
-            }),
-          ]).start(() => {
-            setJeepneyDirection("NORTH");
-            
-            setTimeout(() => {
-              Animated.parallel([
-                Animated.timing(jeepneyXAnim, {
-                  toValue: tileSize * 2.15,
-                  duration: 1600,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(jeepneyYAnim, {
-                  toValue: jeepneyScreenY - tileSize * 4.5,
-                  duration: 1600,
-                  useNativeDriver: true,
-                }),
-              ]).start();
-            }, 250);
-          });
-        }, 350);
-      });
+      // Jeepney appears stationary at fixed screen position
+      const fixedScreenY = height * 0.40; // Fixed position on screen
+      jeepneyYAnim.setValue(fixedScreenY);
+      jeepneyXAnim.setValue(-carWidth * 0.3); // Position at side road entrance
+      setJeepneyDirection("EAST");
+      // Jeepney stays static - no animation needed
       
-    } else if (scenario === "stop_and_wait") {
+    } else if(scenario === "stop_and_wait"){
+      // Calculate jeepney starting position
+      const jeepneyStartRow = 7.5;
+      const jeepneyRowPosition = jeepneyStartRow * tileSize;
+      const mapTopPosition = Math.abs(currentScroll.current - startOffset);
+      const jeepneyScreenY = jeepneyRowPosition - mapTopPosition;
+      
+      jeepneyYAnim.setValue(jeepneyScreenY);
+      jeepneyXAnim.setValue(-carWidth * 0.5);
+      setJeepneyDirection("EAST");
+      
       // Smooth complete turn - jeepney has priority
       Animated.parallel([
         Animated.timing(jeepneyXAnim, {
           toValue: tileSize * 1.3,
-          duration: 1600,
+          duration: 1000,
           useNativeDriver: true,
         }),
         Animated.timing(jeepneyYAnim, {
           toValue: jeepneyScreenY + tileSize * 0.1,
-          duration: 1600,
+          duration: 1000,
           useNativeDriver: true,
         }),
       ]).start(() => {
@@ -420,7 +389,7 @@ export default function DrivingGame() {
                 }),
                 Animated.timing(jeepneyYAnim, {
                   toValue: jeepneyScreenY - tileSize * 3,
-                  duration: 1200,
+                  duration: 12000,
                   useNativeDriver: true,
                 }),
               ]).start(() => {
@@ -428,12 +397,12 @@ export default function DrivingGame() {
                 Animated.parallel([
                   Animated.timing(jeepneyXAnim, {
                     toValue: tileSize * 2.1,
-                    duration: 1500,
+                    duration: 1000,
                     useNativeDriver: true,
                   }),
                   Animated.timing(jeepneyYAnim, {
                     toValue: jeepneyScreenY - tileSize * 6,
-                    duration: 1500,
+                    duration: 1000,
                     useNativeDriver: true,
                   }),
                 ]).start(() => {
@@ -506,14 +475,13 @@ export default function DrivingGame() {
         });
         
     } else if (answer === "Maintain speed since you have the right of way on the main road") {
-        // Start both simultaneously for concurrent movement
-        animateJeepney("maintain_speed");
+        // No jeepney animation for this scenario
 
         const targetRow = 10;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-        // Car maintains steady pace
+        // Car maintains steady pace and passes by
         Animated.timing(scrollY, {
             toValue: nextTarget,
             duration: 2300,
@@ -537,12 +505,12 @@ export default function DrivingGame() {
             setCarPaused(false);
             Animated.timing(scrollY, {
                 toValue: nextTarget,
-                duration: 2200,
+                duration: 1000,
                 useNativeDriver: true,
             }).start(() => {
                 handleFeedback(answer);
             });
-        }, 5500);
+        }, 4500);
     }
 };
 
@@ -681,7 +649,7 @@ export default function DrivingGame() {
       </Animated.View>
 
       {/* Jeepney - positioned relative to map */}
-      {showJeepney && (
+      {showJeepney && selectedAnswer !== "Maintain speed since you have the right of way on the main road" && (
         <Animated.Image
           source={currentJeepneySprite}
           style={{
@@ -690,6 +658,21 @@ export default function DrivingGame() {
             position: "absolute",
             left: jeepneyXAnim,
             top: jeepneyYAnim,
+            zIndex: 7,
+          }}
+        />
+      )}
+
+      {/* Jeepney - fixed position for maintain_speed scenario */}
+      {showJeepney && selectedAnswer === "Maintain speed since you have the right of way on the main road" && (
+        <Image
+          source={currentJeepneySprite}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            left: -carWidth * 0.3,
+            top: height * 0.40,
             zIndex: 7,
           }}
         />
@@ -794,7 +777,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -851,7 +834,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
