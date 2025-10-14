@@ -546,14 +546,19 @@ export default function ResultPage() {
               </TouchableOpacity>
               <Text style={styles.detailedTitle}>SCENARIO DETAILS</Text>
             </View>
-
-            <ScrollView style={styles.detailedContent} showsVerticalScrollIndicator={false}>
+            
+            <View style={styles.scrollWrapper}>
+            <ScrollView style={{ flex: 1 }}
+              showsVerticalScrollIndicator={true}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
               {resultData.scenarioDetails.map((item, index) => (
                 <View key={index}>
                   {renderScenarioDetail({ item, index })}
                 </View>
               ))}
             </ScrollView>
+            </View>
           </>
         )}
 
@@ -573,9 +578,11 @@ export default function ResultPage() {
           ]}
         >
           {/* Custom Container Background for Library - Replacing settings-tab.png */}
-          <View style={styles.customContainerBg}>
-            <View style={styles.customContainerInner} />
-          </View>
+          <Image
+            source={require('../../assets/background/settings-tab.png')}
+            style={styles.settingsTab}
+            resizeMode="stretch"
+          />
 
           <Text style={styles.libraryTitle}>REFERENCES</Text>
 
@@ -725,21 +732,21 @@ const styles = StyleSheet.create({
   },
   resultHeader: {
       alignItems: 'center',
-      marginTop: 18,
-      marginBottom: 2,
+      marginTop: 15,
+      marginBottom: 8,
     },
   resultTitle: {
-      fontSize: 24,
+      fontSize: 20,
       color: 'black',
       fontFamily: 'pixel',
       textAlign: 'center',
     },
     statusContainer: {
       alignItems: 'center',
-      marginBottom: 20,
+      marginBottom: 15,
     },
   resultStatus: {
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: 'pixel',
     textAlign: 'center',
     fontWeight: 'bold',
@@ -747,23 +754,24 @@ const styles = StyleSheet.create({
   resultStats: {
       width: '85%',
       paddingVertical: 0,
-      gap: 12,
+      gap: 8,
       alignItems: 'center',
     },
     statRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: 20,
+      paddingHorizontal: 15,
       width: '100%',
+      marginVertical: 2,
     },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: 'black',
     fontFamily: 'pixel',
   },
   statValue: {
-    fontSize: 13,
+    fontSize: 12,
     color: 'black',
     fontFamily: 'pixel',
     textAlign: 'right',
@@ -810,8 +818,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '90%',
-    marginTop: 20,
-    marginBottom: 15,
+    marginTop: 15, // Reduced
+    marginBottom: 10, // Reduced
+    minHeight: 25,
   },
   backButton: {
     backgroundColor: '#666',
@@ -833,22 +842,22 @@ const styles = StyleSheet.create({
   },
   detailedContent: {
     width: '90%',
-    flex: 1,
+    maxHeight: height * 0.35,
     marginBottom: 20,
   },
   scenarioDetailItem: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
+    padding: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: '#ddd',
   },
   scenarioDetailHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between', // Add this to spread items
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   scenarioDetailNumber: {
     fontSize: 11,
@@ -964,4 +973,14 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     textDecorationLine: 'underline',
   },
+    settingsTab: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  scrollWrapper: {
+  width: '90%',
+    flex: 1, // Use flex instead of fixed height
+    marginBottom: 15,
+},
 });
