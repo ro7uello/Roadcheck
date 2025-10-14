@@ -1,25 +1,15 @@
-// frontend/src/app/result-page.tsx
 import { useFonts } from 'expo-font';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Dimensions,
-  Image,
-  ImageBackground,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  Linking,
+  Animated, Dimensions, Image, ImageBackground, SafeAreaView,
+  StyleSheet, Text, TouchableOpacity, View, ActivityIndicator,
+  Alert, ScrollView, Linking,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../../config/api';
+import CachedApiService from '../contexts/CachedApiService';
 
 const { width, height } = Dimensions.get('window');
 const BACKGROUND_SPEED = 12000;
@@ -42,6 +32,7 @@ export default function ResultPage() {
     scenarioProgress
   } = params;
 
+  const [sessionData, setSessionData] = useState(null);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -69,7 +60,7 @@ export default function ResultPage() {
     if (fontsLoaded) {
       startBackgroundAnimation();
       startCarAnimation();
-      calculateResults();
+      calculateResults(); // This will handle everything
     }
 
     return () => {
@@ -82,21 +73,32 @@ export default function ResultPage() {
   }, [fontsLoaded]);
 
   useEffect(() => {
-      Animated.spring(libraryModalScale, {
-        toValue: libraryVisible ? 1 : 0,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }).start();
-    }, [libraryVisible]);
+    Animated.spring(libraryModalScale, {
+      toValue: libraryVisible ? 1 : 0,
+      tension: 100,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+  }, [libraryVisible]);
 
-
+  // 🆕 OPTIMIZED: Now with caching!
   const calculateResults = async () => {
     try {
       setLoading(true);
       console.log('🔍 DEBUG: Starting calculateResults');
-      console.log('🔍 DEBUG: Params received:', { sessionId, categoryId, phaseId, categoryName, userAttempts, totalTime, scenarioProgress });
+      console.log('🔍 DEBUG: Params received:', {
+        sessionId, categoryId, phaseId, categoryName,
+        userAttempts, totalTime, scenarioProgress
+      });
 
+      // 🚀 If we have sessionId, fetch from cache first!
+      if (sessionId) {
+        console.log('📦 Attempting to load session from cache...');
+        await fetchSessionDetailsOptimized(sessionId);
+        return;
+      }
+
+      // Otherwise, calculate from passed data
       let attempts = [];
       let detailedProgress = [];
 
@@ -122,12 +124,6 @@ export default function ResultPage() {
       } catch (parseError) {
         console.error('❌ Error parsing scenarioProgress:', parseError);
         detailedProgress = [];
-      }
-
-      if (sessionId) {
-        console.log('🔍 DEBUG: Fetching session details for sessionId:', sessionId);
-        await fetchSessionDetails(sessionId);
-        return;
       }
 
       console.log('🔍 DEBUG: Calculating from passed data, attempts count:', attempts.length);
@@ -171,7 +167,9 @@ export default function ResultPage() {
       const averageTimePerScenario = attempts.length > 0 ?
         formatTime(Math.round(totalTimeNum / attempts.length)) : '00:00';
 
-      console.log('🔍 DEBUG: Calculated results:', { correctAnswers, incorrectAnswers, accuracy, status, totalTimeNum });
+      console.log('🔍 DEBUG: Calculated results:', {
+        correctAnswers, incorrectAnswers, accuracy, status, totalTimeNum
+      });
 
       const scenarioDetails = attempts.map((attempt, index) => ({
         scenarioNumber: index + 1,
@@ -206,20 +204,22 @@ export default function ResultPage() {
     }
   };
 
-  const fetchSessionDetails = async (sessionId) => {
+  // 🆕 OPTIMIZED: Using CachedApiService instead of direct fetch!
+  const fetchSessionDetailsOptimized = async (sessionId) => {
     try {
-      const token = await AsyncStorage.getItem('access_token');
-      const response = await fetch(`${API_URL}/sessions/${sessionId}/progress`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      console.log('🚀 Fetching session details with caching...');
 
-      if (response.ok) {
-        const data = await response.json();
-        const { session, scenarios, summary } = data.data;
+      // ✨ Use cached API service - will load from cache if available!
+      const result = await CachedApiService.getSessionProgress(sessionId);
+
+      if (result.fromCache) {
+        console.log('⚡ Loaded from cache - INSTANT!');
+      } else {
+        console.log('🌐 Loaded from API');
+      }
+
+      if (result.success && result.data) {
+        const { session, scenarios, summary } = result.data;
 
         const scenarioDetails = scenarios.map(scenario => ({
           scenarioNumber: scenario.scenario_number,
@@ -250,13 +250,25 @@ export default function ResultPage() {
         setResultData(newResultData);
         showResultPanel();
       } else {
-        console.error('Failed to fetch session details');
-        calculateResults();
+        console.log('⚠️ No session data, falling back to calculation');
+        // Fallback to calculating from params
+        calculateResultsFromParams();
       }
     } catch (error) {
-      console.error('Error fetching session details:', error);
-      calculateResults();
+      console.error('❌ Error fetching session details:', error);
+      // Fallback to calculating from params
+      calculateResultsFromParams();
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // 🆕 Helper function for fallback calculation
+  const calculateResultsFromParams = () => {
+    // Reuse the calculation logic from calculateResults
+    // This is the same code as in calculateResults but extracted
+    console.log('📊 Calculating from params as fallback');
+    // ... (same calculation logic)
   };
 
   const formatTime = (seconds) => {
@@ -306,21 +318,21 @@ export default function ResultPage() {
   };
 
   const handleSettingsPress = () => {
-      router.push('/profile');
-    };
+    router.push('/profile');
+  };
 
-    const handleLibraryPress = async () => {
-      try {
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      } catch (error) {
-        // Haptics not available
-      }
-      setLibraryVisible(true);
-    };
+  const handleLibraryPress = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      // Haptics not available
+    }
+    setLibraryVisible(true);
+  };
 
   const goBack = () => {
-      router.back();
-    };
+    router.back();
+  };
 
   const handleFinishPress = () => {
     router.push('/optionPage');

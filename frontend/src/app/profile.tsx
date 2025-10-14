@@ -20,6 +20,7 @@ import CachedApiService from '../contexts/CachedApiService';
 const { width, height } = Dimensions.get("window");
 
 export default function ProfileScreen() {
+  const [userProgress, setUserProgress] = useState(null);
   const router = useRouter();
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
@@ -32,8 +33,33 @@ export default function ProfileScreen() {
   const [fromCache, setFromCache] = useState(false);
 
   useEffect(() => {
-    loadProfileData();
+    loadProfileData(), loadUserData();
   }, []);
+
+  const loadUserData = async () => {
+      try {
+        setLoading(true);
+
+        // 🆕 This will use cache if available!
+        const progressResult = await CachedApiService.getUserProgress(userId);
+
+        if (progressResult.fromCache) {
+          console.log('✅ Loaded from cache - instant!');
+        }
+
+        setUserProgress(progressResult.data);
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Force refresh when user pulls down
+    const handleRefresh = async () => {
+      const freshData = await CachedApiService.getUserProgress(userId, true);
+      setUserProgress(freshData.data);
+    };
 
   const loadProfileData = async (forceRefresh = false) => {
     try {
@@ -306,8 +332,8 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
+            refreshing={loading}
+            onRefresh={handleRefresh}
             colors={["#000"]}
             tintColor="#000"
           />

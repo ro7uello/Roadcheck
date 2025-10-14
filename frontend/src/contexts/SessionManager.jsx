@@ -1,4 +1,4 @@
-// SessionManager.jsx - WITH CACHE INTEGRATION
+// SessionManager.jsx - FULLY OPTIMIZED WITH CACHING
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,6 +23,7 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
   const [scenarioStartTime, setScenarioStartTime] = useState(Date.now());
   const [scenarios, setScenarios] = useState([]);
   const [scenariosLoaded, setScenariosLoaded] = useState(false);
+  const [cacheStatus, setCacheStatus] = useState({ scenarios: false, session: false });
 
   const getDisplayPhaseNumber = () => {
     if (categoryId === 1) return phaseId;
@@ -50,8 +51,8 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
 
       console.log('🔍 Initializing session with userId:', userId);
 
-      // 🚀 Preload scenarios from cache while starting session
-      const scenariosPromise = loadScenarios();
+      // 🚀 Load scenarios from cache first (parallel with session creation)
+      const scenariosPromise = loadScenariosOptimized();
 
       // Start session
       const response = await fetch(`${API_URL}/sessions/start`, {
@@ -72,7 +73,17 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
         setSessionData(result.data);
         console.log('✅ Session initialized:', result.data.id);
 
-        await loadSessionProgress(result.data.id);
+        // 🔥 CRITICAL: Immediately warm the session cache for result page
+        // This runs in background, doesn't block UI
+        CachedApiService.getSessionProgress(result.data.id)
+          .then(() => {
+            console.log('📦 Session cache warmed up');
+            setCacheStatus(prev => ({ ...prev, session: true }));
+          })
+          .catch(err => console.log('⚠️ Session cache warm failed (non-critical):', err));
+
+        // Load current session progress
+        await loadSessionProgressOptimized(result.data.id);
       } else {
         const errorText = await response.text();
         console.error('Failed to initialize session:', response.status, errorText);
@@ -86,50 +97,71 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     }
   };
 
-  // 📦 Load scenarios with cache
-  const loadScenarios = async () => {
+  // 🆕 OPTIMIZED: Load scenarios with better caching
+  const loadScenariosOptimized = async () => {
     try {
       console.log(`🚀 Loading scenarios for category ${categoryId}, phase ${phaseId}...`);
       const startTime = Date.now();
 
+      // Try to get scenarios with choices (cached)
       const result = await CachedApiService.getScenariosWithChoices(categoryId, phaseId);
 
       const loadTime = Date.now() - startTime;
-      console.log(`⏱️ Scenarios loaded in ${loadTime}ms ${result.fromCache ? '📦' : '🌐'}`);
 
-      if (result.success && result.data) {
+      if (result.fromCache) {
+        console.log(`⚡ INSTANT! Scenarios loaded from cache in ${loadTime}ms`);
+        setCacheStatus(prev => ({ ...prev, scenarios: true }));
+      } else {
+        console.log(`🌐 Scenarios loaded from API in ${loadTime}ms`);
+        setCacheStatus(prev => ({ ...prev, scenarios: false }));
+      }
+
+      if (result.success && result.data && result.data.length > 0) {
         setScenarios(result.data);
         setScenariosLoaded(true);
         console.log(`✅ Loaded ${result.data.length} scenarios`);
+        return true;
+      } else {
+        console.error('❌ No scenarios data received');
+        return false;
       }
     } catch (error) {
-      console.error('Error loading scenarios:', error);
+      console.error('❌ Error loading scenarios:', error);
+      return false;
     }
   };
 
-  const loadSessionProgress = async (sessionId) => {
+  // 🆕 OPTIMIZED: Load session progress with caching
+  const loadSessionProgressOptimized = async (sessionId) => {
     try {
-      const token = await AsyncStorage.getItem('access_token');
-      const response = await fetch(`${API_URL}/sessions/${sessionId}/progress`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      console.log('📊 Loading session progress...');
+      const startTime = Date.now();
 
-      if (response.ok) {
-        const result = await response.json();
-        setSessionProgress(result.data.scenarios);
-        setCurrentScenario(result.data.summary.current_scenario);
+      // Use cached API service
+      const result = await CachedApiService.getSessionProgress(sessionId);
+
+      const loadTime = Date.now() - startTime;
+      console.log(`⏱️ Session progress loaded in ${loadTime}ms ${result.fromCache ? '📦' : '🌐'}`);
+
+      if (result.success && result.data) {
+        setSessionProgress(result.data.scenarios || []);
+        setCurrentScenario(result.data.summary?.current_scenario || 1);
+        return true;
       }
+
+      return false;
     } catch (error) {
-      console.error('Error loading session progress:', error);
+      console.error('❌ Error loading session progress:', error);
+      return false;
     }
   };
 
+  // 🆕 OPTIMIZED: Update scenario progress with cache management
   const updateScenarioProgress = async (scenarioId, selectedAnswer, isCorrect) => {
-    if (!sessionData) return;
+    if (!sessionData) {
+      console.warn('⚠️ No session data available');
+      return;
+    }
 
     try {
       const token = await AsyncStorage.getItem('access_token');
@@ -145,7 +177,16 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
         timeTaken
       });
 
-      // Update session progress
+      // 1️⃣ Submit attempt using cached API (auto-invalidates caches)
+      await CachedApiService.submitScenarioAttempt(
+        userId,
+        scenarioId,
+        selectedAnswer,
+        isCorrect
+      );
+      console.log('✅ Attempt submitted via CachedApiService');
+
+      // 2️⃣ Update session scenario progress
       const response = await fetch(
         `${API_URL}/sessions/${sessionData.id}/scenario/${scenarioId}`,
         {
@@ -164,16 +205,48 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
       );
 
       if (response.ok) {
-        console.log('✅ Scenario progress updated');
+        console.log('✅ Session scenario progress updated');
 
-        // 🚀 Invalidate stats cache since progress changed
-        if (isCorrect) {
-          await CachedApiService.refreshStats(userId);
-          console.log('🔄 Stats cache refreshed');
+        // 3️⃣ 🔥 CRITICAL: Refresh session cache in background for result page
+        // This ensures result page will load instantly when user finishes
+        CachedApiService.getSessionProgress(sessionData.id, true)
+          .then(() => {
+            console.log('🔄 Session cache refreshed for result page');
+          })
+          .catch(err => {
+            console.warn('⚠️ Session cache refresh failed (non-critical):', err);
+          });
+
+        // 4️⃣ Update local state
+        const updatedProgress = [...sessionProgress];
+        const progressIndex = updatedProgress.findIndex(
+          p => p.scenario_id === scenarioId || p.scenario_number === currentScenario
+        );
+
+        if (progressIndex >= 0) {
+          updatedProgress[progressIndex] = {
+            ...updatedProgress[progressIndex],
+            is_attempted: true,
+            is_correct: isCorrect,
+            selected_answer: selectedAnswer,
+            time_taken_seconds: timeTaken
+          };
+        } else {
+          updatedProgress.push({
+            scenario_id: scenarioId,
+            scenario_number: currentScenario,
+            is_attempted: true,
+            is_correct: isCorrect,
+            selected_answer: selectedAnswer,
+            time_taken_seconds: timeTaken
+          });
         }
+
+        setSessionProgress(updatedProgress);
+
       } else {
         const errorText = await response.text();
-        console.error('❌ Failed to update progress:', response.status, errorText);
+        console.error('❌ Failed to update session progress:', response.status, errorText);
       }
     } catch (error) {
       console.error('❌ Error updating scenario progress:', error);
@@ -188,8 +261,12 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     }
   };
 
+  // 🆕 OPTIMIZED: Complete session with cache refresh
   const completeSession = async () => {
-    if (!sessionData) return null;
+    if (!sessionData) {
+      console.warn('⚠️ No session data available');
+      return null;
+    }
 
     try {
       const token = await AsyncStorage.getItem('access_token');
@@ -221,9 +298,17 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
         const result = await response.json();
         console.log('✅ Session completed successfully');
 
-        // 🚀 Invalidate stats cache after session completion
-        await CachedApiService.refreshStats(userId);
-        console.log('🔄 Stats cache refreshed after session');
+        // 🔥 CRITICAL: Final cache refresh before going to result page
+        // This ensures result page has the absolute latest data
+        await CachedApiService.getSessionProgress(sessionData.id, true);
+        console.log('📦 Final session cache refresh complete');
+
+        // Also refresh user stats and progress
+        await Promise.all([
+          CachedApiService.getUserProgress(userId, true),
+          CachedApiService.refreshStats(userId)
+        ]);
+        console.log('🔄 User progress and stats refreshed');
 
         return {
           sessionId: sessionData.id,
@@ -242,11 +327,11 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
           }))
         };
       } else {
-        console.error('Failed to complete session:', response.status);
+        console.error('❌ Failed to complete session:', response.status);
         return null;
       }
     } catch (error) {
-      console.error('Error completing session:', error);
+      console.error('❌ Error completing session:', error);
       return null;
     }
   };
@@ -259,16 +344,23 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     return scenarios[currentScenario - 1] || null;
   };
 
+  // 🆕 Get cache performance info
+  const getCacheInfo = () => {
+    return cacheStatus;
+  };
+
   const value = {
     sessionData,
     sessionProgress,
     currentScenario,
     scenarios,
     scenariosLoaded,
+    cacheStatus,
     updateScenarioProgress,
     moveToNextScenario,
     completeSession,
     getCurrentScenarioData,
+    getCacheInfo,
     getScenarioProgress: (scenarioNum) => {
       return sessionProgress.find(s => s.scenario_number === scenarioNum) || {
         is_attempted: false,
@@ -282,7 +374,7 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
       <View style={styles.container}>
         {children}
 
-        {/* Progression Indicator */}
+        {/* Progression Indicator with Cache Status */}
         <View style={styles.progressContainer}>
           <Text style={styles.progressText}>
             {categoryName} - Phase {displayPhaseNumber}
@@ -291,11 +383,19 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
             <Text style={styles.progressNumber}>
               Scenario {currentScenario} / 10
             </Text>
-            {scenariosLoaded && (
-              <View style={styles.cacheIndicator}>
-                <Text style={styles.cacheText}>📦</Text>
-              </View>
-            )}
+            {/* Cache indicators */}
+            <View style={styles.cacheIndicators}>
+              {scenariosLoaded && cacheStatus.scenarios && (
+                <View style={styles.cacheIndicator}>
+                  <Text style={styles.cacheText}>📦</Text>
+                </View>
+              )}
+              {cacheStatus.session && (
+                <View style={[styles.cacheIndicator, { backgroundColor: '#60a5fa' }]}>
+                  <Text style={styles.cacheText}>⚡</Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </View>
@@ -335,6 +435,10 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  cacheIndicators: {
+    flexDirection: 'row',
+    gap: 4,
   },
   cacheIndicator: {
     backgroundColor: '#4ade80',

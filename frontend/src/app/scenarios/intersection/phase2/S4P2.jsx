@@ -203,7 +203,7 @@ export default function DrivingGame() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 8;
+    const stopRow = 8.5;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {

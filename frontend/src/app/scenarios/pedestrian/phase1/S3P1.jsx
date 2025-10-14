@@ -141,7 +141,7 @@ export default function DrivingGame() {
   // NPC Cars - Initial state with refs
   const carsRef = useRef([
     // Column 1 cars (SOUTH facing - moving down)
-    { id: 1, color: 'blue', column: 1, direction: 'SOUTH', yOffset: 200, frame: 0 },
+    { id: 1, color: 'blue', column: 1, direction: 'SOUTH', yOffset: 600, frame: 0 },
     { id: 2, color: 'red', column: 1, direction: 'SOUTH', yOffset: -50, frame: 0 },
     { id: 3, color: 'green', column: 1, direction: 'SOUTH', yOffset: -600, frame: 0 },
     // Column 2 cars (NORTH facing - moving up)
