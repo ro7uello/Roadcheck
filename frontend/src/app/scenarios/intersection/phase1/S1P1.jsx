@@ -686,10 +686,10 @@ const styles = StyleSheet.create({
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.2,
-    right: sideMargin,
-    width: wp(30)5,
-    height: height * 0.21,
+    top: hp(15),
+    right: wp(5),
+    width: wp(35),
+    height: hp(21),
     zIndex: 11,
   },
   answerButton: {

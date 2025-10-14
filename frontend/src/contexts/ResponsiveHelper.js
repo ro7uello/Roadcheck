@@ -1,4 +1,4 @@
-// src/utils/ResponsiveHelper.js
+// contexts/ResponsiveHelper.js
 import { Dimensions, PixelRatio, Platform } from 'react-native';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
