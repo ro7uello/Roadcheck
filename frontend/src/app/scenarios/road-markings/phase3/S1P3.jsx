@@ -337,7 +337,7 @@ export default function DrivingGame() {
           style={styles.introLTOImage}
         />
         <View style={styles.introTextBox}>
-          <Text style={styles.introTitle}>Road Markings - Phase 3</Text>
+          <Text style={styles.introTitle}>Road Markings</Text>
           <Text style={styles.introText}>
             Test your knowledge of road rules and signs.
             Choose the correct option to proceed safely.

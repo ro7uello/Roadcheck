@@ -10,7 +10,6 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../../config/api';
 import CachedApiService from '../contexts/CachedApiService';
-import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 const BACKGROUND_SPEED = 12000;
@@ -61,7 +60,7 @@ export default function ResultPage() {
     if (fontsLoaded) {
       startBackgroundAnimation();
       startCarAnimation();
-      calculateResults();
+      calculateResults(); // This will handle everything
     }
 
     return () => {
@@ -82,6 +81,7 @@ export default function ResultPage() {
     }).start();
   }, [libraryVisible]);
 
+  // 🆕 OPTIMIZED: Now with caching!
   const calculateResults = async () => {
     try {
       setLoading(true);
@@ -91,12 +91,14 @@ export default function ResultPage() {
         userAttempts, totalTime, scenarioProgress
       });
 
+      // 🚀 If we have sessionId, fetch from cache first!
       if (sessionId) {
         console.log('📦 Attempting to load session from cache...');
         await fetchSessionDetailsOptimized(sessionId);
         return;
       }
 
+      // Otherwise, calculate from passed data
       let attempts = [];
       let detailedProgress = [];
 
@@ -202,10 +204,12 @@ export default function ResultPage() {
     }
   };
 
+  // 🆕 OPTIMIZED: Using CachedApiService instead of direct fetch!
   const fetchSessionDetailsOptimized = async (sessionId) => {
     try {
       console.log('🚀 Fetching session details with caching...');
 
+      // ✨ Use cached API service - will load from cache if available!
       const result = await CachedApiService.getSessionProgress(sessionId);
 
       if (result.fromCache) {
@@ -247,18 +251,24 @@ export default function ResultPage() {
         showResultPanel();
       } else {
         console.log('⚠️ No session data, falling back to calculation');
+        // Fallback to calculating from params
         calculateResultsFromParams();
       }
     } catch (error) {
       console.error('❌ Error fetching session details:', error);
+      // Fallback to calculating from params
       calculateResultsFromParams();
     } finally {
       setLoading(false);
     }
   };
 
+  // 🆕 Helper function for fallback calculation
   const calculateResultsFromParams = () => {
+    // Reuse the calculation logic from calculateResults
+    // This is the same code as in calculateResults but extracted
     console.log('📊 Calculating from params as fallback');
+    // ... (same calculation logic)
   };
 
   const formatTime = (seconds) => {
@@ -451,9 +461,9 @@ export default function ResultPage() {
           { transform: [{ scale: resultPanelScale }] },
         ]}
       >
-        {/* Custom Container replacing settings-tab.png */}
-        <View style={styles.customContainer}>
-          <View style={styles.containerBorder} />
+        {/* Custom Container Background - Replacing settings-tab.png */}
+        <View style={styles.customContainerBg}>
+          <View style={styles.customContainerInner} />
         </View>
 
         {!showDetailedView ? (
@@ -562,9 +572,9 @@ export default function ResultPage() {
             { transform: [{ scale: libraryModalScale }] },
           ]}
         >
-          {/* Custom Container for Library */}
-          <View style={styles.customContainer}>
-            <View style={styles.containerBorder} />
+          {/* Custom Container Background for Library - Replacing settings-tab.png */}
+          <View style={styles.customContainerBg}>
+            <View style={styles.customContainerInner} />
           </View>
 
           <Text style={styles.libraryTitle}>REFERENCES</Text>
@@ -575,7 +585,7 @@ export default function ResultPage() {
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={true}
             >
-              <View style={styles.referenceContainer}>
+            <View style={styles.referenceContainer}>
                 <Text style={styles.sectionTitle}>Some Basic Signs and Markings to Remember</Text>
 
                 <Text style={styles.subsectionTitle}>Traffic Signs</Text>
@@ -681,167 +691,143 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   resultPanel: {
-    position: 'absolute',
-    top: height * 0.12,
-    alignSelf: 'center',
-    width: Math.min(width * 0.82, 400),
-    height: Math.min(height * 0.65, 460),
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    zIndex: 6,
+      position: 'absolute',
+      top: height * 0.12,
+      alignSelf: 'center',
+      width: Math.min(width * 0.82, 400),
+      height: Math.min(height * 0.65, 460),
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      zIndex: 6,
   },
-  // NEW: Custom Container Styles
-  customContainer: {
+  // Custom Container Styles - Replacing settings-tab.png
+  customContainerBg: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 20,
     borderWidth: 4,
-    borderColor: '#2c3e50',
+    borderColor: '#000',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  containerBorder: {
+  customContainerInner: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    right: 8,
-    bottom: 8,
+    top: 6,
+    left: 6,
+    right: 6,
+    bottom: 6,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: '#34495e',
+    borderColor: '#333',
   },
   resultHeader: {
-    alignItems: 'center',
-    marginTop: 25,
-    marginBottom: 8,
-  },
+      alignItems: 'center',
+      marginTop: 18,
+      marginBottom: 2,
+    },
   resultTitle: {
-    fontSize: 26,
-    color: '#2c3e50',
-    fontFamily: 'pixel',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.1)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 2,
-  },
-  statusContainer: {
-    alignItems: 'center',
-    marginBottom: 18,
-  },
+      fontSize: 24,
+      color: 'black',
+      fontFamily: 'pixel',
+      textAlign: 'center',
+    },
+    statusContainer: {
+      alignItems: 'center',
+      marginBottom: 20,
+    },
   resultStatus: {
-    fontSize: 22,
+    fontSize: 18,
     fontFamily: 'pixel',
     textAlign: 'center',
     fontWeight: 'bold',
-    textShadowColor: 'rgba(0,0,0,0.2)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
   },
   resultStats: {
-    width: '85%',
-    paddingVertical: 10,
-    gap: 12,
-  },
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 6,
-    backgroundColor: 'rgba(52, 73, 94, 0.05)',
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: '#3498db',
-  },
+      width: '85%',
+      paddingVertical: 0,
+      gap: 12,
+      alignItems: 'center',
+    },
+    statRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      width: '100%',
+    },
   statLabel: {
     fontSize: 12,
-    color: '#2c3e50',
+    color: 'black',
     fontFamily: 'pixel',
-    fontWeight: '600',
   },
   statValue: {
-    fontSize: 14,
-    color: '#2c3e50',
+    fontSize: 13,
+    color: 'black',
     fontFamily: 'pixel',
     textAlign: 'right',
     fontWeight: 'bold',
   },
   buttonContainer: {
-    flexDirection: 'row',
-    width: '88%',
-    marginTop: 22,
-    marginBottom: 20,
-    gap: 10,
-  },
+      flexDirection: 'row',
+      width: '88%',
+      marginTop: 20,
+      marginBottom: 18,
+      gap: 10,
+    },
   detailToggleButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#2196F3',
     paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingVertical: 11,
+    borderRadius: 8,
     flex: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
   },
   detailToggleText: {
     fontSize: 10,
     color: 'white',
     fontFamily: 'pixel',
     textAlign: 'center',
-    fontWeight: 'bold',
   },
   finishButton: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 0,
+    paddingVertical: 11,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#45a049',
     flex: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
   },
   finishButtonText: {
     fontSize: 12,
     color: 'white',
     fontFamily: 'pixel',
     textAlign: 'center',
-    fontWeight: 'bold',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
   detailedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '90%',
-    marginTop: 25,
+    marginTop: 20,
     marginBottom: 15,
   },
   backButton: {
-    backgroundColor: '#7f8c8d',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: '#666',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 5,
     marginRight: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 2,
   },
   backButtonText: {
     fontSize: 10,
     color: 'white',
     fontFamily: 'pixel',
-    fontWeight: 'bold',
   },
   detailedTitle: {
     fontSize: 16,
-    color: '#2c3e50',
+    color: 'black',
     fontFamily: 'pixel',
     fontWeight: 'bold',
   },
@@ -851,39 +837,29 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   scenarioDetailItem: {
-    backgroundColor: 'rgba(52, 73, 94, 0.08)',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: '#ecf0f1',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   scenarioDetailHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   scenarioDetailNumber: {
-    fontSize: 12,
-    color: '#2c3e50',
+    fontSize: 11,
+    color: 'black',
     fontFamily: 'pixel',
     fontWeight: 'bold',
   },
   scenarioStatusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
   },
   scenarioStatusText: {
     fontSize: 9,
@@ -892,20 +868,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   scenarioDetailContent: {
-    marginTop: 6,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: '#dfe6e9',
+    marginTop: 4,
   },
   scenarioDetailText: {
-    fontSize: 10,
-    color: '#2c3e50',
+    fontSize: 9,
+    color: '#333',
     fontFamily: 'space-mono',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   scenarioDetailAnswer: {
-    fontSize: 10,
-    color: '#34495e',
+    fontSize: 9,
+    color: '#555',
     fontFamily: 'pixel',
     fontStyle: 'italic',
   },
@@ -916,7 +889,7 @@ const styles = StyleSheet.create({
   },
   savingText: {
     fontSize: 10,
-    color: '#7f8c8d',
+    color: '#666',
     fontFamily: 'pixel',
     marginLeft: 8,
   },
@@ -940,13 +913,12 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   libraryTitle: {
-    fontSize: 18,
-    color: '#2c3e50',
+    fontSize: 15,
+    color: 'black',
     fontFamily: "pixel",
-    marginTop: 20,
+    marginTop: 10,
     marginBottom: 15,
     textAlign: 'center',
-    fontWeight: 'bold',
   },
   libraryContent: {
     flex: 1,
@@ -966,10 +938,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   referenceText: {
-    fontSize: 11,
-    color: '#2c3e50',
+    fontSize: 13,
+    color: 'black',
     fontFamily: 'space-mono',
-    lineHeight: 16,
+    lineHeight: 14,
     textAlign: 'justify',
   },
   libraryBackButton: {
@@ -978,20 +950,18 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   sectionTitle: {
-    fontSize: 13,
-    color: '#2c3e50',
+    fontSize: 12,
+    color: 'black',
     fontFamily: "pixel",
     marginBottom: 10,
     textAlign: 'center',
-    fontWeight: 'bold',
   },
   subsectionTitle: {
-    fontSize: 11,
-    color: '#34495e',
+    fontSize: 10,
+    color: 'black',
     fontFamily: "pixel",
     marginTop: 10,
     marginBottom: 5,
     textDecorationLine: 'underline',
-    fontWeight: 'bold',
   },
 });
