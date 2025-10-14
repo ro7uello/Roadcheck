@@ -85,6 +85,7 @@ app.post('/auth/login', async (req, res) => {
 
     console.log('Attempting Supabase login for:', email);
 
+    // First, authenticate with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password: password
@@ -100,7 +101,66 @@ app.post('/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Login failed' });
     }
 
-    console.log('✅ Supabase login successful for:', data.user.email);
+    const userId = data.user.id;
+    console.log('✅ Supabase authentication successful for:', data.user.email);
+
+    // ============================================
+    // 🆕 CHECK FOR EXISTING ACTIVE SESSION
+    // ============================================
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('current_session_token, session_expires_at')
+      .eq('id', userId)
+      .single();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('Error checking profile:', profileError);
+      return res.status(500).json({ message: 'Server error checking session' });
+    }
+
+    // Check if there's an active session
+    if (profile?.current_session_token && profile?.session_expires_at) {
+      const expiresAt = new Date(profile.session_expires_at);
+      const now = new Date();
+
+      // If session is still valid (not expired)
+      if (expiresAt > now) {
+        console.log('⚠️ User already has an active session');
+        return res.status(409).json({
+          message: 'You are already logged in on another device. Please logout from the other device first.',
+          code: 'ALREADY_LOGGED_IN',
+          session_expires_at: profile.session_expires_at
+        });
+      } else {
+        console.log('⏰ Previous session expired, allowing new login');
+      }
+    }
+
+    // ============================================
+    // 🆕 SAVE NEW SESSION TOKEN
+    // ============================================
+
+    // Calculate session expiration (Supabase default is 1 hour)
+    const sessionExpiresAt = new Date(Date.now() + 3600000); // 1 hour from now
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        current_session_token: data.session.access_token,
+        session_created_at: new Date().toISOString(),
+        session_expires_at: sessionExpiresAt.toISOString()
+      })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('Error saving session token:', updateError);
+      // Don't fail login if we can't save the token, just log it
+    } else {
+      console.log('✅ Session token saved to database');
+    }
+
+    console.log('✅ Login successful - new session created');
 
     const response = {
       access_token: data.session.access_token,
@@ -111,11 +171,125 @@ app.post('/auth/login', async (req, res) => {
       }
     };
 
-    console.log('Sending response with real token');
     res.json(response);
 
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ===========================
+// 🆕 LOGOUT ENDPOINT
+// ===========================
+
+app.post('/auth/logout', authenticate, async (req, res) => {
+  try {
+    const userId = req.user.id || req.user.sub;
+
+    console.log('Logout request for user:', userId);
+
+    // Clear session token from database
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        current_session_token: null,
+        session_created_at: null,
+        session_expires_at: null
+      })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('Error clearing session:', updateError);
+      return res.status(500).json({
+        message: 'Error during logout',
+        error: updateError.message
+      });
+    }
+
+    console.log('✅ User logged out successfully');
+
+    res.json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      message: 'Server error during logout',
+      error: error.message
+    });
+  }
+});
+
+// ===========================
+// 🆕 OPTIONAL: FORCE LOGOUT FROM OTHER DEVICES
+// ===========================
+
+app.post('/auth/force-logout-others', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    console.log('Force logout requested for:', email);
+
+    // Verify credentials first
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password
+    });
+
+    if (error || !data.user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const userId = data.user.id;
+
+    // Clear the existing session
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        current_session_token: null,
+        session_created_at: null,
+        session_expires_at: null
+      })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('Error clearing session:', updateError);
+      return res.status(500).json({ message: 'Error clearing session' });
+    }
+
+    // Now create a new session
+    const sessionExpiresAt = new Date(Date.now() + 3600000);
+
+    await supabase
+      .from('profiles')
+      .update({
+        current_session_token: data.session.access_token,
+        session_created_at: new Date().toISOString(),
+        session_expires_at: sessionExpiresAt.toISOString()
+      })
+      .eq('id', userId);
+
+    console.log('✅ Other devices logged out, new session created');
+
+    res.json({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      user: {
+        id: data.user.id,
+        email: data.user.email
+      },
+      message: 'Other devices have been logged out'
+    });
+
+  } catch (error) {
+    console.error('Force logout error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -944,13 +1118,13 @@ app.get('/profiles/:userId', async (req, res) => {
   }
 });
 
-// DELETE ACCOUNT ENDPOINT
 app.delete('/user/delete-account/:userId', authenticate, async (req, res) => {
   try {
     const { userId } = req.params;
 
     // Verify the user is deleting their own account
-    if (req.user.id !== userId && req.user.sub !== userId) {
+    // req.user.sub contains the user ID from JWT token
+    if (req.user.sub !== userId) {
       return res.status(403).json({
         success: false,
         message: 'You can only delete your own account'
@@ -959,87 +1133,128 @@ app.delete('/user/delete-account/:userId', authenticate, async (req, res) => {
 
     console.log('🗑️ Starting account deletion for user:', userId);
 
-    // Delete in order due to foreign key constraints
+    // Use a transaction-like approach - collect all errors
+    const errors = [];
 
-    // 1. Delete scenario progress - FIXED
-    // First get all session IDs for this user
-    const { data: userSessions, error: sessionsListError } = await supabase
-      .from('user_sessions')
-      .select('id')
-      .eq('user_id', userId);
+    // 1. Delete scenario progress
+    try {
+      const { data: userSessions, error: sessionsListError } = await supabase
+        .from('user_sessions')
+        .select('id')
+        .eq('user_id', userId);
 
-    if (!sessionsListError && userSessions && userSessions.length > 0) {
-      const sessionIds = userSessions.map(session => session.id);
+      if (sessionsListError) {
+        throw new Error(`Sessions list error: ${sessionsListError.message}`);
+      }
 
-      const { error: progressError } = await supabase
-        .from('scenario_progress')
-        .delete()
-        .in('session_id', sessionIds);
+      if (userSessions && userSessions.length > 0) {
+        const sessionIds = userSessions.map(session => session.id);
 
-      if (progressError) {
-        console.error('Error deleting scenario progress:', progressError);
-      } else {
+        const { error: progressError } = await supabase
+          .from('scenario_progress')
+          .delete()
+          .in('session_id', sessionIds);
+
+        if (progressError) {
+          throw new Error(`Progress deletion error: ${progressError.message}`);
+        }
         console.log('✅ Deleted scenario progress');
       }
+    } catch (error) {
+      console.error('Error deleting scenario progress:', error);
+      errors.push({ table: 'scenario_progress', error: error.message });
     }
 
     // 2. Delete user sessions
-    const { error: sessionsError } = await supabase
-      .from('user_sessions')
-      .delete()
-      .eq('user_id', userId);
+    try {
+      const { error: sessionsError } = await supabase
+        .from('user_sessions')
+        .delete()
+        .eq('user_id', userId);
 
-    if (sessionsError) {
-      console.error('Error deleting user sessions:', sessionsError);
-    } else {
+      if (sessionsError) {
+        throw new Error(`Sessions deletion error: ${sessionsError.message}`);
+      }
       console.log('✅ Deleted user sessions');
+    } catch (error) {
+      console.error('Error deleting user sessions:', error);
+      errors.push({ table: 'user_sessions', error: error.message });
     }
 
     // 3. Delete user attempts
-    const { error: attemptsError } = await supabase
-      .from('user_attempts')
-      .delete()
-      .eq('user_id', userId);
+    try {
+      const { error: attemptsError } = await supabase
+        .from('user_attempts')
+        .delete()
+        .eq('user_id', userId);
 
-    if (attemptsError) {
-      console.error('Error deleting user attempts:', attemptsError);
-    } else {
+      if (attemptsError) {
+        throw new Error(`Attempts deletion error: ${attemptsError.message}`);
+      }
       console.log('✅ Deleted user attempts');
+    } catch (error) {
+      console.error('Error deleting user attempts:', error);
+      errors.push({ table: 'user_attempts', error: error.message });
     }
 
     // 4. Delete user progress
-    const { error: userProgressError } = await supabase
-      .from('user_progress')
-      .delete()
-      .eq('user_id', userId);
+    try {
+      const { error: userProgressError } = await supabase
+        .from('user_progress')
+        .delete()
+        .eq('user_id', userId);
 
-    if (userProgressError) {
-      console.error('Error deleting user progress:', userProgressError);
-    } else {
+      if (userProgressError) {
+        throw new Error(`User progress deletion error: ${userProgressError.message}`);
+      }
       console.log('✅ Deleted user progress');
+    } catch (error) {
+      console.error('Error deleting user progress:', error);
+      errors.push({ table: 'user_progress', error: error.message });
     }
 
     // 5. Delete profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', userId);
+    try {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
 
-    if (profileError) {
-      console.error('Error deleting profile:', profileError);
-    } else {
+      if (profileError) {
+        throw new Error(`Profile deletion error: ${profileError.message}`);
+      }
       console.log('✅ Deleted profile');
+    } catch (error) {
+      console.error('Error deleting profile:', error);
+      errors.push({ table: 'profiles', error: error.message });
     }
 
-    // 6. Delete from Supabase Auth
-    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+    // 6. Delete from Supabase Auth (most critical step)
+    try {
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
 
-    if (authError) {
-      console.error('Error deleting auth user:', authError);
+      if (authError) {
+        throw new Error(`Auth deletion error: ${authError.message}`);
+      }
+      console.log('✅ Deleted auth user');
+    } catch (error) {
+      console.error('Error deleting auth user:', error);
+      // If auth deletion fails, this is critical
       return res.status(500).json({
         success: false,
         message: 'Failed to delete account from authentication system',
-        error: authError.message
+        error: error.message,
+        partialErrors: errors
+      });
+    }
+
+    // Check if there were any non-critical errors
+    if (errors.length > 0) {
+      console.warn('⚠️ Account deleted with some errors:', errors);
+      return res.json({
+        success: true,
+        message: 'Account deleted successfully (with some warnings)',
+        warnings: errors
       });
     }
 

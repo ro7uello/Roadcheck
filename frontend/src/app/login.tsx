@@ -74,113 +74,147 @@ export default function LoginPage() {
   const carBounce = carAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -10] });
 
   const handleLogin = async () => {
-    // Input validation
-    if (!email.trim() || !password.trim()) {
+    // Basic validation
+    if (!email || !password) {
       Alert.alert("Error", "Please enter both email and password");
       return;
     }
 
-    try {
-      setLoading(true);
-      console.log('🔄 Starting login for:', email);
+    setLoading(true);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+    try {
+      console.log('Attempting login for:', email);
+      console.log('API URL:', API_URL);
 
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
         },
         body: JSON.stringify({
-          email: email.trim().toLowerCase(),
+          email: email.trim(),
           password: password
-        }),
-        signal: controller.signal
+        })
       });
 
-      clearTimeout(timeoutId);
-      console.log('📡 Response status:', response.status);
+      const data = await response.json();
+      console.log('Login response status:', response.status);
+      console.log('Login response data:', data);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(async () => {
-          const textData = await response.text();
-          return { message: textData || 'Network error' };
-        });
-
-        console.log('❌ Login failed. Status:', response.status, 'Error:', errorData);
-
-        let errorMessage = 'Login failed';
-        if (response.status === 401) {
-          errorMessage = 'Invalid email or password';
-        } else if (response.status === 429) {
-          errorMessage = 'Too many login attempts. Please try again later.';
-        } else if (response.status === 500) {
-          errorMessage = 'Server error. Please try again later.';
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
-        }
-
-        throw new Error(errorMessage);
+      // ============================================
+      // 🆕 HANDLE "ALREADY LOGGED IN" CASE
+      // ============================================
+      if (response.status === 409) {
+        setLoading(false);
+        Alert.alert(
+          'Already Logged In',
+          'You are already logged in on another device. Would you like to logout from the other device and login here?',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel'
+            },
+            {
+              text: 'Logout Other Device',
+              onPress: () => handleForceLogout()
+            }
+          ]
+        );
+        return;
       }
+
+      // Handle other error responses
+      if (!response.ok) {
+        setLoading(false);
+        Alert.alert('Login Failed', data.message || 'Invalid email or password');
+        return;
+      }
+
+      // ============================================
+      // SUCCESSFUL LOGIN
+      // ============================================
+      console.log('✅ Login successful');
+
+      // Save tokens to AsyncStorage
+      await AsyncStorage.setItem('access_token', data.access_token);
+      await AsyncStorage.setItem('refresh_token', data.refresh_token);
+
+      // Save user data
+      await AsyncStorage.setItem('user_id', data.user.id);
+      await AsyncStorage.setItem('user_email', data.user.email);
+
+      console.log('✅ Tokens and user data saved to storage');
+
+      setLoading(false);
+
+      // Navigate to home and reset navigation stack
+      router.replace('/(tabs)');
+
+    } catch (error) {
+      setLoading(false);
+      console.error('Login error:', error);
+      Alert.alert(
+        'Connection Error',
+        'Unable to connect to the server. Please check your internet connection and try again.'
+      );
+    }
+  };
+
+  // ============================================
+  // 🆕 FORCE LOGOUT FROM OTHER DEVICES
+  // ============================================
+  const handleForceLogout = async () => {
+    setLoading(true);
+
+    try {
+      console.log('Force logout requested for:', email);
+
+      const response = await fetch(`${API_URL}/auth/force-logout-others`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password
+        })
+      });
 
       const data = await response.json();
-      console.log('✅ Login response received');
+      console.log('Force logout response:', data);
 
-      if (!data.access_token) {
-        console.log('❌ No access token in response');
-        throw new Error('No access token received from server');
+      if (!response.ok) {
+        setLoading(false);
+        Alert.alert('Error', data.message || 'Failed to logout other devices');
+        return;
       }
 
-      if (!data.user?.id) {
-        console.log('⚠️ No user ID in response');
-      }
+      // Save tokens to AsyncStorage
+      await AsyncStorage.setItem('access_token', data.access_token);
+      await AsyncStorage.setItem('refresh_token', data.refresh_token);
 
-      console.log('✅ Login successful!');
+      // Save user data
+      await AsyncStorage.setItem('user_id', data.user.id);
+      await AsyncStorage.setItem('user_email', data.user.email);
 
-      // Save authentication data
-      const authData: [string, string][] = [
-        ['access_token', data.access_token],
-        ['userId', String(data.user?.id || '')],
-        ['user_email', data.user?.email || email.trim().toLowerCase()],
-        ['login_timestamp', new Date().toISOString()]
-      ];
+      console.log('✅ Other device logged out, new session created');
 
-      await AsyncStorage.multiSet(authData);
-      await AsyncStorage.setItem('user_data', JSON.stringify(data.user));
-      console.log('💾 Authentication data saved');
-
-      const savedToken = await AsyncStorage.getItem('access_token');
-      const savedUserId = await AsyncStorage.getItem('userId');
-
-      if (!savedToken) {
-        throw new Error('Failed to save authentication token');
-      }
-
-      console.log('🔍 Token verification: ✅ SAVED');
-      console.log('🔍 User ID saved:', savedUserId);
-
-      // 🔥 Warm the cache in background (non-blocking)
-      if (data.user?.id) {
-        CachedApiService.warmCache(data.user.id).catch(err => {
-          console.error('⚠️ Cache warming failed (non-critical):', err);
-        });
-      }
-
-      console.log('🚀 Navigating to optionPage...');
-      router.replace('/optionPage');
-
-    } catch (error: any) {
-      console.error("❌ Login error:", error);
-
-      if (error.name === 'AbortError') {
-        Alert.alert("Timeout", "Login request timed out. Please check your connection and try again.");
-      } else {
-        Alert.alert("Login Failed", error?.message || "An unexpected error occurred");
-      }
-    } finally {
       setLoading(false);
+
+      // Show success message
+      Alert.alert(
+        'Success',
+        'Other device has been logged out. You are now logged in.',
+        [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+      );
+
+    } catch (error) {
+      setLoading(false);
+      console.error('Force logout error:', error);
+      Alert.alert(
+        'Connection Error',
+        'Unable to connect to the server. Please try again.'
+      );
     }
   };
 

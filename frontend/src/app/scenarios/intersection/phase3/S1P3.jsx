@@ -1,3 +1,4 @@
+// src/app/scenarios/intersection/phase3/S1P3.tsx
 import { router } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { Animated, Dimensions, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -60,7 +61,7 @@ export default function TrafficSignsPhase3ComingSoon() {
       >
         <View style={styles.overlay} />
 
-        {/* Back Button */}
+        {/* Back Button - Same as phase selection */}
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -92,7 +93,7 @@ export default function TrafficSignsPhase3ComingSoon() {
           <Text style={styles.title}>COMING SOON</Text>
 
           {/* Subtitle */}
-          <Text style={styles.subtitle}>TRAFFIC SIGNS</Text>
+          <Text style={styles.subtitle}>INTERSECTION AND OTHERS</Text>
           <Text style={styles.phase}>PHASE 3</Text>
 
           {/* Message */}
@@ -140,6 +141,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
+  // Back button - matching phase selection screen exactly
   backButton: {
     position: 'absolute',
     top: 40,
@@ -164,33 +166,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   icon: {
-    fontSize: 100,
-    marginBottom: 20,
+    fontSize: 80,
+    marginBottom: 15,
   },
   title: {
-    fontSize: 48,
+    fontSize: Math.min(width * 0.08, 36),
     fontFamily: 'pixel',
     color: '#FFD700',
     textAlign: 'center',
     textShadowColor: '#000',
-    textShadowOffset: { width: 4, height: 4 },
-    textShadowRadius: 8,
-    letterSpacing: 4,
+    textShadowOffset: { width: 3, height: 3 },
+    textShadowRadius: 6,
+    letterSpacing: 3,
     marginBottom: 10,
   },
   subtitle: {
-    fontSize: 28,
+    fontSize: Math.min(width * 0.055, 24),
     fontFamily: 'pixel',
     color: 'white',
     textAlign: 'center',
     textShadowColor: '#000',
-    textShadowOffset: { width: 3, height: 3 },
-    textShadowRadius: 6,
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
     letterSpacing: 2,
     marginBottom: 5,
   },
   phase: {
-    fontSize: 24,
+    fontSize: Math.min(width * 0.045, 20),
     fontFamily: 'pixel',
     color: '#FFA500',
     textAlign: 'center',
@@ -198,22 +200,23 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
     letterSpacing: 2,
-    marginBottom: 40,
+    marginBottom: 30,
   },
   messageContainer: {
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
     borderRadius: 12,
-    padding: 25,
+    padding: 20,
     borderWidth: 3,
     borderColor: '#FFD700',
-    marginBottom: 30,
+    marginBottom: 25,
+    width: width * 0.8,
   },
   message: {
-    fontSize: 16,
+    fontSize: Math.min(width * 0.032, 14),
     fontFamily: 'pixel',
     color: 'white',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 24,
     textShadowColor: '#000',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
@@ -222,25 +225,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '60%',
-    marginTop: 20,
+    marginTop: 15,
   },
   decorative: {
-    fontSize: 40,
+    fontSize: 35,
     opacity: 0.8,
   },
   returnButton: {
     position: 'absolute',
-    bottom: 60,
+    bottom: 50,
     alignSelf: 'center',
     backgroundColor: 'rgba(255, 215, 0, 0.9)',
     borderRadius: 12,
-    paddingVertical: 15,
-    paddingHorizontal: 40,
+    paddingVertical: 12,
+    paddingHorizontal: 35,
     borderWidth: 3,
     borderColor: '#FFA500',
   },
   returnButtonText: {
-    fontSize: 18,
+    fontSize: Math.min(width * 0.038, 16),
     fontFamily: 'pixel',
     color: '#000',
     textAlign: 'center',
