@@ -305,7 +305,7 @@ export default function DrivingGame() {
 
             if (turnSequence[currentTurnStep] === "NORTHWEST") {
               deltaX = -tileSize / .5;
-              deltaYScroll = tileSize / 1;
+              deltaYScroll = tileSize / .5;
             }
 
             const currentCarX = carXAnim._value;
@@ -374,7 +374,7 @@ export default function DrivingGame() {
               let busDeltaY = 0;
 
               if (busLaneChangeSequence[busStep] === "SOUTHWEST") {
-                busDeltaX = -tileSize / .5;
+                busDeltaX = -tileSize / .6;
                 busDeltaY = tileSize / 2;
               } else if (busLaneChangeSequence[busStep] === "SOUTH") {
                 busDeltaY = tileSize;
@@ -383,12 +383,12 @@ export default function DrivingGame() {
               Animated.parallel([
                 Animated.timing(busXAnim, {
                   toValue: busXAnim._value + busDeltaX,
-                  duration: 400,
+                  duration: 800,
                   useNativeDriver: false,
                 }),
                 Animated.timing(busYAnim, {
                   toValue: busYAnim._value + busDeltaY,
-                  duration: 400,
+                  duration: 800,
                   useNativeDriver: false,
                 }),
               ]).start(() => {
@@ -426,7 +426,7 @@ export default function DrivingGame() {
 
                       if (carTurnSequence[carTurnStep] === "NORTHWEST") {
                         deltaX = -tileSize / .5;
-                        deltaYScroll = tileSize / 1;
+                        deltaYScroll = tileSize / .5;
                       }
 
                       const currentCarX = carXAnim._value;
@@ -435,12 +435,12 @@ export default function DrivingGame() {
                       Animated.parallel([
                         Animated.timing(carXAnim, {
                           toValue: currentCarX + deltaX,
-                          duration: 500,
+                          duration: 1000,
                           useNativeDriver: false,
                         }),
                         Animated.timing(scrollY, {
                           toValue: currentScrollY + deltaYScroll,
-                          duration: 500,
+                          duration: 1500,
                           useNativeDriver: true,
                         }),
                       ]).start(() => {
@@ -510,12 +510,12 @@ export default function DrivingGame() {
               Animated.parallel([
                 Animated.timing(busXAnim, {
                   toValue: busXAnim._value + busDeltaX,
-                  duration: 400,
+                  duration: 1000,
                   useNativeDriver: false,
                 }),
                 Animated.timing(busYAnim, {
                   toValue: busYAnim._value + busDeltaY,
-                  duration: 400,
+                  duration: 1000,
                   useNativeDriver: false,
                 }),
               ]).start(() => {
