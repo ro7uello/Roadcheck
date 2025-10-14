@@ -13,6 +13,10 @@
     "web": {
       "bundler": "metro"
     },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.camcie.lokcalbite"
+    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#000000"
