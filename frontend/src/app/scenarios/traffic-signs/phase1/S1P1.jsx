@@ -190,6 +190,11 @@ export default function DrivingGame() {
   const [trafficLightState, setTrafficLightState] = useState('green');
   const [isBlinking, setIsBlinking] = useState(true);
 
+  // Honk effect states
+  const [showHonk, setShowHonk] = useState(false);
+  const [honkCount, setHonkCount] = useState(0);
+  const honkOpacity = useRef(new Animated.Value(0)).current;
+
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
     const stopRow = 6.5;
@@ -281,7 +286,30 @@ export default function DrivingGame() {
         });
       }
     };
-  
+
+  // Function to show honk effect
+  const showHonkEffect = () => {
+    return new Promise((resolve) => {
+      setShowHonk(true);
+      setHonkCount(prev => prev + 1);
+      
+      Animated.sequence([
+        Animated.timing(honkOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(honkOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        setShowHonk(false);
+        resolve();
+      });
+    });
+  };
 
   const handleAnswer = async (answer) => {
     setSelectedAnswer(answer);
@@ -295,33 +323,50 @@ export default function DrivingGame() {
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
     if (answer === "Honk to warn the pedestrian and proceed slowly.") {
-      const targetRow = 11;
-      const rowsToMove = targetRow - currentRow;
-      const nextTarget = currentScroll.current + rowsToMove * tileSize;
-      // Traffic light continues blinking (no change needed)
-      // Start pedestrian crossing
+      // Pause the car
+      setCarPaused(true);
+      
+      // Show honk effect twice
+      await showHonkEffect();
+      await new Promise(resolve => setTimeout(resolve, 300)); // Wait 300ms between honks
+      await showHonkEffect();
+      
+      // Wait a moment after second honk
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Start pedestrian crossing quickly
       maleCrossingXAnim.setValue(pedestrianColIndex * tileSize + pedestrianXOffset);
       setIsCrossing(true);
       setMaleFrame(0);
-      // Pedestrian crosses (slower)
-      Animated.timing(maleCrossingXAnim, {
-        fromValue: pedestrianColIndex * tileSize + pedestrianXOffset,
-        toValue: (pedestrianColIndex - 2) * tileSize + pedestrianXOffset,
-        duration: 2000,
-        useNativeDriver: false,
-      }).start();
-      // Car continues moving (doesn't stop) - collision happens
+      
+      // Pedestrian crosses quickly (faster animation)
+      await new Promise((resolve) => {
+        Animated.timing(maleCrossingXAnim, {
+          fromValue: pedestrianColIndex * tileSize + pedestrianXOffset,
+          toValue: (pedestrianColIndex - 3) * tileSize + pedestrianXOffset,
+          duration: 1500, // Faster crossing
+          useNativeDriver: false,
+        }).start(resolve);
+      });
+      
+      // Pedestrian finished crossing
+      setIsCrossing(false);
+      setPedestrianVisible(false);
+      
+      // Now car can proceed
+      setCarPaused(false);
+      const targetRow = 11;
+      const rowsToMove = targetRow - currentRow;
+      const nextTarget = currentScroll.current + rowsToMove * tileSize;
+      
       Animated.timing(scrollY, {
         toValue: nextTarget,
         duration: 3000,
         useNativeDriver: true,
       }).start(() => {
-        // Collision effect - hide pedestrian immediately
-        setIsCrossing(false);
-        setPedestrianVisible(false);
-        // Keep traffic light blinking
         handleFeedback(answer);
       });
+      
     } else if (answer === "Yield the right of way to pedestrian and proceed when it's clear.") {
         const targetRow = 10;
         const rowsToMove = targetRow - currentRow;
@@ -374,6 +419,7 @@ export default function DrivingGame() {
     setCarFrame(0);
     carXAnim.setValue(width / 2 - (280 / 2));
     setPedestrianVisible(true);
+    setHonkCount(0);
 
     setTrafficLightState('green');
     setIsBlinking(false); //SET TO TRUE FOR BLINKING
@@ -535,6 +581,20 @@ export default function DrivingGame() {
         }}
       />
 
+      {/* Honk Effect */}
+      {showHonk && (
+        <Animated.View
+          style={[
+            styles.honkContainer,
+            {
+              opacity: honkOpacity,
+            }
+          ]}
+        >
+          <Text style={styles.honkText}>HONK!</Text>
+        </Animated.View>
+      )}
+
       {/* Question overlay - moved to bottom */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
@@ -658,13 +718,34 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
+  // Honk effect styles
+   honkContainer: {
+    position: "absolute",
+    bottom: height * 0.5,
+    left: width / 2 - 60,
+    zIndex: 20,
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+  },
+  honkText: {
+    color: "#000000",
+    fontSize: 36,
+    fontWeight: "bold",
+    textAlign: "center",
+    textShadowColor: "#FFFFFF",
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 3,
+    fontFamily: "monospace",
+    letterSpacing: 2,
+  },
+
   // In-game responsive styles
  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -721,7 +802,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -746,8 +827,7 @@ const styles = StyleSheet.create({
     right: sideMargin,
     width: width * 0.2,
     alignItems: "center",
-    zIndex: 11,
-  },
+    zIndex: 11,},
   nextButton: {
     backgroundColor: "#007bff",
     paddingVertical: height * 0.015,
