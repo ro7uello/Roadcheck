@@ -1,8 +1,9 @@
-// C:\Users\wahoo\Desktop\roadcheck\frontend\src\contexts\SessionManager.jsx
+// SessionManager.jsx - WITH CACHE INTEGRATION
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../../config/api';
+import CachedApiService from './CachedApiService';
 
 const SessionContext = createContext();
 
@@ -20,30 +21,25 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
   const [currentScenario, setCurrentScenario] = useState(1);
   const [sessionStartTime, setSessionStartTime] = useState(Date.now());
   const [scenarioStartTime, setScenarioStartTime] = useState(Date.now());
+  const [scenarios, setScenarios] = useState([]);
+  const [scenariosLoaded, setScenariosLoaded] = useState(false);
 
-  // Convert database phase ID to display phase number
-  // Road Markings (cat 1): phase IDs 1,2,3 → display 1,2,3
-  // Traffic Signs (cat 2): phase IDs 4,5,6 → display 1,2,3
-  // Intersection (cat 3): phase IDs 7,8,9 → display 1,2,3
-  // Pedestrian (cat 4): phase ID 10 → display 1
   const getDisplayPhaseNumber = () => {
-    if (categoryId === 1) return phaseId;           // Road Markings
-    if (categoryId === 2) return phaseId - 3;       // Traffic Signs
-    if (categoryId === 3) return phaseId - 6;       // Intersection
-    if (categoryId === 4) return 1;                 // Pedestrian (always Phase 1)
+    if (categoryId === 1) return phaseId;
+    if (categoryId === 2) return phaseId - 3;
+    if (categoryId === 3) return phaseId - 6;
+    if (categoryId === 4) return 1;
     return phaseId;
   };
 
   const displayPhaseNumber = getDisplayPhaseNumber();
 
-  // Initialize session when component mounts
   useEffect(() => {
     initializeSession();
   }, []);
 
   const initializeSession = async () => {
     try {
-      // Get userId from AsyncStorage
       const userId = await AsyncStorage.getItem('userId');
       const token = await AsyncStorage.getItem('access_token');
 
@@ -54,7 +50,10 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
 
       console.log('🔍 Initializing session with userId:', userId);
 
-      // Start a new session
+      // 🚀 Preload scenarios from cache while starting session
+      const scenariosPromise = loadScenarios();
+
+      // Start session
       const response = await fetch(`${API_URL}/sessions/start`, {
         method: 'POST',
         headers: {
@@ -68,21 +67,43 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
         })
       });
 
-      console.log('Session start response status:', response.status);
-
       if (response.ok) {
         const result = await response.json();
         setSessionData(result.data);
-        console.log('Session initialized:', result.status);
+        console.log('✅ Session initialized:', result.data.id);
 
-        // Load initial progress
         await loadSessionProgress(result.data.id);
       } else {
         const errorText = await response.text();
         console.error('Failed to initialize session:', response.status, errorText);
       }
+
+      // Wait for scenarios to load
+      await scenariosPromise;
+
     } catch (error) {
       console.error('Error initializing session:', error);
+    }
+  };
+
+  // 📦 Load scenarios with cache
+  const loadScenarios = async () => {
+    try {
+      console.log(`🚀 Loading scenarios for category ${categoryId}, phase ${phaseId}...`);
+      const startTime = Date.now();
+
+      const result = await CachedApiService.getScenariosWithChoices(categoryId, phaseId);
+
+      const loadTime = Date.now() - startTime;
+      console.log(`⏱️ Scenarios loaded in ${loadTime}ms ${result.fromCache ? '📦' : '🌐'}`);
+
+      if (result.success && result.data) {
+        setScenarios(result.data);
+        setScenariosLoaded(true);
+        console.log(`✅ Loaded ${result.data.length} scenarios`);
+      }
+    } catch (error) {
+      console.error('Error loading scenarios:', error);
     }
   };
 
@@ -112,19 +133,19 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
 
     try {
       const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('userId');
       const currentTime = Date.now();
       const timeTaken = Math.round((currentTime - scenarioStartTime) / 1000);
 
-      console.log('🔍 API CALL:', {
-        url: `${API_URL}/sessions/${sessionData.id}/scenario/${scenarioId}`,
-        body: {
-          scenario_id: scenarioId,
-          selected_answer: selectedAnswer,
-          is_correct: isCorrect,
-          time_taken_seconds: timeTaken
-        }
+      console.log('📝 Updating scenario progress:', {
+        sessionId: sessionData.id,
+        scenarioId,
+        selectedAnswer,
+        isCorrect,
+        timeTaken
       });
 
+      // Update session progress
       const response = await fetch(
         `${API_URL}/sessions/${sessionData.id}/scenario/${scenarioId}`,
         {
@@ -142,13 +163,17 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
         }
       );
 
-      const responseText = await response.text();
-      console.log('🔍 API RESPONSE:', response.status, responseText);
-
       if (response.ok) {
-        console.log(`Scenario ${currentScenario} progress updated`);
+        console.log('✅ Scenario progress updated');
+
+        // 🚀 Invalidate stats cache since progress changed
+        if (isCorrect) {
+          await CachedApiService.refreshStats(userId);
+          console.log('🔄 Stats cache refreshed');
+        }
       } else {
-        console.error('❌ API ERROR:', response.status, responseText);
+        const errorText = await response.text();
+        console.error('❌ Failed to update progress:', response.status, errorText);
       }
     } catch (error) {
       console.error('❌ Error updating scenario progress:', error);
@@ -156,12 +181,11 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
   };
 
   const moveToNextScenario = () => {
-    console.log('Moving from scenario', currentScenario, 'to', currentScenario + 1);
+    console.log('➡️ Moving from scenario', currentScenario, 'to', currentScenario + 1);
     if (currentScenario < 10) {
       setCurrentScenario(currentScenario + 1);
-      setScenarioStartTime(Date.now()); // Reset timer for next scenario
+      setScenarioStartTime(Date.now());
     }
-    console.log('New current scenario:', currentScenario + 1);
   };
 
   const completeSession = async () => {
@@ -169,9 +193,17 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
 
     try {
       const token = await AsyncStorage.getItem('access_token');
+      const userId = await AsyncStorage.getItem('userId');
       const totalTime = Math.round((Date.now() - sessionStartTime) / 1000);
       const correctCount = sessionProgress.filter(s => s.is_correct).length;
       const totalScore = Math.round((correctCount / 10) * 100);
+
+      console.log('🏁 Completing session:', {
+        sessionId: sessionData.id,
+        totalTime,
+        totalScore,
+        correctCount
+      });
 
       const response = await fetch(`${API_URL}/sessions/${sessionData.id}/complete`, {
         method: 'PUT',
@@ -187,8 +219,12 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
 
       if (response.ok) {
         const result = await response.json();
+        console.log('✅ Session completed successfully');
 
-        // Return session results for result page
+        // 🚀 Invalidate stats cache after session completion
+        await CachedApiService.refreshStats(userId);
+        console.log('🔄 Stats cache refreshed after session');
+
         return {
           sessionId: sessionData.id,
           categoryId: sessionData.category_id,
@@ -215,13 +251,24 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     }
   };
 
+  // Get current scenario data
+  const getCurrentScenarioData = () => {
+    if (!scenariosLoaded || scenarios.length === 0) {
+      return null;
+    }
+    return scenarios[currentScenario - 1] || null;
+  };
+
   const value = {
     sessionData,
     sessionProgress,
     currentScenario,
+    scenarios,
+    scenariosLoaded,
     updateScenarioProgress,
     moveToNextScenario,
     completeSession,
+    getCurrentScenarioData,
     getScenarioProgress: (scenarioNum) => {
       return sessionProgress.find(s => s.scenario_number === scenarioNum) || {
         is_attempted: false,
@@ -234,14 +281,22 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     <SessionContext.Provider value={value}>
       <View style={styles.container}>
         {children}
-        {/* Progression Indicator - Always visible at bottom */}
+
+        {/* Progression Indicator */}
         <View style={styles.progressContainer}>
           <Text style={styles.progressText}>
             {categoryName} - Phase {displayPhaseNumber}
           </Text>
-          <Text style={styles.progressNumber}>
-            Scenario {currentScenario} / 10
-          </Text>
+          <View style={styles.progressRight}>
+            <Text style={styles.progressNumber}>
+              Scenario {currentScenario} / 10
+            </Text>
+            {scenariosLoaded && (
+              <View style={styles.cacheIndicator}>
+                <Text style={styles.cacheText}>📦</Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
     </SessionContext.Provider>
@@ -271,9 +326,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  progressRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   progressNumber: {
     color: '#4CAF50',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  cacheIndicator: {
+    backgroundColor: '#4ade80',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#000',
+  },
+  cacheText: {
+    fontSize: 10,
   },
 });

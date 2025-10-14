@@ -1,4 +1,4 @@
-// profile.tsx - WITH PEDESTRIAN SUPPORT
+// profile.tsx - WITH CACHING
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -12,35 +12,37 @@ import {
   SafeAreaView,
   Alert,
   Modal,
+  RefreshControl,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import CachedApiService from '../contexts/CachedApiService';
 
 const { width, height } = Dimensions.get("window");
-import { API_URL } from '../../config/api';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [userId, setUserId] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [fromCache, setFromCache] = useState(false);
 
   useEffect(() => {
     loadProfileData();
   }, []);
 
-  const loadProfileData = async () => {
+  const loadProfileData = async (forceRefresh = false) => {
     try {
-      setLoading(true);
+      if (!forceRefresh) {
+        setLoading(true);
+      }
 
       const storedUserId = await AsyncStorage.getItem("userId");
       const userEmail = await AsyncStorage.getItem("user_email");
-
-      console.log("Stored userId:", storedUserId);
-      console.log("Stored user_email:", userEmail);
 
       if (!storedUserId) {
         console.error("No user ID found - redirecting to login");
@@ -52,41 +54,47 @@ export default function ProfileScreen() {
 
       setUserId(storedUserId);
 
-      // Fetch profile and stats from API
-      const [profileRes, statsRes] = await Promise.all([
-        fetch(`${API_URL}/profiles/${storedUserId}`),
-        fetch(`${API_URL}/user-stats/${storedUserId}`)
+      // 🚀 Use cached API service
+      const startTime = Date.now();
+
+      const [profileResult, statsResult] = await Promise.all([
+        CachedApiService.getProfile(storedUserId, forceRefresh),
+        CachedApiService.getStats(storedUserId, forceRefresh)
       ]);
 
-      console.log("Profile response status:", profileRes.status);
-      console.log("Stats response status:", statsRes.status);
+      const loadTime = Date.now() - startTime;
+      console.log(`⏱️ Profile data loaded in ${loadTime}ms`);
 
-      const profileData = await profileRes.json();
-      const statsData = await statsRes.json();
+      // Check if data came from cache
+      const isFromCache = profileResult.fromCache || statsResult.fromCache;
+      setFromCache(isFromCache);
 
-      console.log("Profile data:", profileData);
-      console.log("Stats data:", statsData);
+      if (isFromCache) {
+        console.log('📦 Data loaded from cache!');
+      } else {
+        console.log('🌐 Data loaded from API');
+      }
 
-      if (profileData.success && profileData.data) {
+      if (profileResult.success && profileResult.data) {
         setProfile({
-          username: profileData.data.username,
-          email: userEmail || profileData.data.email || "N/A"
+          username: profileResult.data.username,
+          email: userEmail || profileResult.data.email || "N/A"
         });
       } else {
-        console.warn("Failed to fetch profile from API");
+        console.warn("Failed to fetch profile");
         Alert.alert("Error", "Unable to load profile");
       }
 
-      if (statsData.success) {
-        setStats(statsData.data);
+      if (statsResult.success) {
+        setStats(statsResult.data);
       } else {
-        console.warn("Failed to fetch stats:", statsData);
-        // Set empty stats as fallback with pedestrian
+        console.warn("Failed to fetch stats:", statsResult);
+        // Set empty stats as fallback
         setStats({
           road_markings: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
           traffic_signs: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
           intersection_and_others: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
-          pedestrian: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 }
+          pedestrian: { total_scenarios: 10, completed_scenarios: 0, correct_answers: 0 }
         });
       }
 
@@ -95,14 +103,19 @@ export default function ProfileScreen() {
       Alert.alert("Error", "Failed to load profile data. Please try again.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadProfileData(true); // Force refresh
   };
 
   const calculateAccuracy = (categoryKey) => {
     if (!stats || !stats[categoryKey]) return 0;
     const { correct_answers } = stats[categoryKey];
 
-    // Pedestrian has 10 scenarios, others have 30
     const totalScenarios = categoryKey === 'pedestrian' ? 10 : 30;
 
     return Math.round((correct_answers / totalScenarios) * 100);
@@ -122,7 +135,6 @@ export default function ProfileScreen() {
     const intersectionAcc = calculateAccuracy("intersection_and_others");
     const pedestrianAcc = calculateAccuracy("pedestrian");
 
-    // Average of all 4 categories
     const avgAccuracy = (roadMarkingsAcc + trafficSignsAcc + intersectionAcc + pedestrianAcc) / 4;
     return Math.round(avgAccuracy);
   };
@@ -165,6 +177,9 @@ export default function ProfileScreen() {
       const data = await response.json();
 
       if (response.ok) {
+        // Clear cache before logout
+        await CachedApiService.clearAllCache();
+
         await AsyncStorage.multiRemove([
           'access_token',
           'refresh_token',
@@ -266,7 +281,7 @@ export default function ProfileScreen() {
         <Text style={styles.errorText}>Unable to load profile</Text>
         <TouchableOpacity
           style={styles.retryButton}
-          onPress={loadProfileData}
+          onPress={() => loadProfileData(true)}
         >
           <Text style={styles.retryButtonText}>RETRY</Text>
         </TouchableOpacity>
@@ -287,7 +302,17 @@ export default function ProfileScreen() {
         <Text style={styles.closeButtonText}>×</Text>
       </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#000"]}
+            tintColor="#000"
+          />
+        }
+      >
         <View style={styles.header}>
           <Text style={styles.title}>PROFILE</Text>
         </View>
@@ -327,11 +352,10 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Road Safety Progression - NOW WITH 4 CATEGORIES */}
+        {/* Road Safety Progression */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>ROAD SAFETY PROGRESSION:</Text>
 
-          {/* Driver Categories */}
           <View style={styles.progressItem}>
             <View style={styles.progressRow}>
               <Text style={styles.categoryName}>🛣️ ROAD MARKINGS:</Text>
@@ -365,10 +389,9 @@ export default function ProfileScreen() {
             })()}
           </View>
 
-          {/* NEW: Pedestrian Category */}
           <View style={styles.progressItem}>
             <View style={styles.progressRow}>
-              <Text style={styles.categoryName}>PEDESTRIAN:</Text>
+              <Text style={styles.categoryName}>🚶 PEDESTRIAN:</Text>
               <Text style={styles.accuracy}>{calculateAccuracy("pedestrian")}% ACCURACY</Text>
             </View>
             {(() => {
@@ -393,7 +416,6 @@ export default function ProfileScreen() {
                   {key === 'pedestrian' ? 'PEDESTRIAN' : key.replace(/_/g, " ").toUpperCase()}:
                 </Text>
                 <Text style={styles.statValue}>
-                  {/* ✅ Show /10 for pedestrian, /30 for driver categories */}
                   {data.correct_answers || 0}/{key === 'pedestrian' ? 10 : 30} correct
                 </Text>
               </View>
@@ -472,9 +494,7 @@ export default function ProfileScreen() {
   );
 }
 
-// Styles remain the same as your original
 const styles = StyleSheet.create({
-  // ... (copy all your existing styles here - they remain unchanged)
   container: {
     flex: 1,
     backgroundColor: '#87CEEB',
@@ -498,7 +518,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     lineHeight: 50,
     textAlign: 'center',
-    includeFontPadding: false,
+  },
+  cacheIndicator: {
+    position: 'absolute',
+    top: 60,
+    left: 100,
+    backgroundColor: '#4ade80',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    zIndex: 10,
+    borderWidth: 2,
+    borderColor: '#000',
+  },
+  cacheText: {
+    fontSize: 10,
+    fontFamily: 'pixel',
+    color: '#000',
   },
   scrollContent: {
     padding: 20,
@@ -608,8 +644,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 30,
     paddingLeft: 100,
-    paddingTop: 0,
-    paddingBottom: 0,
   },
   modalContent: {
     backgroundColor: '#f5e6d3',

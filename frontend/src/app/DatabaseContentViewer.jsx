@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { API_URL } from '../../config/api';
+
+const API_BASE_URL = API_URL;
 
 const DatabaseContentViewer = () => {
   const [scenarios, setScenarios] = useState([]);

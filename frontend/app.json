@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "landscape",
     "scheme": "roadcheck",
-    "icon": "./assets/background/login page.png",
+    "icon": "./assets/background/login-page.png",
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
       "**/*"

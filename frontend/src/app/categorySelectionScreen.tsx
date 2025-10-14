@@ -1,28 +1,17 @@
 // src/app/categorySelectionScreen.tsx
 import React, { useRef, useEffect, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  Dimensions,
-  ImageBackground,
-  SafeAreaView,
-  Animated,
-  Image,
-  ScrollView,
-  Linking,
-} from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, ImageBackground, SafeAreaView, Animated, Image, ScrollView, Linking, } from 'react-native';
 import { router } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '../../config/api';
 
 const { width, height } = Dimensions.get('window');
 
 // Configuration
 const BACKGROUND_SPEED = 12000;
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.35:3001';
+const API_BASE_URL = API_URL;
 
 export default function CategorySelectionScreen() {
   // Load font
