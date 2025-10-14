@@ -378,7 +378,7 @@ function startScrollAnimation() {
       
       // Uncomment these when ready to move to next scenario:
      moveToNextScenario();
-     router.navigate(`/scenarios/road-markings/phase3/${currentScenario + 1}P3`);
+     router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
 
     }
   };

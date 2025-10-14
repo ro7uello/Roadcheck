@@ -284,6 +284,11 @@ export default function DrivingGame() {
   };
 
   const handleNext = async () => {
+    // Debug logs
+    console.log('Current Scenario:', currentScenario);
+    console.log('Question Index:', questionIndex);
+    console.log('Questions Length:', questions.length);
+    
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
@@ -292,27 +297,29 @@ export default function DrivingGame() {
     setCarPaused(false);
     carXAnim.setValue(width / 2 - (280 / 2));
     setTrafficLightState('green');
-    setShowTrafficCar(false);
-    trafficCarY.setValue(-350);
+
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
-    } else if (currentScenario >= 10) {
+    } else if (currentScenario >= 9) {
       const sessionResults = await completeSession();
-      navigation.navigate('/result-page', {
-        ...sessionResults,
-        userAttempts: JSON.stringify(sessionResults.attempts)
+      router.navigate({
+        pathname: '/result-page',
+        params: {
+          ...sessionResults,
+          userAttempts: JSON.stringify(sessionResults.attempts)
+        }
       });
     } else {
       moveToNextScenario();
-      const nextScreen = `S${currentScenario + 1}P3`;
-      navigation.navigate(nextScreen);
+      router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
     }
   };
 
   const handleStartGame = () => {
     setShowIntro(false);
   };
+
 
   const trafficLightLeft = trafficLightColIndex * tileSize + trafficLightXOffset;
   const trafficLightTop = trafficLightRowIndex * tileSize;
