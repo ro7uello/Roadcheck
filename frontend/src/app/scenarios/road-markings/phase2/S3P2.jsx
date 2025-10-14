@@ -65,9 +65,17 @@ const playerCarSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/WEST/SEPARATED/Blue_CIVIC_CLEAN_WEST_001.png"),
   ],
+  NORTHWEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
+  ],
   EAST: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+  ],
+  NORTHEAST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
   ],
 };
 
@@ -156,7 +164,7 @@ export default function DrivingGame() {
   // Jeepney ahead in the same lane as player (right lane) - positioned further ahead
   const jeepneyLane = 2;
   const jeepneyInitialX = jeepneyLane * tileSize + (tileSize / 2 - jeepWidth / 2);
-  const jeepneyYAnim = useRef(new Animated.Value(-jeepHeight * 4)).current;
+  const jeepneyYAnim = useRef(new Animated.Value(-jeepHeight * 3.5)).current;
 
   // Oncoming jeepney in left lane (lane 1) going south
   const oncomingJeepneyLane = 1;
@@ -218,7 +226,7 @@ export default function DrivingGame() {
 
     // Animate jeepney ahead into view
     jeepneyAnimationRef.current = Animated.timing(jeepneyYAnim, {
-      toValue: -height * 0.2,
+      toValue: -height * 0.3,
       duration: 2500,
       easing: Easing.linear,
       useNativeDriver: true,
@@ -361,32 +369,48 @@ export default function DrivingGame() {
       // Wait a moment to show proper decision making
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      // 1. Signal and move to center lane (lane 1 - the passing lane with broken yellow line)
+      // 1. Signal and move diagonally to center lane (NORTHWEST direction)
+      const centerLaneX = 1 * tileSize + (tileSize / 2 - carWidth / 2);
       await new Promise(resolve => {
-        setPlayerCarDirection("WEST");
-        Animated.timing(carXAnim, {
-          toValue: 1 * tileSize + (tileSize / 2 - carWidth / 2),
-          duration: 1200,
-          easing: Easing.easeInOut,
-          useNativeDriver: false,
-        }).start(resolve);
+        setPlayerCarDirection("NORTHWEST");
+        Animated.parallel([
+          Animated.timing(carXAnim, {
+            toValue: centerLaneX,
+            duration: 500,
+            easing: Easing.easeInOut,
+            useNativeDriver: false,
+          }),
+          // Move forward while changing lanes
+          Animated.timing(scrollY, {
+            toValue: scrollY._value - (tileSize * 0.8),
+            duration: 500,
+            easing: Easing.easeInOut,
+            useNativeDriver: true,
+          }),
+          Animated.timing(jeepneyYAnim, {
+            toValue: jeepneyYAnim._value + (tileSize * 0.2),
+            duration: 500,
+            easing: Easing.easeInOut,
+            useNativeDriver: true,
+          })
+        ]).start(resolve);
       });
 
-      // 2. Accelerate and pass the jeepney - move forward significantly
+      // 2. Accelerate straight forward in passing lane (NORTH)
       await new Promise(resolve => {
         setPlayerCarDirection("NORTH");
         Animated.parallel([
           // Move jeepney backward relative to player (player passing it)
           Animated.timing(jeepneyYAnim, {
             toValue: height * 0.5,
-            duration: 2800,
+            duration: 500,
             easing: Easing.easeOut,
             useNativeDriver: true,
           }),
           // Scroll road to show forward movement
           Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 4),
-            duration: 2800,
+            toValue: scrollY._value - (tileSize * 3.5),
+            duration: 500,
             easing: Easing.easeOut,
             useNativeDriver: true,
           })
@@ -394,42 +418,52 @@ export default function DrivingGame() {
       });
 
       // Wait until jeepney is behind player
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Hide jeepney after it's passed
       setIsJeepneyVisible(false);
 
-      // 3. Continue forward a bit more to create safe distance
+      // 3. Continue forward a bit more to create safe distance (NORTH)
       await new Promise(resolve => {
+        setPlayerCarDirection("NORTH");
         Animated.timing(scrollY, {
-          toValue: scrollY._value - (tileSize * 1.5),
-          duration: 1000,
-          easing: Easing.easeOut,
+          toValue: scrollY._value - (tileSize * 1.2),
+          duration: 500,
+          easing: Easing.linear,
           useNativeDriver: true,
         }).start(resolve);
       });
 
-      // 4. Signal and return to rightmost lane after safe distance
+      // 4. Signal and return diagonally to rightmost lane (NORTHEAST direction)
       await new Promise(resolve => {
-        setPlayerCarDirection("EAST");
+        setPlayerCarDirection("NORTHEAST");
         Animated.parallel([
           Animated.timing(carXAnim, {
             toValue: playerCarInitialX,
-            duration: 1200,
+            duration: 500,
             easing: Easing.easeInOut,
             useNativeDriver: false,
           }),
+          // Continue moving forward while returning to lane
           Animated.timing(scrollY, {
-            toValue: scrollY._value - (tileSize * 0.8),
-            duration: 1200,
-            easing: Easing.easeOut,
+            toValue: scrollY._value - (tileSize * 1),
+            duration: 500,
+            easing: Easing.easeInOut,
             useNativeDriver: true,
           })
         ]).start(resolve);
       });
 
-      // 5. Continue normal driving
-      setPlayerCarDirection("NORTH");
+      // 5. Continue normal driving straight (NORTH)
+      await new Promise(resolve => {
+        setPlayerCarDirection("NORTH");
+        Animated.timing(scrollY, {
+          toValue: scrollY._value - (tileSize * 0.5),
+          duration: 600,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }).start(resolve);
+      });
 
     } catch (error) {
       console.error('Error in animateSafeOvertake:', error);
@@ -741,8 +775,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: sideMargin * 0.5,
   },
-  questionTextContainer: {
-    paddingHorizontal: width * 0.02,
+  questionTextContainer: {paddingHorizontal: width * 0.02,
     maxWidth: width * 0.65,
   },
   questionText: {
