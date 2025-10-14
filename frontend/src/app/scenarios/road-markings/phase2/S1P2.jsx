@@ -608,7 +608,6 @@ const animateTrafficJam = async () => {
         />
         <View style={styles.introTextBox}>
           <Text style={styles.introTitle}>Road Markings - Phase 2</Text>
-          <Text style={styles.introSubtitle}>Scenario {currentScenario}/10</Text>
           <Text style={styles.introText}>
             Test your knowledge of road rules and signs.
             Choose the correct option to proceed safely.
