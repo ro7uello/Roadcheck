@@ -272,7 +272,7 @@ export default function DrivingGame() {
   const moveNPCsNorth = () => {
     setNpcsMoving(true);
     Animated.timing(npcScrollY, {
-      toValue: scaledMapHeight * 0.25,
+      toValue: scaledMapHeight * 0.20,
       duration: 3500,
       useNativeDriver: true,
     }).start();
@@ -397,7 +397,9 @@ export default function DrivingGame() {
       // Move to next scenario
       moveToNextScenario();
       const nextScreen = `S${currentScenario + 1}P1`;
-      router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+       router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+    
+      
     }
   };
 

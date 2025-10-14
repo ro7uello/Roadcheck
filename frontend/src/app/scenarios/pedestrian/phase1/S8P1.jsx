@@ -46,8 +46,8 @@ const maleSprites = {
 // South facing cars
 const npcCarSpritesSouth = {
   yellow: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/WEST/SEPARATED/Yellow_CIVIC_CLEAN_WEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/WEST/SEPARATED/Yellow_CIVIC_CLEAN_WEST_001.png"),
   ],
 };
 
@@ -63,7 +63,7 @@ const questions = [
     correct: "Stop, make noise, and wait for the driver to notice you before proceeding",
     wrongExplanation: {
       "Continue jogging since you have the right of way on the sidewalk": "Accident prone! Having the right of way doesn't guarantee your safety. Always be alert of your surroundings and make sure that the driver sees you before continuing",
-      "Quickly run behind the car while it's still backing up": "Accident prone! Running behind the car while it's backing up might not give enough time for the driver to notice you and run you over as a result."
+      "Quickly run behind the car while it's still backing up": "Accident prone! Running behind the car while it's still backing up might not give enough time for the driver to notice you and run you over as a result."
     }
   },
 ];
@@ -120,9 +120,26 @@ export default function DrivingGame() {
 
   // Parked car on map - fixed position relative to map
   const [parkedCarFrame, setParkedCarFrame] = useState(0);
-  const [parkedCarMapY] = useState(scaledMapHeight * 0.37); // Position on the map (45% down from top)
-  const parkedCarOffset = useRef(new Animated.Value(0)).current; // Offset for backing up animation
+  const [parkedCarMapY] = useState(scaledMapHeight * 0.45); // Position on the map (45% down from top)
+  const parkedCarOffsetX = useRef(new Animated.Value(0)).current; // Horizontal offset for backing out
   const [hasCarStartedBacking, setHasCarStartedBacking] = useState(false);
+  const [isCarPaused, setIsCarPaused] = useState(false);
+  const carAnimationRef = useRef(null); // Store animation reference
+
+
+  // Function to pause car
+  const pauseCar = () => {
+    parkedCarOffsetX.stopAnimation();
+  };
+
+  // Function to reverse car back to driveway
+  const reverseCarToDriveway = () => {
+    Animated.timing(parkedCarOffsetX, {
+      toValue: 0, // Return to starting position
+      duration: 3000,
+      useNativeDriver: true,
+    }).start();
+  };
 
 
   // Start parked car backing up animation when game starts
@@ -132,12 +149,13 @@ export default function DrivingGame() {
       setTimeout(() => {
         setHasCarStartedBacking(true);
        
-        // Animate car backing up slowly (moving down/south)
-        Animated.timing(parkedCarOffset, {
-          toValue: scaledMapHeight * 0.10, // Back up 15% of map height
-          duration: 13000, // 6 seconds - very slow
+        // Animate car backing out horizontally (moving right into the road)
+        carAnimationRef.current = Animated.timing(parkedCarOffsetX, {
+          toValue: +width * 0.30, // Positive value moves right (backing into road)
+          duration: 17000, // 17 seconds - very slow
           useNativeDriver: true,
-        }).start();
+        });
+        carAnimationRef.current.start();
       }, 2000);
     }
   }, [hasCarStartedBacking]);
@@ -217,6 +235,7 @@ export default function DrivingGame() {
     const currentQuestion = questions[questionIndex];
     const isCorrect = answer === currentQuestion.correct;
     updateProgress(answer, isCorrect);
+    
     if (answer === "Continue jogging since you have the right of way on the sidewalk") {
       // Continue running forward (north) - will collide with car
       setPlayerDirection("NORTH");
@@ -237,8 +256,16 @@ export default function DrivingGame() {
       setPlayerDirection("NORTH");
       setPlayerPaused(true);
       setPlayerFrame(0);
+      
+      // PAUSE THE CAR
+      pauseCar();
+      
+      // Wait 1 second, then car notices and reverses back
+      setTimeout(() => {
+        reverseCarToDriveway(); // Car goes back to driveway
+      }, 1000);
      
-      // Wait for car to pass, then continue
+      // Wait for car to return, then player continues
       setTimeout(() => {
         setPlayerPaused(false);
         Animated.timing(scrollY, {
@@ -249,7 +276,7 @@ export default function DrivingGame() {
           setIsPlayerVisible(false);
           handleFeedback(answer);
         });
-      }, 3000); // Wait 3 seconds for car to pass
+      }, 4000); // Wait 4 seconds (1s pause + 3s for car to reverse)
      
       return;
     } else if (answer === "Quickly run behind the car while it's still backing up") {
@@ -258,7 +285,7 @@ export default function DrivingGame() {
       setPlayerFrame(0);
      
       Animated.timing(scrollY, {
-        toValue: currentScroll.current + scaledMapHeight * 0.05,
+        toValue: currentScroll.current + scaledMapHeight * 0.07,
         duration: 800, // Quick movement
         useNativeDriver: true,
       }).start(() => {
@@ -283,8 +310,8 @@ export default function DrivingGame() {
     setIsPlayerVisible(true);
     setPlayerPaused(false);
     setHasCarStartedBacking(false);
-    parkedCarOffset.setValue(0);
-   
+    parkedCarOffsetX.setValue(0);
+    
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
@@ -311,9 +338,9 @@ export default function DrivingGame() {
       }
     } else {
       // Move to next scenario
-      moveToNextScenario();
-      const nextScreen = `S${currentScenario + 1}P1`;
-      router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+       moveToNextScenario();
+       const nextScreen = `S${currentScenario + 1}P1`;
+       router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
     }
   };
 
@@ -356,11 +383,11 @@ export default function DrivingGame() {
         <Animated.View
           style={{
             position: "absolute",
-            left: width * 0.30, // Position on map (68% from left)
+            left: width * 0.15, // Position on map (15% from left)
             top: parkedCarMapY, // Fixed position on map
             width: carWidth,
             height: carHeight,
-            transform: [{ translateY: parkedCarOffset }], // Backing up animation
+            transform: [{ translateX: parkedCarOffsetX }], // Backing out animation (horizontal)
           }}
         >
           <Image
@@ -570,4 +597,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
