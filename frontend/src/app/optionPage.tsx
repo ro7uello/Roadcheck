@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   referenceText: {
-    fontSize: 9,
+    fontSize: 13,
     color: 'black',
     fontFamily: 'spaceMono',
     lineHeight: 14,
