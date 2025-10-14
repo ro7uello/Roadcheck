@@ -1,21 +1,10 @@
 // profile.tsx - WITH CACHING
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  Dimensions,
-  SafeAreaView,
-  Alert,
-  Modal,
-  RefreshControl,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Dimensions, SafeAreaView, Alert, Modal, RefreshControl } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CachedApiService from '../contexts/CachedApiService';
+import { API_URL } from '../../config/api';
 
 const { width, height } = Dimensions.get("window");
 
@@ -33,90 +22,53 @@ export default function ProfileScreen() {
   const [fromCache, setFromCache] = useState(false);
 
   useEffect(() => {
-    loadProfileData(), loadUserData();
-  }, []);
+      loadAllData();
+    }, []);
 
-  const loadUserData = async () => {
+    const handleApiError = async (error, router) => {
+      console.error('API Error:', error);
+      if (error.message?.includes('401') || error.status === 401) {
+        await AsyncStorage.multiRemove([
+          'access_token',
+          'refresh_token',
+          'userId',
+          'user_email'
+        ]);
+        Alert.alert(
+          'Session Ended',
+          'Your session was ended because you logged in on another device. Please login again.',
+          [{ text: 'OK', onPress: () => router.replace('/login') }]
+        );
+        return true;
+      }
+      return false;
+    };
+
+    // ✅ Single unified loader
+    const loadAllData = async (forceRefresh = false) => {
       try {
-        setLoading(true);
+        if (!forceRefresh) setLoading(true);
 
-        // 🆕 This will use cache if available!
-        const progressResult = await CachedApiService.getUserProgress(userId);
+        const storedUserId = await AsyncStorage.getItem("userId");
+        const userEmail = await AsyncStorage.getItem("user_email");
+        const token = await AsyncStorage.getItem("access_token");
 
-        if (progressResult.fromCache) {
-          console.log('✅ Loaded from cache - instant!');
+        console.log('📋 Stored userId:', storedUserId);
+        console.log('📋 Has token:', !!token);
+
+        if (!storedUserId || !token) {
+          Alert.alert("Session Expired", "Please login again", [
+            { text: "OK", onPress: () => router.replace("/login") }
+          ]);
+          return;
         }
 
-        setUserProgress(progressResult.data);
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+        setUserId(storedUserId);
+        const startTime = Date.now();
 
-    // Force refresh when user pulls down
-    const handleRefresh = async () => {
-      const freshData = await CachedApiService.getUserProgress(userId, true);
-      setUserProgress(freshData.data);
-    };
-
-  const handleApiError = async (error, router) => {
-    console.error('API Error:', error);
-
-    // Check if it's a 401 error (unauthorized)
-    if (error.message?.includes('401') || error.status === 401) {
-      // Clear local storage
-      await AsyncStorage.multiRemove([
-        'access_token',
-        'refresh_token',
-        'userId',
-        'user_email'
-      ]);
-
-      Alert.alert(
-        'Session Ended',
-        'Your session was ended because you logged in on another device. Please login again.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/login')
-          }
-        ]
-      );
-      return true;
-    }
-    return false;
-  };
-
-  // Then UPDATE your loadProfileData function to use this error handler:
-
-  const loadProfileData = async (forceRefresh = false) => {
-    try {
-      if (!forceRefresh) {
-        setLoading(true);
-      }
-
-      const storedUserId = await AsyncStorage.getItem("userId");
-      const userEmail = await AsyncStorage.getItem("user_email");
-      const token = await AsyncStorage.getItem("access_token");
-
-      if (!storedUserId || !token) {
-        console.error("No user ID or token found - redirecting to login");
-        Alert.alert("Session Expired", "Please login again", [
-          { text: "OK", onPress: () => router.replace("/login") }
-        ]);
-        return;
-      }
-
-      setUserId(storedUserId);
-
-      const startTime = Date.now();
-
-      try {
         const [profileResult, statsResult] = await Promise.all([
           CachedApiService.getProfile(storedUserId, forceRefresh),
-          CachedApiService.getStats(storedUserId, forceRefresh)
+          CachedApiService.getStats(storedUserId, forceRefresh),
         ]);
 
         const loadTime = Date.now() - startTime;
@@ -124,12 +76,7 @@ export default function ProfileScreen() {
 
         const isFromCache = profileResult.fromCache || statsResult.fromCache;
         setFromCache(isFromCache);
-
-        if (isFromCache) {
-          console.log('📦 Data loaded from cache!');
-        } else {
-          console.log('🌐 Data loaded from API');
-        }
+        console.log(isFromCache ? '📦 Data loaded from cache!' : '🌐 Data loaded from API');
 
         if (profileResult.success && profileResult.data) {
           setProfile({
@@ -137,14 +84,12 @@ export default function ProfileScreen() {
             email: userEmail || profileResult.data.email || "N/A"
           });
         } else {
-          console.warn("Failed to fetch profile");
           Alert.alert("Error", "Unable to load profile");
         }
 
         if (statsResult.success) {
           setStats(statsResult.data);
         } else {
-          console.warn("Failed to fetch stats:", statsResult);
           setStats({
             road_markings: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
             traffic_signs: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
@@ -152,29 +97,22 @@ export default function ProfileScreen() {
             pedestrian: { total_scenarios: 10, completed_scenarios: 0, correct_answers: 0 }
           });
         }
-
       } catch (apiError) {
-        // Handle session ended error
         const wasHandled = await handleApiError(apiError, router);
-        if (wasHandled) {
-          return; // Exit early if session was ended
+        if (!wasHandled) {
+          console.error("Error loading data:", apiError);
+          Alert.alert("Error", "Failed to load profile data. Please try again.");
         }
-        throw apiError; // Re-throw if not a session error
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
+    };
 
-    } catch (error) {
-      console.error("Error loading profile:", error);
-      Alert.alert("Error", "Failed to load profile data. Please try again.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadProfileData(true); // Force refresh
-  };
+    const onRefresh = async () => {
+      setRefreshing(true);
+      await loadAllData(true);
+    };
 
   const calculateAccuracy = (categoryKey) => {
     if (!stats || !stats[categoryKey]) return 0;
@@ -345,7 +283,7 @@ export default function ProfileScreen() {
         <Text style={styles.errorText}>Unable to load profile</Text>
         <TouchableOpacity
           style={styles.retryButton}
-          onPress={() => loadProfileData(true)}
+          onPress={() => loadAllData(true)}
         >
           <Text style={styles.retryButtonText}>RETRY</Text>
         </TouchableOpacity>
@@ -371,7 +309,7 @@ export default function ProfileScreen() {
         refreshControl={
           <RefreshControl
             refreshing={loading}
-            onRefresh={handleRefresh}
+            onRefresh={onRefresh}
             colors={["#000"]}
             tintColor="#000"
           />
