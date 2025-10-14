@@ -24,6 +24,7 @@ const mapWidth = 320;
 const mapHeight = 768;
 const mapScale = width / mapWidth;
 const scaledMapHeight = mapHeight * mapScale;
+const scaledMapWidth = mapWidth * mapScale; // Add this line
 
 
 // Character sprites
@@ -50,8 +51,8 @@ const maleSprites = {
 
 // NPC standing sprites (alternating between north and west)
 const npcStandingSprites = [
-  require("../../../../../assets/character/sprites/north/north_walk1.png"),
-  require("../../../../../assets/character/sprites/west/west_walk1.png"),
+  require("../../../../../assets/character/sprites/north/north_walk_reflective1.png"),
+  require("../../../../../assets/character/sprites/east/east_walk1.png"),
 ];
 
 
@@ -181,14 +182,14 @@ export default function DrivingGame() {
 
   // NPC People - Standing on sidewalk blocking the path
   // Fixed positions on the map (will scroll with the map)
-  const npcPeopleMapPositions = [
-    { id: 1, mapY: scaledMapHeight * 0.45, spriteIndex: 0 },
-    { id: 2, mapY: scaledMapHeight * 0.47, spriteIndex: 1 },
-    { id: 3, mapY: scaledMapHeight * 0.49, spriteIndex: 0 },
-    { id: 4, mapY: scaledMapHeight * 0.51, spriteIndex: 1 },
-    { id: 5, mapY: scaledMapHeight * 0.53, spriteIndex: 0 },
-    { id: 6, mapY: scaledMapHeight * 0.43, spriteIndex: 1 },
-  ];
+const npcPeopleMapPositions = [
+  { id: 1, mapX: scaledMapWidth * 0.47, mapY: scaledMapHeight * 0.45, spriteIndex: 0 },
+  { id: 2, mapX: scaledMapWidth * 0.5, mapY: scaledMapHeight * 0.47, spriteIndex: 1 },
+  { id: 3, mapX: scaledMapWidth * 0.48, mapY: scaledMapHeight * 0.49, spriteIndex: 0 },
+  { id: 4, mapX: scaledMapWidth * 0.49, mapY: scaledMapHeight * 0.51, spriteIndex: 1 },
+  { id: 5, mapX: scaledMapWidth * 0.45, mapY: scaledMapHeight * 0.53, spriteIndex: 0 },
+  { id: 6, mapX: scaledMapWidth * 0.52, mapY: scaledMapHeight * 0.43, spriteIndex: 1 },
+];
 
 
   // Animate NPC cars moving forward slowly with the map
@@ -329,7 +330,7 @@ export default function DrivingGame() {
       setPlayerDirection("NORTH");
       setPlayerFrame(0);
      
-      const rightX = width * 0.70 - spriteWidth / 2;
+      const rightX = width * 0.30 + spriteWidth / 2;
       const targetScroll = scrollAtAnswer + scaledMapHeight * 0.08;
      
       // Move diagonally to the right side while moving forward
@@ -351,19 +352,30 @@ export default function DrivingGame() {
      
       return;
 } else if (answer === "Find alternative route.") {
-      // OPTION 3 (WRONG): Turn around and go back
+      // OPTION 3 (WRONG): Turn around and go back, then go west
       setPlayerDirection("SOUTH");
       setPlayerFrame(0);
      
-      // Walk backwards (scroll down)
+      // First: Walk backwards (scroll down)
       const targetScroll = scrollAtAnswer - scaledMapHeight * 0.09;
       Animated.timing(scrollY, {
         toValue: targetScroll,
         duration: 1500,
         useNativeDriver: true,
       }).start(() => {
-        setPlayerPaused(true);
-        handleFeedback(answer);
+        // Then: Turn west and walk left
+        setPlayerDirection("WEST");
+        setPlayerFrame(0);
+        
+        const leftX = width * 0.15 - spriteWidth / 2;
+        Animated.timing(playerXAnim, {
+          toValue: leftX,
+          duration: 1500,
+          useNativeDriver: true,
+        }).start(() => {
+          setPlayerPaused(true);
+          handleFeedback(answer);
+        });
       });
      
       return;
@@ -462,28 +474,28 @@ export default function DrivingGame() {
         />
 
 
-        {/* NPC People - Positioned on the map, will scroll with it */}
-        {npcPeopleMapPositions.map(person => (
-          <View
-            key={person.id}
-            style={{
-              position: "absolute",
-              left: width * 0.50 - (spriteWidth * 1.5) / 2,
-              top: person.mapY,
-              width: spriteWidth * 1.5,
-              height: spriteHeight * 1.5,
-            }}
-          >
-            <Image
-              source={npcStandingSprites[person.spriteIndex]}
-              style={{
-                width: spriteWidth * 1.5,
-                height: spriteHeight * 1.5,
-              }}
-              resizeMode="contain"
-            />
-          </View>
-        ))}
+  {/* NPC People - Positioned on the map, will scroll with it */}
+  {npcPeopleMapPositions.map(person => (
+    <View
+      key={person.id}
+      style={{
+        position: "absolute",
+        left: person.mapX - (spriteWidth * 1.5) / 2, // Use person.mapX instead
+        top: person.mapY,
+        width: spriteWidth * 1.5,
+        height: spriteHeight * 1.5,
+      }}
+    >
+      <Image
+        source={npcStandingSprites[person.spriteIndex]}
+        style={{
+          width: spriteWidth * 1.5,
+          height: spriteHeight * 1.5,
+        }}
+        resizeMode="contain"
+      />
+    </View>
+  ))}
       </Animated.View>
 
 

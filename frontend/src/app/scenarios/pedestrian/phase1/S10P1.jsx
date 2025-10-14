@@ -13,8 +13,8 @@ const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
-// Map setup
-const mapImage = require("../../../../../assets/map/map5.png");
+// Map setup - CHANGED TO MAP6
+const mapImage = require("../../../../../assets/map/map6.png");
 const mapWidth = 320;
 const mapHeight = 768;
 const mapScale = width / mapWidth;
@@ -39,6 +39,8 @@ const maleSprites = {
 const trafficSign = {
   west: require("../../../../../assets/traffic light/street_light2.png"),
   east: require("../../../../../assets/traffic light/street_light3.png"),
+  green: require("../../../../../assets/traffic light/street_light2.png"), // Green light
+  red: require("../../../../../assets/traffic light/street_light3.png"),   // Red light
 };
 
 // Multiple streetlight positions (row, column, xOffset, direction)
@@ -89,6 +91,7 @@ export default function DrivingGame() {
   };
 
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
+  const [trafficLightState, setTrafficLightState] = useState('green'); // New state for traffic light
 
   const startOffset = -(scaledMapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
@@ -114,19 +117,30 @@ export default function DrivingGame() {
   // Player
   const [playerFrame, setPlayerFrame] = useState(0);
   const [playerPaused, setPlayerPaused] = useState(false);
-  const rightX = width * 0.80 - spriteWidth / 2; // Adjusted to right side by half
-  const playerXAnim = useRef(new Animated.Value(rightX)).current;
+  // Start player on the right side, already crossing
+  const startX = width * 0.50 - spriteWidth / 2;
+  const playerXAnim = useRef(new Animated.Value(startX)).current;
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopDistance = scaledMapHeight * 0.4;
+    const stopDistance = scaledMapHeight * 0.46;
     const stopOffset = startOffset + stopDistance;
+
+    // Start player walking animation immediately
+    setPlayerDirection("NORTH");
+    setPlayerPaused(false);
+    setTrafficLightState('green'); // Start with green light
 
     Animated.timing(scrollY, {
       toValue: stopOffset,
       duration: 5000,
       useNativeDriver: true,
     }).start(() => {
+      // Change traffic light to red when stopping
+      setTrafficLightState('red');
+      
+      // Pause player when question appears
+      setPlayerPaused(true);
       setShowQuestion(true);
       setTimeout(() => {
         setShowAnswers(true);
@@ -169,76 +183,89 @@ export default function DrivingGame() {
     }
   };
 
- const handleAnswer = (answer) => {
-    setSelectedAnswer(answer);
-    setShowQuestion(false);
-    setShowAnswers(false);
+const handleAnswer = (answer) => {
+  setSelectedAnswer(answer);
+  setShowQuestion(false);
+  setShowAnswers(false);
 
-    const currentQuestion = questions[questionIndex];
-    const isCorrect = answer === currentQuestion.correct;
-    updateProgress(answer, isCorrect);
+  const currentQuestion = questions[questionIndex];
+  const isCorrect = answer === currentQuestion.correct;
+  updateProgress(answer, isCorrect);
 
-    if (answer === "Walk quickly to reach the other side of the road.") {
-      // Walk quickly across the entire road without stopping
-      setPlayerDirection("WEST");
-      setPlayerFrame(0);
+  if (answer === "Walk quickly to reach the other side of the road.") {
+    // Resume walking and continue quickly upward (north)
+    setPlayerPaused(false);
+    setPlayerDirection("NORTH");
+    // Light stays red (dangerous!)
+    
+    // Animate map scrolling upward (player going north)
+    const quickScrollDistance = scaledMapHeight * 0.3;
+    const quickScrollTarget = currentScroll.current + quickScrollDistance;
 
-      const farLeftX = width * 0.05 - spriteWidth / 2;
-
-      Animated.timing(playerXAnim, {
-        toValue: farLeftX,
-        duration: 1000, // Faster duration to show "walking quickly"
-        useNativeDriver: true,
-      }).start(() => {
-        setIsPlayerVisible(false);
-        handleFeedback(answer);
-      });
-
-      return;
-    } else if (answer === "Walk and stop at the center island and wait for the traffic light for pedestrian to turn green.") {
-      // Walk to center island and stop
-      setPlayerDirection("WEST");
-      setPlayerFrame(0);
-
-      const centerIslandX = width * 0.35 - spriteWidth / 2;
-
-      Animated.timing(playerXAnim, {
-        toValue: centerIslandX,
-        duration: 2000,
-        useNativeDriver: true,
-      }).start(() => {
-        // Stop at center island (pause briefly)
-        setPlayerPaused(true);
-        
-        setTimeout(() => {
-          // After waiting, continue crossing
-          setPlayerPaused(false);
-          const farLeftX = width * 0.15 - spriteWidth / 2;
-          
-          Animated.timing(playerXAnim, {
-            toValue: farLeftX,
-            duration: 2000,
-            useNativeDriver: true,
-          }).start(() => {
-            setIsPlayerVisible(false);
-            handleFeedback(answer);
-          });
-        }, 1500); // Wait at center island
-      });
-
-      return;
-    } else if (answer === "Stop where you are right now.") {
-      // Stop immediately without moving
+    Animated.timing(scrollY, {
+      toValue: quickScrollTarget,
+      duration: 1200,
+      useNativeDriver: true,
+    }).start(() => {
       setPlayerPaused(true);
+      setIsPlayerVisible(false);
+      handleFeedback(answer);
+    });
+
+    return;
+  } else if (answer === "Walk and stop at the center island and wait for the traffic light for pedestrian to turn green.") {
+    // Walk to center island (median) and stop
+    setPlayerPaused(false);
+    setPlayerDirection("NORTH");
+
+    // Walk to center island
+    const centerIslandScrollDistance = scaledMapHeight * 0.23;
+    const centerIslandTarget = currentScroll.current + centerIslandScrollDistance;
+
+    Animated.timing(scrollY, {
+      toValue: centerIslandTarget,
+      duration: 1500,
+      useNativeDriver: true,
+    }).start(() => {
+      // Stop at center island and wait
+      setPlayerPaused(true);
+      // Light is still red while waiting
       
       setTimeout(() => {
-        setIsPlayerVisible(false);
-        handleFeedback(answer);
-      }, 1500);
+        // Traffic light turns green after waiting
+        setTrafficLightState('green');
+        
+        // After waiting, traffic light turns green, continue crossing
+        setPlayerPaused(false);
+        const remainingScrollDistance = scaledMapHeight * 0.2;
+        const finalTarget = currentScroll.current + remainingScrollDistance;
+        
+        Animated.timing(scrollY, {
+          toValue: finalTarget,
+          duration: 1800,
+          useNativeDriver: true,
+        }).start(() => {
+          setPlayerPaused(true);
+          setIsPlayerVisible(false);
+          handleFeedback(answer);
+        });
+      }, 2000); // Wait at center island for traffic light
+    });
 
-      return;
-    }
-  };
+    return;
+  } else if (answer === "Stop where you are right now.") {
+    // Stop immediately in the middle of the road (dangerous position)
+    setPlayerPaused(true);
+    // Light stays red
+    
+    setTimeout(() => {
+      setIsPlayerVisible(false);
+      handleFeedback(answer);
+    }, 1500);
+
+    return;
+  }
+};
 
   const handleNext = async () => {
     setAnimationType(null);
@@ -246,42 +273,44 @@ export default function DrivingGame() {
     setSelectedAnswer(null);
     setPlayerFrame(0);
 
-    const rightX = width * 0.65 - spriteWidth / 2;
-    playerXAnim.setValue(rightX);
+    // Reset player position to start
+    const startX = width * 0.50 - spriteWidth / 2;
+    playerXAnim.setValue(startX);
     setPlayerDirection("NORTH");
     setIsPlayerVisible(true);
     setPlayerPaused(false);
+    setTrafficLightState('green'); // Reset to green
 
     if (questionIndex < questions.length - 1) {
-          setQuestionIndex(questionIndex + 1);
-          startScrollAnimation();
-        } else if (currentScenario >= 10) {
+      setQuestionIndex(questionIndex + 1);
+      startScrollAnimation();
+    } else if (currentScenario >= 10) {
+      try {
+        const sessionResults = await completeSession();
 
-          try {
-            const sessionResults = await completeSession();
+        if (!sessionResults) {
+          Alert.alert('Error', 'Failed to complete session');
+          return;
+        }
 
-            if (!sessionResults) {
-              Alert.alert('Error', 'Failed to complete session');
-              return;
-            }
-
-            router.push({
-              pathname: '/result-page',
-              params: {
-                ...sessionResults,
-                userAttempts: JSON.stringify(sessionResults.attempts)
-              }
-            });
-          } catch (error) {
-            console.error('Error completing session:', error);
-            Alert.alert('Error', 'Failed to save session results');
+        router.push({
+          pathname: '/result-page',
+          params: {
+            ...sessionResults,
+            userAttempts: JSON.stringify(sessionResults.attempts)
           }
-        } else {
-          // Move to next scenario
-         moveToNextScenario();
-          const nextScreen = `S${currentScenario + 1}P1`;
-          router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);        }
-      };
+        });
+      } catch (error) {
+        console.error('Error completing session:', error);
+        Alert.alert('Error', 'Failed to save session results');
+      }
+    } else {
+      // Move to next scenario
+      moveToNextScenario();
+      const nextScreen = `S${currentScenario + 1}P1`;
+      router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+    }
+  };
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
@@ -314,15 +343,18 @@ export default function DrivingGame() {
           resizeMode="stretch"
         />
 
-        {/* Render multiple streetlights with correct directions */}
+        {/* Render multiple streetlights with traffic light state */}
         {streetLights.map((light, index) => {
           const lightLeft = light.col * tileSize + light.xOffset;
           const lightTop = light.row * tileSize;
+          
+          // Use traffic light state for all lights
+          const lightSource = trafficLightState === 'green' ? trafficSign.green : trafficSign.red;
 
           return (
             <Image
               key={`streetlight-${index}`}
-              source={light.direction === 'west' ? trafficSign.west : trafficSign.east}
+              source={lightSource}
               style={{
                 width: tileSize * 3,
                 height: tileSize * 3,
