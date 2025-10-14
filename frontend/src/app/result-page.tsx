@@ -1,23 +1,8 @@
-// frontend/src/app/result-page.tsx
 import { useFonts } from 'expo-font';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import {
-  Animated,
-  Dimensions,
-  Image,
-  ImageBackground,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  Linking,
-} from 'react-native';
+import { Animated, Dimensions, Image, ImageBackground, SafeAreaView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Alert, ScrollView, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../../config/api';
 
@@ -29,18 +14,23 @@ export default function ResultPage() {
     pixel: require('../../assets/fonts/pixel3.ttf'),
     'space-mono': require('../../assets/fonts/SpaceMono-Regular.ttf'),
   });
+  
+  const getStringParam = (param: string | string[] | undefined): string => {
+    if (Array.isArray(param)) return param[0] || '';
+    return param || '';
+  };
 
   const params = useLocalSearchParams();
-  const {
-    sessionId,
-    categoryId,
-    phaseId,
-    categoryName,
-    userAttempts,
-    totalTime,
-    scenarioCount = 10,
-    scenarioProgress
-  } = params;
+
+  // Convert all params to strings safely
+  const sessionId = getStringParam(params.sessionId);
+  const categoryId = getStringParam(params.categoryId);
+  const phaseId = getStringParam(params.phaseId);
+  const categoryName = getStringParam(params.categoryName);
+  const userAttempts = getStringParam(params.userAttempts);
+  const totalTime = getStringParam(params.totalTime);
+  const scenarioCount = getStringParam(params.scenarioCount) || '10';
+  const scenarioProgress = getStringParam(params.scenarioProgress);
 
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -58,7 +48,7 @@ export default function ResultPage() {
     averageTime: '00:00',
     scenarioDetails: []
   });
-
+ 
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
   const carBounce = useRef(new Animated.Value(0)).current;
   const modalScale = useRef(new Animated.Value(0)).current;

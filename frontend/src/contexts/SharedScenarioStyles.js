@@ -2,8 +2,8 @@
 // REUSABLE RESPONSIVE STYLES FOR ALL SCENARIOS
 
 import { StyleSheet } from 'react-native';
-import { scale, verticalScale, fontSize, wp, hp } from '../utils/ResponsiveHelper';
-import ResponsiveHelper from '../utils/ResponsiveHelper';
+import { scale, verticalScale, fontSize, wp, hp } from './ResponsiveHelper';
+import ResponsiveHelper from './ResponsiveHelper';
 
 export const getSharedScenarioStyles = () => {
   const isSmall = ResponsiveHelper.isSmallDevice();

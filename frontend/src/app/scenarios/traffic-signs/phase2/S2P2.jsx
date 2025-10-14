@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert,Easing } from "react-native";
 import { router } from 'expo-router';
 import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
+import { scale, fontSize, wp, hp } from '../../../../contexts/ResponsiveHelper';
 
 const { width, height } = Dimensions.get("window");
 
@@ -511,7 +512,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: fontSize(18),
     fontWeight: 'bold',
   },
   // No intro styles (responsive)
@@ -556,14 +557,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: height * 0.2,
     right: sideMargin,
-    width: width * 0.35,
+    width: wp(30),
     height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
     padding: height * 0.015,
-    borderRadius: 8,
+    borderRadius: scale(8),
     marginBottom: height * 0.015,
     borderWidth: 1,
     borderColor: "#555",
@@ -599,23 +600,23 @@ const styles = StyleSheet.create({
   },
   nextButtonContainer: {
     position: "absolute",
-    top: height * 0.50,
-    right: sideMargin,
-    width: width * 0.2,
+    top: hp(50),
+    right: wp(5),
+    width: wp(20),
     alignItems: "center",
     zIndex: 11,
   },
   nextButton: {
     backgroundColor: "#007bff",
-    paddingVertical: height * 0.015,
-    paddingHorizontal: width * 0.06,
-    borderRadius: 8,
+    paddingVertical: scale(12),
+    paddingHorizontal: scale(20),
+    borderRadius: scale(8),
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    minWidth: width * 0.15,
+    minWidth: wp(15),
     alignItems: "center",
   },
   nextButtonText: {

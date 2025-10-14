@@ -1,8 +1,8 @@
-// src/app/scenarios/traffic-signs/phase1/S1P1.jsx
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
 import { useSession, SessionProvider } from '../../../../contexts/SessionManager';
+import { scale, fontSize, wp, hp } from '../../../../contexts/ResponsiveHelper';
 
 const { width, height } = Dimensions.get("window");
 
@@ -68,7 +68,7 @@ const carSprites = {
 
 const questions = [
   {
-    question: "You are driving down a highway intersection. The light is green but there is still a heavy predestran traffic crossing",
+    question: "You are driving down a highway intersection. The light is green but there is still a heavy pedestrian traffic crossing",
     options: ["Proceed since you have the green light.", "Honk to warn the pedestrian and proceed slowly.", "Yield the right of way to pedestrian and proceed when it's clear."],
     correct: "Yield the right of way to pedestrian and proceed when it's clear.",
     wrongExplanation: {
@@ -607,54 +607,54 @@ const styles = StyleSheet.create({
     backgroundColor: "black",
     justifyContent: "center",
     alignItems: "center",
-    padding: width * 0.05,
+    padding: scale(20),
   },
   introLTOImage: {
-    width: width * 0.6,
-    height: height * 0.25,
+    width: wp(60),
+    height: hp(25),
     resizeMode: "contain",
-    marginBottom: height * 0.03,
+    marginBottom: scale(20),
   },
   introTextBox: {
     backgroundColor: "rgba(8, 8, 8, 0.7)",
-    padding: width * 0.06,
-    borderRadius: 15,
+    padding: scale(24),
+    borderRadius: scale(15),
     alignItems: "center",
-    maxWidth: width * 0.85,
-    minHeight: height * 0.3,
+    maxWidth: wp(85),
+    minHeight: hp(30),
     justifyContent: "center",
   },
   introTitle: {
     color: "white",
-    fontSize: Math.min(width * 0.07, 32),
+    fontSize: fontSize(28),
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: height * 0.02,
+    marginBottom: scale(15),
   },
   introText: {
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: fontSize(16),
     textAlign: "center",
-    marginBottom: height * 0.04,
-    lineHeight: Math.min(width * 0.06, 26),
-    paddingHorizontal: width * 0.02,
+    marginBottom: scale(25),
+    lineHeight: fontSize(22),
+    paddingHorizontal: scale(10),
   },
   startButton: {
     backgroundColor: "#007bff",
-    paddingVertical: height * 0.02,
-    paddingHorizontal: width * 0.08,
-    borderRadius: 10,
+    paddingVertical: scale(15),
+    paddingHorizontal: scale(40),
+    borderRadius: scale(10),
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 8,
-    minWidth: width * 0.4,
+    minWidth: wp(40),
     alignItems: "center",
   },
   startButtonText: {
     color: "white",
-    fontSize: Math.min(width * 0.055, 24),
+    fontSize: fontSize(20),
     fontWeight: "bold",
   },
 
@@ -691,7 +691,7 @@ const styles = StyleSheet.create({
   questionText: {
     flexWrap: "wrap",
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: fontSize(16),
     fontWeight: "bold",
     textAlign: "center",
   },
@@ -699,14 +699,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: height * 0.25,
     right: sideMargin,
-    width: width * 0.35,
+    width: wp(30),
     height: height * 0.21,
     zIndex: 11,
   },
   answerButton: {
     backgroundColor: "#333",
     padding: height * 0.015,
-    borderRadius: 8,
+    borderRadius: scale(8),
     marginBottom: height * 0.015,
     borderWidth: 1,
     borderColor: "#555",
@@ -742,28 +742,28 @@ const styles = StyleSheet.create({
   },
   nextButtonContainer: {
     position: "absolute",
-    top: height * 0.50,
-    right: sideMargin,
-    width: width * 0.2,
+    top: hp(50),
+    right: wp(5),
+    width: wp(20),
     alignItems: "center",
     zIndex: 11,
   },
   nextButton: {
     backgroundColor: "#007bff",
-    paddingVertical: height * 0.015,
-    paddingHorizontal: width * 0.06,
-    borderRadius: 8,
+    paddingVertical: scale(12),
+    paddingHorizontal: scale(20),
+    borderRadius: scale(8),
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    minWidth: width * 0.15,
+    minWidth: wp(15),
     alignItems: "center",
   },
   nextButtonText: {
     color: "white",
-    fontSize: Math.min(width * 0.045, 20),
+    fontSize: fontSize(16),
     fontWeight: "bold",
   },
 });
