@@ -69,9 +69,9 @@ const npcCarSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  blue: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+  magenta: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Magenta/MOVE/NORTH/SEPARATED/Magenta_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Magenta/MOVE/NORTH/SEPARATED/Magenta_CIVIC_CLEAN_NORTH_001.png"),
   ],
   brown: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
@@ -164,23 +164,23 @@ export default function DrivingGame() {
   const npcCars = [
     { lane: 1, row: 4, color: 'red' },
     { lane: 1, row: 9, color: 'black' },
-    { lane: 2, row: 3, color: 'blue' },
+    { lane: 2, row: 3, color: 'magenta' },
     { lane: 2, row: 7, color: 'green' },
     { lane: 2, row: 11, color: 'white' },
     { lane: 4, row: 5, color: 'brown' },
     { lane: 4, row: 8, color: 'red' },
     { lane: 4, row: 4, color: 'black' },
-    { lane: 4, row: 8, color: 'blue' },
+    { lane: 4, row: 8, color: 'magenta' },
 
     { lane: 2, row: 10, color: 'red' },
     { lane: 1, row: 9, color: 'black' },
-    { lane: 2, row: 15, color: 'blue' },
+    { lane: 2, row: 15, color: 'magenta' },
     { lane: 2, row: 14, color: 'green' },
     { lane: 2, row: 11, color: 'white' },
     { lane: 4, row: 5, color: 'brown' },
     { lane: 3, row: 11, color: 'red' },
     { lane: 3, row: 11, color: 'black' },
-    { lane: 4, row: 14, color: 'blue' },
+    { lane: 4, row: 14, color: 'magenta' },
   ];
 
   const updateProgress = async (selectedOption, isCorrect) => {
