@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, } from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
 import { useSession } from '../../../../contexts/SessionManager';
 
@@ -10,7 +10,7 @@ const { width, height } = Dimensions.get("window");
 // Responsive calculations
 const spriteWidth = Math.min(width * 0.08, 64);
 const spriteHeight = spriteWidth * 1.5;
-const carWidth = spriteWidth * 5; // Make cars bigger
+const carWidth = spriteWidth * 5;
 const carHeight = spriteHeight * 5;
 const overlayHeight = height * 0.35;
 const ltoWidth = Math.min(width * 0.3, 240);
@@ -24,7 +24,7 @@ const mapWidth = 320;
 const mapHeight = 768;
 const mapScale = width / mapWidth;
 const scaledMapHeight = mapHeight * mapScale;
-const scaledMapWidth = mapWidth * mapScale; // Add this line
+const scaledMapWidth = mapWidth * mapScale;
 
 
 // Character sprites
@@ -41,27 +41,22 @@ const maleSprites = {
     require("../../../../../assets/character/sprites/north/north_walk3.png"),
     require("../../../../../assets/character/sprites/north/north_walk4.png"),
   ],
-      SOUTH: [
+  SOUTH: [
     require("../../../../../assets/character/sprites/south/south_walk1.png"),
     require("../../../../../assets/character/sprites/south/south_walk2.png"),
-
   ],
 };
 
 
-// NPC standing sprites (alternating between north and west)
+// NPC standing sprites
 const npcStandingSprites = [
   require("../../../../../assets/character/sprites/north/north_walk_reflective1.png"),
   require("../../../../../assets/character/sprites/east/east_walk1.png"),
 ];
 
 
-// Multiple car colors - North facing
+// Only red and green cars - North facing
 const npcCarSprites = {
-  blue: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
-  ],
   red: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
@@ -70,19 +65,11 @@ const npcCarSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  yellow: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_001.png"),
-  ],
 };
 
 
 // South facing cars
 const npcCarSpritesSouth = {
-  blue: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTH/SEPARATED/Blue_CIVIC_CLEAN_SOUTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTH/SEPARATED/Blue_CIVIC_CLEAN_SOUTH_001.png"),
-  ],
   red: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/SOUTH/SEPARATED/Red_CIVIC_CLEAN_SOUTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/SOUTH/SEPARATED/Red_CIVIC_CLEAN_SOUTH_001.png"),
@@ -90,10 +77,6 @@ const npcCarSpritesSouth = {
   green: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_CIVIC_CLEAN_SOUTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_CIVIC_CLEAN_SOUTH_001.png"),
-  ],
-  yellow: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/SOUTH/SEPARATED/Yellow_CIVIC_CLEAN_SOUTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/SOUTH/SEPARATED/Yellow_CIVIC_CLEAN_SOUTH_001.png"),
   ],
 };
 
@@ -108,7 +91,7 @@ const questions = [
     ],
     correct: "Walk on the side of the road facing oncoming traffic.",
     wrongExplanation: {
-      "Walk on the side of the road with the traffic.": "Wrong! Walking on the side of the road in the same direction of the traffic might stop you from reacting to vehicles coming too close.",
+      "Walk on the side of the road with the traffic": "Wrong! Walking on the side of the road in the same direction of the traffic might stop you from reacting to vehicles coming too close.",
       "Find alternative route.": "Wrong! While cautious, this takes up too much time."
     }
   },
@@ -133,8 +116,6 @@ export default function DrivingGame() {
   };
 
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
-
-
   const startOffset = -(scaledMapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
@@ -155,6 +136,7 @@ export default function DrivingGame() {
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(null);
   const [playerDirection, setPlayerDirection] = useState("NORTH");
+  const [carsPaused, setCarsPaused] = useState(false);
 
 
   // Player
@@ -164,51 +146,48 @@ export default function DrivingGame() {
   const playerXAnim = useRef(new Animated.Value(centerX)).current;
 
 
-  // NPC Cars - Initial state with refs
+  // NPC Cars - Only red and green cars
   const carsRef = useRef([
     // Column 1 cars (SOUTH facing - moving down)
-    { id: 1, color: 'blue', column: 1, direction: 'SOUTH', yOffset: 100, frame: 0 },
-    { id: 2, color: 'red', column: 1, direction: 'SOUTH', yOffset: -200, frame: 0 },
-    { id: 3, color: 'green', column: 1, direction: 'SOUTH', yOffset: -500, frame: 0 },
+    { id: 1, color: 'red', column: 1, direction: 'SOUTH', yOffset: 100, frame: 0 },
+    { id: 2, color: 'green', column: 1, direction: 'SOUTH', yOffset: -400, frame: 0 },
+    { id: 3, color: 'red', column: 1, direction: 'SOUTH', yOffset: -700, frame: 0 },
     // Column 2 cars (NORTH facing - moving up)
-    { id: 4, color: 'yellow', column: 2, direction: 'NORTH', yOffset: -150, frame: 0 },
-    { id: 5, color: 'blue', column: 2, direction: 'NORTH', yOffset: -450, frame: 0 },
-    { id: 6, color: 'red', column: 2, direction: 'NORTH', yOffset: -750, frame: 0 },
+    { id: 4, color: 'green', column: 2, direction: 'NORTH', yOffset: -150, frame: 0 },
+    { id: 5, color: 'red', column: 2, direction: 'NORTH', yOffset: -450, frame: 0 },
+    { id: 6, color: 'green', column: 2, direction: 'NORTH', yOffset: -750, frame: 0 },
   ]);
 
 
   const [npcCars, setNpcCars] = useState(carsRef.current);
 
 
-  // NPC People - Standing on sidewalk blocking the path
-  // Fixed positions on the map (will scroll with the map)
-const npcPeopleMapPositions = [
-  { id: 1, mapX: scaledMapWidth * 0.47, mapY: scaledMapHeight * 0.45, spriteIndex: 0 },
-  { id: 2, mapX: scaledMapWidth * 0.5, mapY: scaledMapHeight * 0.47, spriteIndex: 1 },
-  { id: 3, mapX: scaledMapWidth * 0.48, mapY: scaledMapHeight * 0.49, spriteIndex: 0 },
-  { id: 4, mapX: scaledMapWidth * 0.49, mapY: scaledMapHeight * 0.51, spriteIndex: 1 },
-  { id: 5, mapX: scaledMapWidth * 0.45, mapY: scaledMapHeight * 0.53, spriteIndex: 0 },
-  { id: 6, mapX: scaledMapWidth * 0.52, mapY: scaledMapHeight * 0.43, spriteIndex: 1 },
-];
+  // NPC People - Standing on sidewalk
+  const npcPeopleMapPositions = [
+    { id: 1, mapX: scaledMapWidth * 0.47, mapY: scaledMapHeight * 0.45, spriteIndex: 0 },
+    { id: 2, mapX: scaledMapWidth * 0.5, mapY: scaledMapHeight * 0.47, spriteIndex: 1 },
+    { id: 3, mapX: scaledMapWidth * 0.48, mapY: scaledMapHeight * 0.49, spriteIndex: 0 },
+    { id: 4, mapX: scaledMapWidth * 0.49, mapY: scaledMapHeight * 0.51, spriteIndex: 1 },
+    { id: 5, mapX: scaledMapWidth * 0.45, mapY: scaledMapHeight * 0.53, spriteIndex: 0 },
+    { id: 6, mapX: scaledMapWidth * 0.52, mapY: scaledMapHeight * 0.43, spriteIndex: 1 },
+  ];
 
 
-  // Animate NPC cars moving forward slowly with the map
+  // Animate NPC cars - pause when question shows
   useEffect(() => {
     const carUpdateInterval = setInterval(() => {
+      if (carsPaused) return; // Don't update if paused
+
       carsRef.current = carsRef.current.map(car => {
         let newYOffset;
        
         if (car.direction === 'NORTH') {
-          // North facing cars move up (negative Y)
           newYOffset = car.yOffset - 2;
-          // Reset when off top of screen
           if (newYOffset < -200) {
             newYOffset = height + 200;
           }
         } else {
-          // South facing cars move down (positive Y)
           newYOffset = car.yOffset + 2;
-          // Reset when off bottom of screen
           if (newYOffset > height + 200) {
             newYOffset = -200;
           }
@@ -222,11 +201,10 @@ const npcPeopleMapPositions = [
       });
      
       setNpcCars([...carsRef.current]);
-    }, 50); // Update every 50ms for smooth movement
-
+    }, 50);
 
     return () => clearInterval(carUpdateInterval);
-  }, []);
+  }, [carsPaused]);
 
 
   function startScrollAnimation() {
@@ -234,12 +212,12 @@ const npcPeopleMapPositions = [
     const stopDistance = scaledMapHeight * 0.3;
     const stopOffset = startOffset + stopDistance;
 
-
     Animated.timing(scrollY, {
       toValue: stopOffset,
       duration: 3000,
       useNativeDriver: true,
     }).start(() => {
+      setCarsPaused(true); // Pause cars when question appears
       setShowQuestion(true);
       setTimeout(() => {
         setShowAnswers(true);
@@ -290,22 +268,20 @@ const npcPeopleMapPositions = [
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
-    setPlayerPaused(false); // Enable walking animation
+    setPlayerPaused(false);
+    setCarsPaused(false); // Resume cars when player moves
 
     const currentQuestion = questions[questionIndex];
     const isCorrect = answer === currentQuestion.correct;
     updateProgress(answer, isCorrect);
 
-    // Capture current scroll value at the moment of answer
     const scrollAtAnswer = currentScroll.current;
 
-
     if (answer === "Walk on the side of the road facing oncoming traffic.") {
-      // OPTION 1 (CORRECT): Walk to the left side facing oncoming traffic
       setPlayerDirection("WEST");
       setPlayerFrame(0);
      
-      const leftX = width * 0.15 - spriteWidth / 2;
+      const leftX = width * 0.07 - spriteWidth / 2;
       const targetScroll = scrollAtAnswer + scaledMapHeight * 0.08;
      
       Animated.parallel([
@@ -314,26 +290,20 @@ const npcPeopleMapPositions = [
           duration: 2000,
           useNativeDriver: true,
         }),
-        Animated.timing(scrollY, {
-          toValue: targetScroll,
-          duration: 2000,
-          useNativeDriver: true,
-        })
       ]).start(() => {
         setPlayerPaused(true);
+        setCarsPaused(true); // Pause cars for feedback
         handleFeedback(answer);
       });
      
       return;
     } else if (answer === "Walk on the side of the road with the traffic") {
-      // OPTION 2 (WRONG): Walk on right side WITH traffic (same direction as cars)
       setPlayerDirection("NORTH");
       setPlayerFrame(0);
      
       const rightX = width * 0.30 + spriteWidth / 2;
       const targetScroll = scrollAtAnswer + scaledMapHeight * 0.08;
      
-      // Move diagonally to the right side while moving forward
       Animated.parallel([
         Animated.timing(playerXAnim, {
           toValue: rightX,
@@ -347,40 +317,45 @@ const npcPeopleMapPositions = [
         })
       ]).start(() => {
         setPlayerPaused(true);
+        setCarsPaused(true); // Pause cars for feedback
         handleFeedback(answer);
       });
      
       return;
 } else if (answer === "Find alternative route.") {
-      // OPTION 3 (WRONG): Turn around and go back, then go west
-      setPlayerDirection("SOUTH");
-      setPlayerFrame(0);
-     
-      // First: Walk backwards (scroll down)
-      const targetScroll = scrollAtAnswer - scaledMapHeight * 0.09;
+  setPlayerDirection("WEST");
+  setPlayerFrame(0);
+
+  const leftX = width * 0.07 - spriteWidth / 2;
+  const targetScroll = scrollAtAnswer - scaledMapHeight * 0.08; // move visually downward
+
+  // Step 1: Move West first
+  Animated.timing(playerXAnim, {
+    toValue: leftX,
+    duration: 2000,
+    useNativeDriver: true,
+  }).start(() => {
+    // Step 2: Once WEST movement is done, change direction to SOUTH *before* scroll starts
+    setPlayerDirection("SOUTH");
+    setPlayerFrame(0);
+
+    // Add a slight delay to prevent direction flicker
+    setTimeout(() => {
       Animated.timing(scrollY, {
         toValue: targetScroll,
-        duration: 1500,
+        duration: 2000,
         useNativeDriver: true,
       }).start(() => {
-        // Then: Turn west and walk left
-        setPlayerDirection("WEST");
-        setPlayerFrame(0);
-        
-        const leftX = width * 0.15 - spriteWidth / 2;
-        Animated.timing(playerXAnim, {
-          toValue: leftX,
-          duration: 1500,
-          useNativeDriver: true,
-        }).start(() => {
-          setPlayerPaused(true);
-          handleFeedback(answer);
-        });
+        setPlayerPaused(true);
+        setCarsPaused(true);
+        handleFeedback(answer);
       });
-     
-      return;
-    }
-  };
+    }, 50); // 100ms delay helps prevent visual glitch
+  });
+
+  return;
+}
+  }
 
 
   const handleNext = async () => {
@@ -388,6 +363,7 @@ const npcPeopleMapPositions = [
     setShowNext(false);
     setSelectedAnswer(null);
     setPlayerFrame(0);
+    setCarsPaused(false); // Resume cars for next round
    
     const centerX = width * 0.5 - spriteWidth / 2;
     playerXAnim.setValue(centerX);
@@ -399,7 +375,6 @@ const npcPeopleMapPositions = [
       setQuestionIndex(questionIndex + 1);
       startScrollAnimation();
     } else if (currentScenario >= 10) {
-
       try {
         const sessionResults = await completeSession();
 
@@ -420,12 +395,9 @@ const npcPeopleMapPositions = [
         Alert.alert('Error', 'Failed to save session results');
       }
     } else {
-      // Move to next scenario
-      moveToNextScenario();
-      const nextScreen = `S${currentScenario + 1}P1`;
-      router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
-      
-
+       moveToNextScenario();
+       const nextScreen = `S${currentScenario + 1}P1`;
+       router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
     }
   };
 
@@ -441,12 +413,11 @@ const npcPeopleMapPositions = [
     : maleSprites["NORTH"][0];
 
 
-  // Calculate car positions based on columns
   const getCarXPosition = (column) => {
     if (column === 1) {
-      return width * 0.25; // Column 1 (left lane)
+      return width * 0.25;
     } else {
-      return width * 0.45; // Column 2 (middle-left lane)
+      return width * 0.45;
     }
   };
 
@@ -473,33 +444,32 @@ const npcPeopleMapPositions = [
           resizeMode="stretch"
         />
 
-
-  {/* NPC People - Positioned on the map, will scroll with it */}
-  {npcPeopleMapPositions.map(person => (
-    <View
-      key={person.id}
-      style={{
-        position: "absolute",
-        left: person.mapX - (spriteWidth * 1.5) / 2, // Use person.mapX instead
-        top: person.mapY,
-        width: spriteWidth * 1.5,
-        height: spriteHeight * 1.5,
-      }}
-    >
-      <Image
-        source={npcStandingSprites[person.spriteIndex]}
-        style={{
-          width: spriteWidth * 1.5,
-          height: spriteHeight * 1.5,
-        }}
-        resizeMode="contain"
-      />
-    </View>
-  ))}
+        {/* NPC People */}
+        {npcPeopleMapPositions.map(person => (
+          <View
+            key={person.id}
+            style={{
+              position: "absolute",
+              left: person.mapX - (spriteWidth * 1.5) / 2,
+              top: person.mapY,
+              width: spriteWidth * 1.5,
+              height: spriteHeight * 1.5,
+            }}
+          >
+            <Image
+              source={npcStandingSprites[person.spriteIndex]}
+              style={{
+                width: spriteWidth * 1.5,
+                height: spriteHeight * 1.5,
+              }}
+              resizeMode="contain"
+            />
+          </View>
+        ))}
       </Animated.View>
 
 
-      {/* NPC Cars - Fixed positioning */}
+      {/* NPC Cars */}
       {npcCars.map(car => {
         const carSprites = car.direction === 'SOUTH' ? npcCarSpritesSouth : npcCarSprites;
         return (
@@ -722,4 +692,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
