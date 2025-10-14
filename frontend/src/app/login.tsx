@@ -148,7 +148,7 @@ export default function LoginPage() {
       setLoading(false);
 
       // Navigate to home and reset navigation stack
-      router.replace('/(tabs)');
+      router.replace('/optionPage');
 
     } catch (error) {
       setLoading(false);
@@ -205,7 +205,7 @@ export default function LoginPage() {
       Alert.alert(
         'Success',
         'Other device has been logged out. You are now logged in.',
-        [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+        [{ text: 'OK', onPress: () => router.replace('/optionPage') }]
       );
 
     } catch (error) {
