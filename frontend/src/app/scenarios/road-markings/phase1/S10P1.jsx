@@ -176,15 +176,14 @@ export default function DrivingGame() {
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carFrame, setCarFrame] = useState(0);
   
-  // NPC frozen state
-  const [npcFrozen, setNpcFrozen] = useState(false);
-
-  // NPC cars state - Initialize with refs for animation
-  const npc1YAnim = useRef(new Animated.Value(height * 0.8)).current;
-  const npc2YAnim = useRef(new Animated.Value(height * 0.8)).current;
+  // NPC frame animation only (no movement)
   const [npc1Frame, setNpc1Frame] = useState(0);
   const [npc2Frame, setNpc2Frame] = useState(0);
-  const npcAnimationRef = useRef(null);
+  const frameIntervalRef = useRef(null);
+
+  // NPC1 visibility and animation
+  const [showNpc1, setShowNpc1] = useState(false);
+  const npc1OpacityAnim = useRef(new Animated.Value(0)).current;
 
   // Responsive car positioning
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
@@ -193,61 +192,19 @@ export default function DrivingGame() {
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
 
-  // NPC car frame animation
+  // NPC car frame animation ONLY (no position animation)
   useEffect(() => {
-    if (npcFrozen) return;
-    
-    const interval = setInterval(() => {
+    frameIntervalRef.current = setInterval(() => {
       setNpc1Frame((prev) => (prev + 1) % 2);
       setNpc2Frame((prev) => (prev + 1) % 2);
     }, 500);
-    return () => clearInterval(interval);
-  }, [npcFrozen]);
-
-  // Animate NPC cars moving forward continuously
-  useEffect(() => {
-    if (npcFrozen) return;
-
-    const animateNPCs = () => {
-      npcAnimationRef.current = Animated.loop(
-        Animated.parallel([
-          Animated.sequence([
-            Animated.timing(npc1YAnim, {
-              toValue: height * 0.7,
-              duration: 7000,
-              useNativeDriver: false,
-            }),
-            Animated.timing(npc1YAnim, {
-              toValue: height * 0.8,
-              duration: 0,
-              useNativeDriver: false,
-            }),
-          ]),
-          Animated.sequence([
-            Animated.timing(npc2YAnim, {
-              toValue: height * 0.7,
-              duration: 7000,
-              useNativeDriver: false,
-            }),
-            Animated.timing(npc2YAnim, {
-              toValue: height * 0.8,
-              duration: 0,
-              useNativeDriver: false,
-            }),
-          ]),
-        ])
-      );
-      npcAnimationRef.current.start();
-    };
-
-    animateNPCs();
 
     return () => {
-      if (npcAnimationRef.current) {
-        npcAnimationRef.current.stop();
+      if (frameIntervalRef.current) {
+        clearInterval(frameIntervalRef.current);
       }
     };
-  }, [npcFrozen, npc1YAnim, npc2YAnim]);
+  }, []);
 
   // Car animation frame cycling
   function animateTurnLeft(onComplete) {
@@ -332,39 +289,33 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
-    // Freeze NPC animations when answer is selected
-    setNpcFrozen(true);
-    if (npcAnimationRef.current) {
-      npcAnimationRef.current.stop();
-    }
-
     const currentQuestion = questions[questionIndex];
     const isCorrect = answer === currentQuestion.correct;
     updateProgress(answer, isCorrect);
     
     const currentRow = Math.abs(currentScroll.current - startOffset) / tileSize;
 
-    if (answer === "Continue straight and find another route to your destination") {
-      setNpcFrozen(true);
-      const targetRow = 17;
-      const rowsToMove = targetRow - currentRow;
-      const nextTarget = currentScroll.current + rowsToMove * tileSize;
-      Animated.timing(scrollY, {
-        toValue: nextTarget,
-        duration: 3000,
-        useNativeDriver: true,
-      }).start(() => handleFeedback(answer));
+   if (answer === "Continue straight and find another route to your destination") {
+    const targetRow = 17;
+    const rowsToMove = targetRow - currentRow;
+    const nextTarget = currentScroll.current + rowsToMove * tileSize;
+
+    Animated.timing(scrollY, {
+      toValue: nextTarget,
+      duration: 3000,
+      useNativeDriver: true,
+    }).start(() => {
+      handleFeedback(answer);
+    });
 
     } else if (answer === "Quickly change lanes before the intersection despite the solid lines") {
-        setNpcFrozen(true);
-
       const turnStartRow = 6.5;
       const initialScrollTarget =
         currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
       Animated.timing(scrollY, {
         toValue: initialScrollTarget,
-        duration: 2000,
+        duration: 500,
         easing: Easing.inOut(Easing.ease),
         useNativeDriver: true,
       }).start(() => {
@@ -373,13 +324,13 @@ export default function DrivingGame() {
         Animated.parallel([
           Animated.timing(carXAnim, {
             toValue: (width / 2 - carWidth / 2) - tileSize,
-            duration: 800,
+            duration: 300,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: false,
           }),
           Animated.timing(scrollY, {
             toValue: currentScroll.current + tileSize * 1,
-            duration: 800,
+            duration: 300,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           })
@@ -414,6 +365,8 @@ export default function DrivingGame() {
           });
         });
       });
+
+      
     } else if (answer === "Stop and reverse to get in the correct lane") {
       const turnStartRow = 6.5;
       const initialScrollTarget =
@@ -427,7 +380,15 @@ export default function DrivingGame() {
         setCarDirection("NORTH");
         setCarFrame(0);
 
-        // Only blue car reverses, NPC cars stay frozen
+        // Show NPC1 when blue car starts reversing
+        setShowNpc1(true);
+        Animated.timing(npc1OpacityAnim, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start();
+
+        // Only blue car reverses
         Animated.timing(carYAnim, {
           toValue: carYAnim.__getValue() - height * 0.1,
           duration: 2000,
@@ -449,11 +410,12 @@ export default function DrivingGame() {
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
     carYAnim.setValue(height * 0.1);
-    npc1YAnim.setValue(height * 0.8);
-    npc2YAnim.setValue(height * 0.8);
     setCarDirection("NORTH");
     setIsCarVisible(true);
-    setNpcFrozen(false);
+
+    // Hide NPC1 for next round
+    setShowNpc1(false);
+    npc1OpacityAnim.setValue(0);
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
@@ -479,9 +441,7 @@ export default function DrivingGame() {
           Alert.alert('Error', 'Failed to save session results');
         }
       } else {
-        const nextScenarioNumber = currentFileScenario + 1;
-        const nextScreen = `S${nextScenarioNumber}P1`;
-        router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
+       router.push(`/scenarios/road-markings/phase1/S10P1`);
       }
 
       setShowQuestion(false);
@@ -492,6 +452,10 @@ export default function DrivingGame() {
   const feedbackMessage = isCorrectAnswer
     ? "Solid white lines discourage crossing, you may even get a violation ticket if you did this near an intersection. It is safer to just continue and find another route towards your destination"
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong answer!";
+
+  // NPC2 position on map - row 4, right lane (column 3)
+  const npc2MapRow = 15;
+  const npc2MapCol = 3; // Right lane
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -522,35 +486,38 @@ export default function DrivingGame() {
             />
           ))
         )}
+
+        {/* NPC Car 2 - ON THE MAP - Right lane, will appear as map scrolls */}
+        <Image
+          source={npcCarSprites.NORTH[npc2Frame]}
+          style={{
+            position: "absolute",
+            width: carWidth,
+            height: carHeight,
+            left: npc2MapCol * tileSize,
+            top: npc2MapRow * tileSize,
+            zIndex: 2,
+          }}
+        />
       </Animated.View>
 
-      {/* NPC Car 1 - Behind player, same lane */}
-      <Animated.Image
-        source={npcCarSprites.NORTH[npc1Frame]}
-        style={{
-          width: carWidth,
-          height: carHeight,
-          position: "absolute",
-          top: npc1YAnim,
-          left: width / 2 - carWidth / 2,
-          zIndex: 4,
-        }}
-      />
+      {/* NPC Car 1 - FIXED TO SCREEN - Only shows on "Stop and reverse" option, behind blue car */}
+      {showNpc1 && (
+        <Animated.Image
+          source={npcCarSprites.NORTH[npc1Frame]}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            bottom: height * -0.40,
+            left: width / 2 - carWidth / 2,
+            zIndex: 3,
+            opacity: npc1OpacityAnim,
+          }}
+        />
+      )}
 
-      {/* NPC Car 2 - Behind player, right lane */}
-      <Animated.Image
-        source={npcCarSprites.NORTH[npc2Frame]}
-        style={{
-          width: carWidth,
-          height: carHeight,
-          position: "absolute",
-          top: npc2YAnim,
-          left: (width / 2 - carWidth / 2) + tileSize,
-          zIndex: 4,
-        }}
-      />
-
-      {/* Responsive Car */}
+      {/* Responsive Car - FIXED TO SCREEN */}
       {isCarVisible && (
         <Animated.Image
           source={carSprites[carDirection][carFrame]}
