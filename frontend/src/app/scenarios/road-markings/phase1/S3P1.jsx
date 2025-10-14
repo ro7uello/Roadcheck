@@ -385,7 +385,6 @@ export default function DrivingGame() {
     if (jeepneyAnimationRef.current) {
       jeepneyAnimationRef.current.stop();
     }
-    npcCarAnimationsRef.current.forEach(anim => anim.stop());
   }
 };
 

@@ -27,7 +27,7 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
   const getDisplayPhaseNumber = () => {
     if (categoryId === 1) return phaseId;
     if (categoryId === 2) return phaseId - 3;
-    if (categoryId === 3) return phaseId - 6;
+    if (categoryId === 3) return phaseId - 9;
     if (categoryId === 4) return 1;
     return phaseId;
   };
