@@ -145,20 +145,22 @@ export default function DrivingGame() {
   // Start parked car backing up animation when game starts
   useEffect(() => {
     if (!hasCarStartedBacking) {
-      // Wait 2 seconds after game starts, then start backing up
       setTimeout(() => {
         setHasCarStartedBacking(true);
-       
-        // Animate car backing out horizontally (moving right into the road)
+
+        const stopDistance = width * 0.13; // <== where car stops backing up
+
         carAnimationRef.current = Animated.timing(parkedCarOffsetX, {
-          toValue: +width * 0.30, // Positive value moves right (backing into road)
-          duration: 17000, // 17 seconds - very slow
+          toValue: stopDistance,
+          duration: 7000, // adjust speed
           useNativeDriver: true,
         });
+
         carAnimationRef.current.start();
-      }, 2000);
+      }, 3000);
     }
   }, [hasCarStartedBacking]);
+
 
 
   // Animate parked car sprite frames
@@ -242,7 +244,7 @@ export default function DrivingGame() {
       setPlayerFrame(0);
      
       Animated.timing(scrollY, {
-        toValue: currentScroll.current + scaledMapHeight * 0.1,
+        toValue: currentScroll.current + scaledMapHeight * 0.17,
         duration: 1000, // Fast running
         useNativeDriver: true,
       }).start(() => {
@@ -269,7 +271,7 @@ export default function DrivingGame() {
       setTimeout(() => {
         setPlayerPaused(false);
         Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.08,
+          toValue: currentScroll.current + scaledMapHeight * 0.15,
           duration: 2000, // Normal walking
           useNativeDriver: true,
         }).start(() => {
@@ -285,7 +287,7 @@ export default function DrivingGame() {
       setPlayerFrame(0);
      
       Animated.timing(scrollY, {
-        toValue: currentScroll.current + scaledMapHeight * 0.07,
+        toValue: currentScroll.current + scaledMapHeight * 0.06,
         duration: 800, // Quick movement
         useNativeDriver: true,
       }).start(() => {
@@ -339,8 +341,8 @@ export default function DrivingGame() {
     } else {
       // Move to next scenario
        moveToNextScenario();
-       const nextScreen = `S${currentScenario + 1}P1`;
-       router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+      const nextScreen = `S${currentScenario + 1}P1`;
+      router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
     }
   };
 
@@ -383,7 +385,7 @@ export default function DrivingGame() {
         <Animated.View
           style={{
             position: "absolute",
-            left: width * 0.15, // Position on map (15% from left)
+            left: width * 0.08, // Position on map (15% from left)
             top: parkedCarMapY, // Fixed position on map
             width: carWidth,
             height: carHeight,

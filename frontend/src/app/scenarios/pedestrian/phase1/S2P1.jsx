@@ -290,6 +290,7 @@ export default function DrivingGame() {
           moveToNextScenario();
           const nextScreen = `S${currentScenario + 1}P1`;
           router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+
         }
       };
 

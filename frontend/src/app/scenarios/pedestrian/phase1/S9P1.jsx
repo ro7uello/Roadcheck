@@ -517,17 +517,15 @@ if (answer === "Cross immediately while you still feel okay") {
       {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
-          {questions[questionIndex].options.map((answer, index) => (
-            <TouchableOpacity
-              key={answer}
-              style={styles.answerButton}
-              onPress={() => handleAnswer(answer)}
-            >
-              <Text style={styles.answerText}>
-                {String.fromCharCode(65 + index)}. {answer}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {questions[questionIndex].options.map((answer) => (
+          <TouchableOpacity
+            key={answer}
+            style={styles.answerButton}
+            onPress={() => handleAnswer(answer)}
+          >
+            <Text style={styles.answerText}>{answer}</Text>
+          </TouchableOpacity>
+        ))}
         </View>
       )}
 
