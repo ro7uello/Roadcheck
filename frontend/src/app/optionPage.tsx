@@ -308,7 +308,7 @@ const testBasicConnection = async () => {
 
   const backgroundTranslate = backgroundAnimation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -width],
+    outputRange: [0, -(width - 2)],
   });
 
   const carVerticalBounce = carBounce.interpolate({
@@ -335,7 +335,7 @@ const testBasicConnection = async () => {
         <Animated.View
           style={[
             styles.backgroundWrapper,
-            { transform: [{ translateX: Animated.add(backgroundTranslate, width) }] }
+            { transform: [{ translateX: Animated.add(backgroundTranslate, width - 2) }] }
           ]}
         >
           <ImageBackground
@@ -568,14 +568,14 @@ const styles = StyleSheet.create({
   },
   backgroundWrapper: {
     position: 'absolute',
-    width: width,
+    width: width + 2,
     height: height,
     top: 0,
     left: 0,
   },
   backgroundImage: {
-    width: width,
-    height: height,
+    width: '102%',
+    height: '102%',
   },
   skyOverlay: {
     position: 'absolute',

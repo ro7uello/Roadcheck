@@ -69,7 +69,7 @@ export default function LoginPage() {
     }
   };
 
-  const bgTranslate = bgAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -width] });
+  const bgTranslate = bgAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -(width - 2)] });
   const carBounce = carAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -10] });
 
   const handleLogin = async () => {
@@ -187,7 +187,7 @@ export default function LoginPage() {
           />
         </Animated.View>
         <Animated.View
-          style={[styles.bgWrapper, { transform: [{ translateX: Animated.add(bgTranslate, width) }] }]}
+          style={[styles.bgWrapper, { transform: [{ translateX: Animated.add(bgTranslate, width - 2) }] }]}
         >
           <ImageBackground
             source={require("../../assets/background/city-background.png")}
@@ -275,8 +275,8 @@ export default function LoginPage() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   movingBackground: { ...StyleSheet.absoluteFillObject },
-  bgWrapper: { position: "absolute", width, height },
-  bgImage: { flex: 1, width: "105%", height: "105%" },
+  bgWrapper: { position: "absolute", width: width + 2, height, overflow: "hidden" },
+  bgImage: { flex: 1, width: "102%", height: "102%" },
   carContainer: { position: "absolute", bottom: 5, left: width * 0.05 },
   car: { width: 250, height: 150 },
   box: {
