@@ -177,8 +177,8 @@ export default function DrivingGame() {
       return Animated.loop(
         Animated.sequence([
           Animated.timing(car.yAnim, {
-            toValue: - 500,
-            duration: 10000,
+            toValue: - 1000,
+            duration: 20000,
             useNativeDriver: true,
           }),
           Animated.timing(car.yAnim, {
@@ -323,37 +323,46 @@ export default function DrivingGame() {
       });
       return;
     } else if (answer === "Take the exit since Olongapo is mentioned") {
-      // Lane change to the right (exit lane)
-      setCarDirection("NORTHEAST");
+      // Step 1: Start facing NORTH and move forward slightly
+      setCarDirection("NORTH");
       setCarFrame(0);
       
-      const rightLaneX = width * 0.7 - carWidth / 2;
-      
-      // Animate both lane change and forward movement
-      Animated.parallel([
-        Animated.timing(carXAnim, {
-          toValue: rightLaneX,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 3,
-          duration: 1500,
-          useNativeDriver: true,
-        })
-      ]).start(() => {
-        // Switch back to NORTH direction after lane change
-        setCarDirection("NORTH");
+      Animated.timing(scrollY, {
+        toValue: currentScroll.current + tileSize * 1.5,
+        duration: 800,
+        useNativeDriver: true,
+      }).start(() => {
+        // Step 2: Change to NORTHEAST and perform lane change
+        setCarDirection("NORTHEAST");
         setCarFrame(0);
         
-        // Continue straight in right lane
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 5,
-          duration: 1500,
-          useNativeDriver: true,
-        }).start(() => {
-          setIsCarVisible(false);
-          handleFeedback(answer);
+        const rightLaneX = width * 0.7 - carWidth / 2;
+        
+        Animated.parallel([
+          Animated.timing(carXAnim, {
+            toValue: rightLaneX,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scrollY, {
+            toValue: currentScroll.current + tileSize * 1.5,
+            duration: 1200,
+            useNativeDriver: true,
+          })
+        ]).start(() => {
+          // Step 3: Switch back to NORTH after lane change
+          setCarDirection("NORTH");
+          setCarFrame(0);
+          
+          // Continue straight in right lane
+          Animated.timing(scrollY, {
+            toValue: currentScroll.current + tileSize * 4,
+            duration: 1500,
+            useNativeDriver: true,
+          }).start(() => {
+            setIsCarVisible(false);
+            handleFeedback(answer);
+          });
         });
       });
       return;
@@ -510,7 +519,7 @@ export default function DrivingGame() {
             height: carHeight,
             position: "absolute",
             bottom: 80,
-            left: carXAnim,
+            transform: [{ translateX: carXAnim }],
             zIndex: 8,
           }}
         />
