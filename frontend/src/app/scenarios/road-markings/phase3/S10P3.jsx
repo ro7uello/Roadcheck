@@ -121,7 +121,7 @@ export default function DrivingGame() {
   const currentScroll = useRef(startOffset);
 
   const pwdSignRowIndex = 13.2;
-  const pwdSignColIndex = 3.7;
+  const pwdSignColIndex = 5.8;
   const pwdSignXOffset = 0;
 
   useEffect(() => {
@@ -311,7 +311,7 @@ else if (answer === " Park there and display a makeshift disability sign") {
                       try {
                         const sessionResults = await completeSession();
                         router.push({
-                          pathname: '/result-page',
+                          pathname: `/scenarios/road-markings/phase3/S10P3`,
                           params: {
                             ...sessionResults,
                             userAttempts: JSON.stringify(sessionResults.attempts)
@@ -325,6 +325,7 @@ else if (answer === " Park there and display a makeshift disability sign") {
                     moveToNextScenario();
                     const nextScreen = `S${currentScenario + 1}P3`;
                     router.push(`/scenarios/road-markings/phase3/${nextScreen}`);
+                   
                     }
               };
 
