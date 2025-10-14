@@ -70,3 +70,5 @@ ios/*.xcworkspace
 ios/*.xcuserdata
 
 .idea/
+
+frontend/config/api.js

@@ -396,23 +396,30 @@ const handleNext = async () => {
   BusYAnim.setValue(height * 1.5);
   BusXAnim.setValue(busLaneX);
 
-  if (questionIndex < questions.length - 1) {
-    setQuestionIndex(questionIndex + 1);
-    startScrollAnimation();
-  } else if (currentScenario >= 10) {
-    const sessionResults = await completeSession();
-    router.navigate({
-      pathname: '/result-page',
-      params: {
-        ...sessionResults,
-        userAttempts: JSON.stringify(sessionResults.attempts)
-      }
-    });
-  } else {
-    moveToNextScenario();
-    router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
-  }
-};
+      if (questionIndex < questions.length - 1) {
+                setQuestionIndex(questionIndex + 1);
+                startScrollAnimation();
+              } else if (currentScenario >= 10) {
+                        // Last scenario in phase - complete session
+                        try {
+                          const sessionResults = await completeSession();
+                          router.push({
+                            pathname: '/result-page',
+                            params: {
+                              ...sessionResults,
+                              userAttempts: JSON.stringify(sessionResults.attempts)
+                            }
+                          });
+                        } catch (error) {
+                          console.error('Error completing session:', error);
+                          Alert.alert('Error', 'Failed to save session results');
+                        }
+                      } else {
+                      moveToNextScenario();
+                      const nextScreen = `S${currentScenario + 1}P3`;
+                      router.push(`/scenarios/road-markings/phase3/${nextScreen}`);
+                      }
+                };
 
     // Helper function to return the scenario number based on the current file
     const getCurrentScenarioNumber = () => {

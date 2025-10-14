@@ -299,22 +299,29 @@ export default function DrivingGame() {
     setTrafficLightState('green');
 
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else if (currentScenario >= 9) {
-      const sessionResults = await completeSession();
-      router.navigate({
-        pathname: '/result-page',
-        params: {
-          ...sessionResults,
-          userAttempts: JSON.stringify(sessionResults.attempts)
-        }
-      });
-    } else {
-    moveToNextScenario();
-    router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
-    }
-  };
+          setQuestionIndex(questionIndex + 1);
+          startScrollAnimation();
+        } else if (currentScenario >= 10) {
+                  // Last scenario in phase - complete session
+                  try {
+                    const sessionResults = await completeSession();
+                    router.push({
+                      pathname: '/result-page',
+                      params: {
+                        ...sessionResults,
+                        userAttempts: JSON.stringify(sessionResults.attempts)
+                      }
+                    });
+                  } catch (error) {
+                    console.error('Error completing session:', error);
+                    Alert.alert('Error', 'Failed to save session results');
+                  }
+                } else {
+                moveToNextScenario();
+                const nextScreen = `S${currentScenario + 1}P3`;
+                router.push(`/scenarios/road-markings/phase3/${nextScreen}`);
+                }
+          };
 
   const handleStartGame = () => {
     setShowIntro(false);
@@ -337,7 +344,7 @@ export default function DrivingGame() {
           style={styles.introLTOImage}
         />
         <View style={styles.introTextBox}>
-          <Text style={styles.introTitle}>Road Markings - Phase 3</Text>
+          <Text style={styles.introTitle}>Road Markings</Text>
           <Text style={styles.introText}>
             Test your knowledge of road rules and signs.
             Choose the correct option to proceed safely.
