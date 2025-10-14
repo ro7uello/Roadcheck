@@ -1,6 +1,6 @@
 import { useSession } from '../../../../contexts/SessionManager';
 import React, { useRef, useEffect, useState } from "react";
-import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { router } from 'expo-router';
 
 const { width, height } = Dimensions.get("window");
@@ -13,6 +13,11 @@ const overlayHeight = height * 0.35;
 const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
+
+// Cyclist size
+const cyclistWidth = carWidth * 0.15;
+const cyclistHeight = cyclistWidth * 0.75;
+const cyclistCircleSize = Math.max(cyclistWidth, cyclistHeight) * 1.3;
 
 const roadTiles = {
   road3: require("../../../../../assets/road/road3.png"),
@@ -37,6 +42,11 @@ const roadTiles = {
   int2: require("../../../../../assets/road/int2.png"),
   int3: require("../../../../../assets/road/int3.png"),
   int4: require("../../../../../assets/road/int4.png"),
+};
+
+// Character sprites
+const characterSprites = {
+  BIKER: require("../../../../../assets/character/sprites/biker/cyclist-40px.png"),
 };
 
 // Map layout with complex intersection including crosswalks
@@ -115,6 +125,8 @@ export default function S4P3() {
   const mapHeight = mapLayout.length * tileSize;
 
   const [isCarVisible, setIsCarVisible] = useState(true);
+  const [isCyclistVisible, setIsCyclistVisible] = useState(true);
+  const [cyclistMoving, setCyclistMoving] = useState(false);
 
   const startOffset = -(mapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
@@ -143,6 +155,14 @@ export default function S4P3() {
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
 
+  // Cyclist positioning - placed on road83, independent of map scroll
+  const road83ColumnIndex = 2; // road83 is at column index 2
+  const cyclistXPosition = (width / numColumns) * road83ColumnIndex + (tileSize * 0.9) - (cyclistCircleSize / 2);
+  
+  // Cyclist starts at row 3 and moves down slowly
+  const cyclistYAnim = useRef(new Animated.Value(tileSize * .2)).current;
+  const cyclistAnimationRef = useRef(null);
+
   // Car animation frame cycling
   useEffect(() => {
     let iv;
@@ -156,12 +176,36 @@ export default function S4P3() {
 
   const scrollAnimationRef = useRef(null);
 
-  function startScrollAnimation() {
-    scrollY.setValue(startOffset);
-    
-    // Reset car position
-    const centerX = width / 2 - carWidth / 2;
-    carXAnim.setValue(centerX);
+// Start cyclist moving independently
+function startCyclistAnimation() {
+  setCyclistMoving(true);
+  
+  // Cyclist moves down slowly on screen
+  cyclistAnimationRef.current = Animated.timing(cyclistYAnim, {
+    toValue: height * .8, // Move to bottom of screen
+    duration: 5000, // Very slow - 15 seconds to move down screen
+    useNativeDriver: false,
+  });
+  
+  cyclistAnimationRef.current.start();
+}
+
+function startScrollAnimation() {
+  scrollY.setValue(startOffset);
+  
+  // Reset car position
+  const centerX = width / 2 - carWidth / 2;
+  carXAnim.setValue(centerX);
+
+  // Reset cyclist position to top of screen
+  cyclistYAnim.setValue(height * 0.3);
+  setIsCyclistVisible(true);
+  setIsCarVisible(true);
+  
+  // Wait 2 seconds before starting animations so car and cyclist are visible
+  setTimeout(() => {
+    // Start cyclist moving
+    startCyclistAnimation();
 
     // Start continuous map scrolling
     scrollAnimationRef.current = Animated.timing(scrollY, {
@@ -179,12 +223,14 @@ export default function S4P3() {
         }, 1000);
       }, 1500);
     });
-  }
+  }, 2000); // 2 second delay to show car and cyclist first
+}
 
   useEffect(() => {
     startScrollAnimation();
     return () => {
       if (scrollAnimationRef.current) scrollAnimationRef.current.stop();
+      if (cyclistAnimationRef.current) cyclistAnimationRef.current.stop();
     };
   }, []);
 
@@ -234,7 +280,7 @@ export default function S4P3() {
           useNativeDriver: false,
         }),
         Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 0.5,
+          toValue: currentScroll.current + tileSize * 0.9,
           duration: 1500,
           useNativeDriver: true,
         })
@@ -244,34 +290,40 @@ export default function S4P3() {
         }, 500);
       });
 
-    } else if (answer === "Wait behind the bike lane until the cyclist passes, then turn") {
-      // CORRECT ANIMATION: Car stops, waits for cyclist to clear, then turns
-      setCarPaused(true);
+} else if (answer === "Wait behind the bike lane until the cyclist passes, then turn") {
+  // CORRECT ANIMATION: Car stops, waits for cyclist to clear, then turns
+  setCarPaused(true);
+  
+  // Cyclist moves north (up the screen) to clear the intersection
+  Animated.timing(cyclistYAnim, {
+    toValue: height * .010, // Move cyclist up and out of the way
+    duration: 1500,
+    useNativeDriver: false,
+  }).start();
+  
+  // Wait for cyclist to move further away
+  setTimeout(() => {
+    setCarPaused(false);
+    
+    // First move straight north
+    Animated.timing(scrollY, {
+      toValue: currentScroll.current + tileSize * 1.7,
+      duration: 700,
+      useNativeDriver: true,
+    }).start(() => {
+      // Then turn east
+      setCarDirection("EAST");
       
-      // Wait for cyclist to pass (simulate waiting)
-      setTimeout(() => {
-        setCarPaused(false);
-        
-        // First move straight north
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + tileSize * 1.7,
-          duration: 700,
-          useNativeDriver: true,
-        }).start(() => {
-          // Then turn east
-          setCarDirection("EAST");
-          
-          Animated.timing(carXAnim, {
-            toValue: (width / 2 - carWidth / 2) + carWidth * 1,
-            duration: 900,
-            useNativeDriver: false,
-          }).start(() => {
-            handleFeedback(answer);
-          });
-        });
-      }, 3000);
-
-} else if (answer === "Honk at the cyclist to move out of your way") {
+      Animated.timing(carXAnim, {
+        toValue: (width / 2 - carWidth / 2) + carWidth * 1,
+        duration: 900,
+        useNativeDriver: false,
+      }).start(() => {
+        handleFeedback(answer);
+      });
+    });
+  }, 3000);
+    } else if (answer === "Honk at the cyclist to move out of your way") {
       // WRONG ANIMATION: Car moves aggressively
       setCarPaused(false);
       
@@ -293,6 +345,7 @@ export default function S4P3() {
       });
     }
   }
+
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
@@ -301,6 +354,11 @@ export default function S4P3() {
     setCarFrame(0);
     setCarPaused(false);
 
+    // Stop cyclist animation
+    if (cyclistAnimationRef.current) {
+      cyclistAnimationRef.current.stop();
+    }
+
     // Reset positions
     const centerX = width / 2 - carWidth / 2;
     carXAnim.setValue(centerX);
@@ -308,19 +366,22 @@ export default function S4P3() {
     setIsCarVisible(true);
 
     if (questionIndex < questions.length - 1) {
-         setQuestionIndex(questionIndex + 1);
-       } else if (currentScenario >= 10) {
-         const sessionResults = await completeSession();
-         navigation.navigate('/result-page', {
-           ...sessionResults,
-           userAttempts: JSON.stringify(sessionResults.attempts)
-         });
-       } else {
-         moveToNextScenario();
-         const nextScreen = `S${currentScenario + 1}P3`;
-         navigation.navigate(nextScreen);
-       }
-    };
+      setQuestionIndex(questionIndex + 1);
+      startScrollAnimation(); // Restart for next question
+    } else if (currentScenario >= 10) {
+      const sessionResults = await completeSession();
+      router.navigate('/result-page', {
+        ...sessionResults,
+        userAttempts: JSON.stringify(sessionResults.attempts)
+      });
+    } else {
+      
+      // Uncomment these when ready to move to next scenario:
+     moveToNextScenario();
+     router.navigate(`/scenarios/road-markings/phase3/${currentScenario + 1}P3`);
+
+    }
+  };
 
   // Feedback message
   let feedbackMessage = "Wrong answer!";
@@ -348,21 +409,61 @@ export default function S4P3() {
       >
         {mapLayout.map((row, rowIndex) =>
           row.map((tile, colIndex) => (
-            <Image
-              key={`${rowIndex}-${colIndex}`}
-              source={roadTiles[tile]}
-              style={{
-                position: "absolute",
-                width: tileSize,
-                height: tileSize,
-                left: colIndex * tileSize,
-                top: rowIndex * tileSize,
-              }}
-              resizeMode="stretch"
-            />
+            <React.Fragment key={`${rowIndex}-${colIndex}`}>
+              <Image
+                source={roadTiles[tile]}
+                style={{
+                  position: "absolute",
+                  width: tileSize,
+                  height: tileSize,
+                  left: colIndex * tileSize,
+                  top: rowIndex * tileSize,
+                }}
+                resizeMode="stretch"
+              />
+            </React.Fragment>
           ))
         )}
       </Animated.View>
+
+      {/* Cyclist on road83 (bike lane) - with white circle background */}
+      {isCyclistVisible && (
+        <Animated.View
+          style={{
+            position: "absolute",
+            left: cyclistXPosition,
+            top: cyclistYAnim,
+            zIndex: 4,
+          }}
+        >
+          {/* White circle background */}
+          <View
+            style={{
+              width: cyclistCircleSize,
+              height: cyclistCircleSize,
+              borderRadius: cyclistCircleSize / 2,
+              backgroundColor: 'white',
+              justifyContent: 'center',
+              alignItems: 'center',
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.3,
+              shadowRadius: 4,
+              elevation: 5,
+            }}
+          >
+            {/* Cyclist image */}
+            <Image
+              source={characterSprites.BIKER}
+              style={{
+                width: cyclistWidth,
+                height: cyclistHeight,
+              }}
+              resizeMode="contain"
+            />
+          </View>
+        </Animated.View>
+      )}
 
       {/* Blue Car (player car) */}
       {isCarVisible && (
@@ -434,7 +535,6 @@ export default function S4P3() {
 }
 
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -446,8 +546,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 20,
   },
-
-  // ADDED: Intro styles (responsive)
   introContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -503,13 +601,12 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
-
- questionOverlay: {
+  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -566,7 +663,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",

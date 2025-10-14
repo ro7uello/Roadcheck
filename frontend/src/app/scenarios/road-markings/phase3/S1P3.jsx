@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
-import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
-import { router } from 'expo-router';
+import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert, ActivityIndicator } from "react-native";
+import { router, useNavigation } from 'expo-router';
 import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
@@ -292,9 +292,11 @@ export default function DrivingGame() {
     setCarPaused(false);
     carXAnim.setValue(width / 2 - (280 / 2));
     setTrafficLightState('green');
-
+    setShowTrafficCar(false);
+    trafficCarY.setValue(-350);
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
+      startScrollAnimation();
     } else if (currentScenario >= 10) {
       const sessionResults = await completeSession();
       navigation.navigate('/result-page', {

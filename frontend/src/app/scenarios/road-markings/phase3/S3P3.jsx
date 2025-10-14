@@ -19,10 +19,7 @@ const roadTiles = {
   road76: require("../../../../../assets/road/road76.png"),
   road86: require("../../../../../assets/road/road86.png"),
   road80: require("../../../../../assets/road/road80.png"),
-
 };
-
-//FIX ANIMATION
 
 const mapLayout = [
   ["road2", "road2", "road3", "road80", "road80"],
@@ -50,12 +47,9 @@ const mapLayout = [
 
 const treeSprites = {
   tree1: require("../../../../../assets/tree/Tree3_idle_s.png"),
-  // Add more tree variations if you have them
-  // tree2: require("../assets/tree/Tree2_idle_s"),
-  // tree3: require("../assets/tree/Tree1_idle_s"),
 };
+
 const treePositions = [
-  // Left side trees (column -1, outside the road)
   { row: 7, col: 4, type: 'tree1' },
   { row: 8, col: 4, type: 'tree1' },
   { row: 9, col: 4, type: 'tree1' },
@@ -79,6 +73,20 @@ const carSprites = {
   ],
 };
 
+const npcSprites = {
+  NPC1: [
+    require("../../../../../assets/character/sprites/north/npc_north_walk1.png"),
+    require("../../../../../assets/character/sprites/north/npc_north_walk2.png"),
+    require("../../../../../assets/character/sprites/north/npc_north_walk3.png"),
+    require("../../../../../assets/character/sprites/north/npc_north_walk4.png"),
+  ],
+  NPC2: [
+    require("../../../../../assets/character/sprites/north/npc2_north_walk1.png"),
+    require("../../../../../assets/character/sprites/north/npc2_north_walk2.png"),
+    require("../../../../../assets/character/sprites/north/npc2_north_walk3.png"),
+    require("../../../../../assets/character/sprites/north/npc2_north_walk4.png"),
+  ],
+};
 
 const questions = [
   {
@@ -90,7 +98,6 @@ const questions = [
       "Park there briefly to accompany passengers into the mall": "Wrong! These bays are for active loading/unloading only, not for leaving your vehicle unattended."
     }
   },
-  // Add more questions here as needed
 ];
 
 const trafficSign = {
@@ -147,9 +154,23 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - (280 / 2))).current;
 
+  // Pedestrian states
+  const [npcFrame, setNpcFrame] = useState(0);
+  const [showNPC, setShowNPC] = useState(false);
+  const [npcType, setNpcType] = useState("NPC1");
+  const npcYAnim = useRef(new Animated.Value(0)).current;
+  
+  // Second NPC states
+  const [npc2Frame, setNpc2Frame] = useState(0);
+  const [showNPC2, setShowNPC2] = useState(false);
+  const npc2YAnim = useRef(new Animated.Value(0)).current;
+  
+  const npcSize = tileSize * 0.6;
+  const npcStartY = height * 0.45;
+
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 4.2; // Adjusted to match the visual stop point
+    const stopRow = 4.2;
     const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
@@ -168,7 +189,7 @@ export default function DrivingGame() {
     startScrollAnimation();
   }, []);
 
-  // Car sprite frame loop (stops when carPaused=true)
+  // Car sprite frame loop
   useEffect(() => {
     let iv;
     if (!carPaused) {
@@ -179,6 +200,28 @@ export default function DrivingGame() {
     return () => clearInterval(iv);
   }, [carPaused]);
 
+  // NPC sprite frame loop
+  useEffect(() => {
+    let iv;
+    if (showNPC) {
+      iv = setInterval(() => {
+        setNpcFrame((p) => (p + 1) % npcSprites[npcType].length);
+      }, 150);
+    }
+    return () => clearInterval(iv);
+  }, [showNPC, npcType]);
+
+  // Second NPC sprite frame loop
+  useEffect(() => {
+    let iv;
+    if (showNPC2) {
+      iv = setInterval(() => {
+        setNpc2Frame((p) => (p + 1) % npcSprites.NPC2.length);
+      }, 150);
+    }
+    return () => clearInterval(iv);
+  }, [showNPC2]);
+
   // feedback anims
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
@@ -186,31 +229,31 @@ export default function DrivingGame() {
   const [showNext, setShowNext] = useState(false);
 
   const handleFeedback = (answerGiven) => {
-      const currentQuestion = questions[questionIndex];
-      if (answerGiven === currentQuestion.correct) {
-        setIsCorrectAnswer(true); // Set to true for correct feedback
-        setAnimationType("correct");
-        Animated.timing(correctAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }).start(() => {
-          correctAnim.setValue(0);
-          setShowNext(true);
-        });
-      } else {
-        setIsCorrectAnswer(false); // Set to false for wrong feedback
-        setAnimationType("wrong");
-        Animated.timing(wrongAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }).start(() => {
-          wrongAnim.setValue(0);
-          setShowNext(true);
-        });
-      }
-    };
+    const currentQuestion = questions[questionIndex];
+    if (answerGiven === currentQuestion.correct) {
+      setIsCorrectAnswer(true);
+      setAnimationType("correct");
+      Animated.timing(correctAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        correctAnim.setValue(0);
+        setShowNext(true);
+      });
+    } else {
+      setIsCorrectAnswer(false);
+      setAnimationType("wrong");
+      Animated.timing(wrongAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }).start(() => {
+        wrongAnim.setValue(0);
+        setShowNext(true);
+      });
+    }
+  };
 
   const handleAnswer = async (answer) => {
     setSelectedAnswer(answer);
@@ -224,15 +267,32 @@ export default function DrivingGame() {
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
 
     if (answer === "Use the bay only for quick passenger drop-off, not parking") {
+      // CORRECT: Stop at the loading/unloading bay and show 2 NPCs walking away
+      setNpcType("NPC1");
+      setShowNPC(true);
+      setShowNPC2(false);
+      npcYAnim.setValue(0);
+      npc2YAnim.setValue(0);
+      
+      Animated.parallel([
+        Animated.timing(npcYAnim, {
+          toValue: -(height * 0.8),
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(npc2YAnim, {
+          toValue: -(height * 0.2),
+          duration: 2000,
+          useNativeDriver: true,
+        })
+      ]).start();
 
-      // CORRECT: Stop at the loading/unloading bay (current position ~row 4)
-      // Car stays at current position to drop off passenger
       setTimeout(() => {
         handleFeedback(answer);
-      }, 1000);
-    } else if (answer === "Avoid the area completely since there's a \"No Parking sign\" ") {
+      }, 2500);
+} else if (answer === "Avoid the area completely since there's a \"No Parking sign\" ") {
       // WRONG: Car continues forward past the bay
-      const targetRow = 6;
+      const targetRow = 8;
       const rowsToMove = targetRow - currentRow;
       const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
@@ -241,45 +301,74 @@ export default function DrivingGame() {
         duration: 3000,
         useNativeDriver: true,
       }).start(() => {
-        handleFeedback(answer);
+        // Show NPC walking away after car passes
+        setNpcType("NPC2");
+        setShowNPC(false);
+        npcYAnim.setValue(height * 0.45);
+        
+        Animated.timing(npcYAnim, {
+          toValue: height * 0.25,
+          duration: 2000,
+          useNativeDriver: true,
+        }).start();
+
+        setTimeout(() => {
+          handleFeedback(answer);
+        }, 2500);
       });
     } else if (answer === "Park there briefly to accompany passengers into the mall") {
-      // WRONG: Car parks at the No Parking sign (row 14.5 area)
-      const targetRow = 4;
-      const rowsToMove = targetRow - currentRow;
-      const nextTarget = currentScroll.current + rowsToMove * tileSize;
+      // CORRECT: Stop at the loading/unloading bay and show 2 NPCs walking away
+      setNpcType("NPC1");
+      setShowNPC(true);
+      setShowNPC2(true);
+      npcYAnim.setValue(0);
+      npc2YAnim.setValue(0);
+      
+      Animated.parallel([
+        Animated.timing(npcYAnim, {
+          toValue: -(height * 0.8),
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(npc2YAnim, {
+          toValue: -(height * 0.8),
+          duration: 2000,
+          useNativeDriver: true,
+        })
+      ]).start();
 
-      Animated.timing(scrollY, {
-        toValue: nextTarget,
-        duration: 2500,
-        useNativeDriver: true,
-      }).start(() => {
+      setTimeout(() => {
         handleFeedback(answer);
-      });
+      }, 2500);
     }
-  };
+  }
 
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setCarFrame(0);
+    setShowNPC(false);
+    setShowNPC2(false);
+    setNpcFrame(0);
+    setNpc2Frame(0);
+    npcYAnim.setValue(0);
+    npc2YAnim.setValue(0);
     carXAnim.setValue(width / 2 - (280 / 2));
     
     if (questionIndex < questions.length - 1) {
-         setQuestionIndex(questionIndex + 1);
-       } else if (currentScenario >= 10) {
-         const sessionResults = await completeSession();
-         navigation.navigate('/result-page', {
-           ...sessionResults,
-           userAttempts: JSON.stringify(sessionResults.attempts)
-         });
-       } else {
-         moveToNextScenario();
-         const nextScreen = `S${currentScenario + 1}P3`;
-         navigation.navigate(nextScreen);
-       }
-    };
+      setQuestionIndex(questionIndex + 1);
+    } else if (currentScenario >= 10) {
+      const sessionResults = await completeSession();
+      navigation.navigate('/result-page', {
+        ...sessionResults,
+        userAttempts: JSON.stringify(sessionResults.attempts)
+      });
+    } else {
+    moveToNextScenario();
+    router.navigate(`/scenarios/road-markings/phase3/S${currentScenario + 1}P3`);
+  }
+};
 
   const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;  
   const trafficSignTop = trafficSignRowIndex * tileSize;
@@ -288,7 +377,6 @@ export default function DrivingGame() {
   const feedbackMessage = isCorrectAnswer
     ? "Correct! Loading and unloading bays are specifically for brief stops to load/unload passengers or goods, not for parking"
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
-
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -320,52 +408,34 @@ export default function DrivingGame() {
           ))
         )}
         {treePositions.map((tree, index) => (
-                  <Image
-                    key={`tree-${index}`}
-                    source={treeSprites[tree.type]}
-                    style={{
-                      position: "absolute",
-                      width: tileSize * 0.8,
-                      height: tileSize * 1.2,
-                      left: tree.col * tileSize,
-                      top: tree.row * tileSize,
-                      zIndex: 2,
-                    }}
-                    resizeMode="contain"
-                  />
-                ))}
+          <Image
+            key={`tree-${index}`}
+            source={treeSprites[tree.type]}
+            style={{
+              position: "absolute",
+              width: tileSize * 0.8,
+              height: tileSize * 1.2,
+              left: tree.col * tileSize,
+              top: tree.row * tileSize,
+              zIndex: 2,
+            }}
+            resizeMode="contain"
+          />
+        ))}
 
-        {/*Traffic Sign */}
+        {/* Traffic Sign */}
         <Image
-        source={trafficSign.sign}
-        style={{
-            width: tileSize * .8,
-            height: tileSize *.8,
+          source={trafficSign.sign}
+          style={{
+            width: tileSize * 0.8,
+            height: tileSize * 0.8,
             position: "absolute",
             top: trafficSignTop,
             left: trafficSignLeft,
             zIndex: 11,
-        }}
-        resizeMode="contain"
+          }}
+          resizeMode="contain"
         />
-
-        {/* Pedestrian (REMOVED) */}
-        {/*
-        {pedestrianVisible && (
-          <Animated.Image
-            source={isCrossing ? maleWalkSprites[maleFrame] : maleStandingSprite}
-            style={{
-              width: FRAME_WIDTH,
-              height: FRAME_HEIGHT,
-              position: "absolute",
-              top: pedestrianRowIndex * tileSize + maleVerticalOffset,
-              left: isCrossing ? maleCrossingXAnim : maleFixedLeft,
-              zIndex: 6,
-            }}
-            resizeMode="contain"
-          />
-        )}
-        */}
       </Animated.View>
 
       {/* Car - fixed */}
@@ -381,7 +451,41 @@ export default function DrivingGame() {
         }}
       />
 
-      {/* Question overlay - moved to bottom */}
+      {/* NPC Pedestrian - walks away on sidewalk */}
+      {showNPC && (
+        <Animated.Image
+          source={npcSprites[npcType][npcFrame]}
+          style={{
+            width: npcSize,
+            height: npcSize * 1.5,
+            position: "absolute",
+            left: width * 0.68,
+            top: npcStartY,
+            transform: [{ translateY: npcYAnim }],
+            zIndex: 9,
+          }}
+          resizeMode="contain"
+        />
+      )}
+
+      {/* Second NPC Pedestrian - walks away on sidewalk */}
+      {showNPC2 && (
+        <Animated.Image
+          source={npcSprites.NPC2[npc2Frame]}
+          style={{
+            width: npcSize,
+            height: npcSize * 1.5,
+            position: "absolute",
+            left: width * 0.58,
+            top: npcStartY,
+            transform: [{ translateY: npc2YAnim }],
+            zIndex: 9,
+          }}
+          resizeMode="contain"
+        />
+      )}
+
+      {/* Question overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -398,7 +502,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Answers - moved above bottom overlay */}
+      {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -413,7 +517,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Feedback - moved to bottom */}
+      {/* Feedback */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -427,14 +531,12 @@ export default function DrivingGame() {
         <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
           <View style={styles.feedbackBox}>
-            <Text style={styles.feedbackText}>
-                {feedbackMessage}
-            </Text>
+            <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
         </View>
       )}
 
-      {/* Next button - positioned above bottom overlay */}
+      {/* Next button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
@@ -444,10 +546,8 @@ export default function DrivingGame() {
       )}
     </View>
   );
-}
-
+  }
 const styles = StyleSheet.create({
-  // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -459,8 +559,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 20,
   },
-
-  // ADDED: Intro styles (responsive)
   introContainer: {
     flex: 1,
     backgroundColor: "black",
@@ -516,13 +614,12 @@ const styles = StyleSheet.create({
     fontSize: Math.min(width * 0.055, 24),
     fontWeight: "bold",
   },
-
- questionOverlay: {
+  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -579,7 +676,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: width,
-    height: overlayHeight, // Corrected line: use the variable directly
+    height: overlayHeight,
     backgroundColor: "rgba(8, 8, 8, 0.43)",
     flexDirection: "row",
     alignItems: "flex-end",
@@ -625,4 +722,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-//s3
