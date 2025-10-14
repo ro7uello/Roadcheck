@@ -64,14 +64,6 @@ const npcCarSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  green: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
-  ],
-  yellow: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_001.png"),
-  ],
 };
 
 
@@ -145,26 +137,25 @@ export default function DrivingGame() {
   // Friend
   const [friendFrame, setFriendFrame] = useState(0);
   const [friendDirection, setFriendDirection] = useState("WEST");
-  const friendXAnim = useRef(new Animated.Value(centerX + spriteWidth * 2)).current;
+  const friendXAnim = useRef(new Animated.Value(centerX + spriteWidth * 1)).current;
 
 
-  // NPC Cars - Initial state with refs
+  // NPC Cars - Initial state with refs (only 1 red and 1 blue)
   const carsRef = useRef([
     { id: 1, color: 'blue', column: 1, yOffset: 0, frame: 0 },
-    { id: 2, color: 'red', column: 1, yOffset: -300, frame: 0 },
-    { id: 3, color: 'green', column: 1, yOffset: -600, frame: 0 },
-    { id: 4, color: 'yellow', column: 2, yOffset: -150, frame: 0 },
-    { id: 5, color: 'blue', column: 2, yOffset: -450, frame: 0 },
-    { id: 6, color: 'red', column: 2, yOffset: -750, frame: 0 },
+    { id: 2, color: 'red', column: 2, yOffset: -150, frame: 0 },
   ]);
 
 
   const [npcCars, setNpcCars] = useState(carsRef.current);
+  const [carsMoving, setCarsMoving] = useState(true);
 
 
   // Animate NPC cars - moving upward to match forward movement
   useEffect(() => {
     const carUpdateInterval = setInterval(() => {
+      if (!carsMoving) return; // Pause cars when not moving
+      
       carsRef.current = carsRef.current.map(car => {
         let newYOffset = car.yOffset - 3; // Move upward (negative = up the screen)
        
@@ -184,7 +175,7 @@ export default function DrivingGame() {
     }, 50);
 
     return () => clearInterval(carUpdateInterval);
-  }, []);
+  }, [carsMoving]);
 
 
   function startScrollAnimation() {
@@ -195,9 +186,10 @@ export default function DrivingGame() {
 
     Animated.timing(scrollY, {
       toValue: stopOffset,
-      duration: 2000,
+      duration: 3500,
       useNativeDriver: true,
     }).start(() => {
+      setCarsMoving(false); // Pause cars when question appears
       setShowQuestion(true);
       setTimeout(() => {
         setShowAnswers(true);
@@ -260,6 +252,7 @@ export default function DrivingGame() {
     setSelectedAnswer(answer);
     setShowQuestion(false);
     setShowAnswers(false);
+    setCarsMoving(true); // Resume car animation when option is chosen
 
     const currentQuestion = questions[questionIndex];
     const isCorrect = answer === currentQuestion.correct;
@@ -269,75 +262,69 @@ export default function DrivingGame() {
       // Player runs west alone and gets hit
       setPlayerDirection("WEST");
       setPlayerFrame(0);
+      setCarsMoving(true); // Keep cars moving during animation
      
       const leftX = width * 0.15 - spriteWidth / 2;
-      const scrollDistance = scaledMapHeight * 0.15; // Scroll up 15% of map
-      const targetScroll = currentScroll.current + scrollDistance;
       const duration = 1200;
      
-      // Synchronized horizontal and vertical movement
-if (answer === "Cross immediately while you still feel okay") {
-  // Player runs west alone and gets hit
-  setPlayerDirection("WEST");
-  setPlayerFrame(0);
- 
-  const leftX = width * 0.15 - spriteWidth / 2;
-  const duration = 1200;
- 
-  // Only horizontal movement
-  Animated.timing(playerXAnim, {
-    toValue: leftX,
-    duration: duration,
-    useNativeDriver: true,
-  }).start(() => {
-    setIsPlayerVisible(false);
-    handleFeedback(answer);
-  });
- 
-  return;
-}
+      // Only horizontal movement
+      Animated.timing(playerXAnim, {
+        toValue: leftX,
+        duration: duration,
+        useNativeDriver: true,
+      }).start(() => {
+        setIsPlayerVisible(false);
+        setCarsMoving(false); // Pause cars during feedback
+        handleFeedback(answer);
+      });
+     
+      return;
     } else if (answer === "Wait to sober up completely before attempting to cross") {
       // Player just waits (minimal animation)
       setPlayerPaused(true);
+      setCarsMoving(true); // Keep cars moving during animation
      
       setTimeout(() => {
+        setCarsMoving(false); // Pause cars during feedback
         handleFeedback(answer);
       }, 1500);
      
       return;
-} else if (answer === "Ask a sober friend to help guide you to the proper crossing") {
-  // Sober friend appears and both walk west together safely
-  setIsFriendVisible(true);
-  setPlayerDirection("WEST");
-  setFriendDirection("WEST");
-  setPlayerFrame(0);
-  setFriendFrame(0);
+    } else if (answer === "Ask a sober friend to help guide you to the proper crossing") {
+      // Sober friend appears and both walk west together safely
+      setIsFriendVisible(true);
+      setPlayerDirection("WEST");
+      setFriendDirection("WEST");
+      setPlayerFrame(0);
+      setFriendFrame(0);
+      setCarsMoving(true); // Keep cars moving during animation
 
-  // Define the target positions
-  const playerLeftX = width * 0.25 - spriteWidth / 2;
-  const friendLeftX = width * 0.15 - spriteWidth / 2;
-  const duration = 3000;
+      // Define the target positions
+      const playerLeftX = width * 0.25 - spriteWidth / 2;
+      const friendLeftX = width * 0.15 - spriteWidth / 2;
+      const duration = 3000;
 
-  // Horizontal movement for both characters
-  Animated.parallel([
-    Animated.timing(playerXAnim, {
-      toValue: playerLeftX,
-      duration: duration,
-      useNativeDriver: true,
-    }),
-    Animated.timing(friendXAnim, {
-      toValue: friendLeftX,
-      duration: duration,
-      useNativeDriver: true,
-    })
-  ]).start(() => {
-    setIsPlayerVisible(false);
-    setIsFriendVisible(false);
-    handleFeedback(answer);
-  });
+      // Horizontal movement for both characters
+      Animated.parallel([
+        Animated.timing(playerXAnim, {
+          toValue: playerLeftX,
+          duration: duration,
+          useNativeDriver: true,
+        }),
+        Animated.timing(friendXAnim, {
+          toValue: friendLeftX,
+          duration: duration,
+          useNativeDriver: true,
+        })
+      ]).start(() => {
+        setIsPlayerVisible(false);
+        setIsFriendVisible(false);
+        setCarsMoving(false); // Pause cars during feedback
+        handleFeedback(answer);
+      });
 
-  return;
-}
+      return;
+    }
   };
 
 
@@ -346,6 +333,7 @@ if (answer === "Cross immediately while you still feel okay") {
     setShowNext(false);
     setSelectedAnswer(null);
     setPlayerFrame(0);
+    setCarsMoving(true); // Resume car movement
    
     const centerX = width * 0.5 - spriteWidth / 2;
     playerXAnim.setValue(centerX);
@@ -385,6 +373,7 @@ if (answer === "Cross immediately while you still feel okay") {
        moveToNextScenario();
        const nextScreen = `S${currentScenario + 1}P1`;
        router.push(`/scenarios/pedestrian/phase1/${nextScreen}`);
+  
     
     }
   };
