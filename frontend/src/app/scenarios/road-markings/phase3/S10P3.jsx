@@ -311,7 +311,7 @@ else if (answer === " Park there and display a makeshift disability sign") {
                       try {
                         const sessionResults = await completeSession();
                         router.push({
-                          pathname: `/scenarios/road-markings/phase3/S10P3`,
+                          pathname: `/result-page`,
                           params: {
                             ...sessionResults,
                             userAttempts: JSON.stringify(sessionResults.attempts)
