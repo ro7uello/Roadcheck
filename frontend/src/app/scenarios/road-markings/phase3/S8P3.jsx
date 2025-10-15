@@ -341,7 +341,7 @@ if (answer === "Follow the turn lines from your current position even if it's no
 
   Animated.timing(scrollY, {
     toValue: currentScroll.current + tileSize * 13,
-    duration: 2000,
+    duration: 4000,
     useNativeDriver: true,
   }).start(() => {
     handleFeedback(answer);
