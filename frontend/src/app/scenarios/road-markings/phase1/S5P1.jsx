@@ -383,9 +383,11 @@ export default function DrivingGame() {
       } else {
         moveToNextScenario();
         
-        const nextScenarioNumber = currentFileScenario + 1;
+       const nextScenarioNumber = currentFileScenario + 1;
         const nextScreen = `S${nextScenarioNumber}P1`;
         router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
+      
+        
       }
 
       setShowQuestion(false);
@@ -659,7 +661,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 18),
+    fontSize: Math.min(width * 0.04, 17),
     textAlign: "center",
   },
   feedbackOverlay: {

@@ -233,6 +233,8 @@ export default function DrivingGame() {
     });
   }
 
+  
+
   useEffect(() => {
     startScrollAnimation();
   }, [animationSpeed]);
@@ -264,34 +266,27 @@ export default function DrivingGame() {
     }
   };
 
-  const animateAmbulanceCrossing = () => {
-    const intersectionRow = 10;
-    const ambulanceY = height - (intersectionRow * tileSize) + Math.abs(currentScroll.current - startOffset);
-    
-    ambulanceYAnim.setValue(ambulanceY);
-    ambulanceXAnim.setValue(-carWidth);
-    
-    setShowAmbulance(true);
-    
-    Animated.timing(ambulanceXAnim, {
-      toValue: width + carWidth,
-      duration: 3000,
-      useNativeDriver: true,
-    }).start(() => {
-      setShowAmbulance(false);
-      
-      const finalTarget = currentScroll.current + (1 * tileSize);
-      
-      setCarPaused(false);
-      Animated.timing(scrollY, {
-        toValue: finalTarget,
-        duration: 1500,
-        useNativeDriver: true,
-      }).start(() => {
-        handleFeedback("Stop completely at the give way lines and wait for the vehicle to pass");
-      });
-    });
-  };
+const animateAmbulanceCrossing = () => {
+  setCarPaused(true);
+  scrollY.stopAnimation(); // <- immediately halt movement
+
+  const intersectionRow = 10;
+  const ambulanceY = height - (intersectionRow * tileSize) + Math.abs(currentScroll.current - startOffset);
+  
+  ambulanceYAnim.setValue(ambulanceY);
+  ambulanceXAnim.setValue(-carWidth);
+  setShowAmbulance(true);
+
+  Animated.timing(ambulanceXAnim, {
+    toValue: width + carWidth,
+    duration: 3000,
+    useNativeDriver: true,
+  }).start(() => {
+    setShowAmbulance(false);
+    setCarPaused(false);
+    handleFeedback("Stop completely at the give way lines and wait for the vehicle to pass");
+  });
+};
 
   const animateCollision = () => {
     // Calculate ambulance position to align with car's intersection point
@@ -342,25 +337,13 @@ export default function DrivingGame() {
 
 const executeAnswerBehavior = (answer, currentRow) => {
     if (answer === "Stop completely at the give way lines and wait for the vehicle to pass") {
-      // Choice 1: Car proceeds to give way lines and makes COMPLETE STOP
-      const giveWayStopRow = 6.5; // Stop exactly at give way lines
-      const currentScrollValue = currentScroll.current;
-      const rowsToMove = giveWayStopRow - 6; // From road22Row (6) to give way lines
-      const giveWayTarget = currentScrollValue + rowsToMove * tileSize;
-
-      // Move to give way lines with slower speed to show controlled stop
-      Animated.timing(scrollY, {
-        toValue: giveWayTarget,
-        duration: 2500, // Slower approach for complete stop
-        easing: Easing.out(Easing.quad), // Deceleration easing
-        useNativeDriver: true,
-      }).start(() => {
-        // Complete stop at give way lines
-        setCarPaused(true);
-        
-        // Finish animation after stop
-        handleFeedback(answer);
-      });
+      // Choice 1: Car STOPS IMMEDIATELY, no movement at all
+      setCarPaused(true);
+      
+      // Show ambulance crossing after a brief moment
+      setTimeout(() => {
+        animateAmbulanceCrossing();
+      }, 500);
 
     } else if (answer === "Speed up to cross before the approaching vehicle reaches the intersection") {
       // Choice 2: Speed up and collision
@@ -472,9 +455,10 @@ const executeAnswerBehavior = (answer, currentRow) => {
             Alert.alert('Error', 'Failed to save session results');
           }
         } else {
-                 moveToNextScenario();
-                 const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
-                 router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+                moveToNextScenario();
+                const nextScreen = `S${currentScenario + 1}P2`; // Will be S2P2
+               router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+
         }
   };
 
