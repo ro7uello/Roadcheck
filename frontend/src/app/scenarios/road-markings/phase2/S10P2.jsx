@@ -292,7 +292,7 @@ if (answer === "Proceed with your turn since vehicles have right of way over ped
                 });
               }, 300);
             });
-          }, 500);
+          }, 200);
         });
       });
 
@@ -345,7 +345,7 @@ if (questionIndex < questions.length - 1) {
       try {
         const sessionResults = await completeSession();
         router.push({
-          pathname: '/result-page',
+          pathname: '/scenarios/road-markings/phase2/S10P2',
           params: {
             ...sessionResults,
             userAttempts: JSON.stringify(sessionResults.attempts)
@@ -357,10 +357,12 @@ if (questionIndex < questions.length - 1) {
       }
     } else {
       try {
-        await moveToNextScenario();
-        const nextScreen = `S${currentScenario + 1}P2`;
-        console.log('Navigating to:', nextScreen);
-        router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+        //await moveToNextScenario();
+        //const nextScreen = `S${currentScenario + 1}P2`;
+        //console.log('Navigating to:', nextScreen);
+        //router.push(`/scenarios/road-markings/phase2/${nextScreen}`);
+                      router.push(`/scenarios/road-markings/phase2/S10P2`);
+        
       } catch (error) {
         console.error('Navigation error:', error);
         Alert.alert('Error', 'Failed to navigate to next scenario');

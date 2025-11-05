@@ -508,6 +508,7 @@ export default function DrivingGame() {
       const nextScenarioNumber = currentFileScenario + 1;
       const nextScreen = `S${nextScenarioNumber}P1`;
       router.push(`/scenarios/road-markings/phase1/${nextScreen}`);
+
     }
 
     setShowQuestion(false);
