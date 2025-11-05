@@ -13,7 +13,7 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 // Map setup - Using single image like pedestrian game
-const mapImage = require("../../../../../assets/map/map7.png");
+const mapImage = require("../../../../../assets/map/map9.png");
 const mapWidth = 320;  // Original map width (5 columns * 64 pixels)
 const mapHeight = 768; // Original map height (12 rows * 64 pixels)
 const mapScale = width / mapWidth;
@@ -44,8 +44,8 @@ const npcCarSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
   ],
   green: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_CIVIC_CLEAN_SOUTH_001.png"),
   ],
   yellow: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_000.png"),
@@ -55,12 +55,12 @@ const npcCarSprites = {
 
 const questions = [
   {
-    question: "You're driving along EDSA and approaching the Ortigas intersection. You see chevron markings on the road guiding traffic to the right, along with a traffic island separating the lanes. You need to turn right to Ortigas Avenue.",
-    options: ["Follow the chevron markings and stay in the guided lane", "Cross over the chevron markings to get to the leftmost lane", "Stop before the chevron markings to decide which lane to use"],
-    correct: "Follow the chevron markings and stay in the guided lane",
+    question: "You're on the Skyway and notice concrete barriers have been installed to separate opposing traffic lanes due to ongoing construction. The barriers have yellow reflective tape. Traffic is moving at normal highway speeds.",
+    options: ["Drive closer to the barriers to give more space to other vehicles", "Maintain normal following distance and stay centered in your lane", "Change lanes frequently to avoid being near the barriers"],
+    correct: "Maintain normal following distance and stay centered in your lane",
     wrongExplanation: {
-      "Cross over the chevron markings to get to the leftmost lane": "Wrong! Crossing over chevron markings defeats their safety purpose and may put you in the wrong position for turning.",
-      "Stop before the chevron markings to decide which lane to use": "Wrong! Stopping unnecessarily on a major road creates traffic hazards and rear-end collision risks."
+      "Change lanes frequently to avoid being near the barriers": "Wrong! Frequent lane changes increase accident risk and don't improve safety around barriers.",
+      "Drive closer to the barriers to give more space to other vehicles": "Wrong! Driving too close to concrete barriers reduces your margin for error and increases accident risk."
     }
   },
 ];
@@ -75,11 +75,11 @@ export default function DrivingGame() {
 
   // NPC Cars - static positions (positioned relative to map)
   const [npcCars] = useState([
-    { id: 1, color: 'red', x: width * 0.3, y: scaledMapHeight * 0.15, frame: 0 },
-    { id: 2, color: 'green', x: width * 0.3, y: scaledMapHeight * 0.55, frame: 0 },
-    { id: 3, color: 'yellow', x: width * 0.9, y: scaledMapHeight * 0.45, frame: 0 },
-    { id: 4, color: 'blue', x: width * 0.3, y: scaledMapHeight * 0.45, frame: 0 },
-    { id: 5, color: 'red', x: width * 0.7, y: scaledMapHeight * 0.6, frame: 0 },
+    { id: 1, color: 'green', x: width * 0.1, y: scaledMapHeight * 0.15, frame: 0 },
+    { id: 2, color: 'green', x: width * 0.1, y: scaledMapHeight * 0.55, frame: 0 },
+    { id: 3, color: 'yellow', x: width * 0.9, y: scaledMapHeight * 0.55, frame: 0 },
+    { id: 4, color: 'blue', x: width * 0.9, y: scaledMapHeight * 0.7, frame: 0 },
+    { id: 5, color: 'red', x: width * 0.5, y: scaledMapHeight * 0.8, frame: 0 },
   ]);
 
   const [npcCarFrames, setNpcCarFrames] = useState(npcCars.map(() => 0));
@@ -102,7 +102,7 @@ export default function DrivingGame() {
   // Car
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
-  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+  const carXAnim = useRef(new Animated.Value(width / 1.4 - carWidth / 2)).current;
 
   // NPC Cars sprite animation
   useEffect(() => {
@@ -190,12 +190,12 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
-    if (answer === "Follow the chevron markings and stay in the guided lane") {
+    if (answer === "Drive closer to the barriers to give more space to other vehicles") {
       // Smooth lane change to right using NORTH and NORTHEAST
       setCarDirection("NORTH");
       setCarFrame(0);
       
-      const rightLaneX = width * 0.7 - carWidth / 2;
+      const rightLaneX = width * 0.65 - carWidth / 2;
       
       // Move forward while changing lanes
       Animated.parallel([
@@ -208,7 +208,7 @@ export default function DrivingGame() {
 
       // Start lane change after brief delay
       setTimeout(() => {
-        setCarDirection("NORTHEAST");
+        setCarDirection("NORTHWEST");
         setCarFrame(0);
         
         Animated.timing(carXAnim, {
@@ -233,20 +233,20 @@ export default function DrivingGame() {
       }, 800);
 
       return;
-    } else if (answer === "Cross over the chevron markings to get to the leftmost lane") {
+    } else if (answer === "Change lanes frequently to avoid being near the barriers") {
       // Move upward
-      const targetScroll = currentScroll.current + scaledMapHeight * 0.3;
+      const targetScroll = currentScroll.current + scaledMapHeight * 0.1;
       
       setCarDirection("NORTH");
       setCarFrame(0);
 
       Animated.timing(scrollY, {
         toValue: targetScroll,
-        duration: 2500,
+        duration: 1000,
         useNativeDriver: true,
       }).start(() => {
         // Change lane to right using NORTHEAST
-        const rightLaneX = width * 0.7 - carWidth / 2;
+        const rightLaneX = width * 0.9 - carWidth / 2;
         
         setCarDirection("NORTHEAST");
         setCarFrame(0);
@@ -278,7 +278,7 @@ export default function DrivingGame() {
         });
       });
       return;
-    } else if (answer === "Stop before the chevron markings to decide which lane to use") {
+    } else if (answer === "Maintain normal following distance and stay centered in your lane") {
       // Stop after moving a bit
       const targetScroll = currentScroll.current + scaledMapHeight * 0.2;
 
@@ -328,7 +328,7 @@ export default function DrivingGame() {
   // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Chevron markings are designed to guide traffic safely around islands and obstacles. Following them ensures proper lane positioning for your intended turn."
+    ? "Correct! Maintaining proper lane position and following distance provides the best safety margin around temporary barriers."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction
