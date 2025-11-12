@@ -15,6 +15,8 @@ const roadTiles = {
   road3: require("../../../../../assets/road/road3.png"),
   road4: require("../../../../../assets/road/road4.png"),
   road16: require("../../../../../assets/road/road16.png"),
+    road6: require("../../../../../assets/road/road6.png"),
+      road8: require("../../../../../assets/road/road8.png"),
   road17: require("../../../../../assets/road/road17.png"),
   road18: require("../../../../../assets/road/road18.png"),
   road19: require("../../../../../assets/road/road19.png"),
@@ -38,24 +40,26 @@ const treeSprites = {
 };
 
 const mapLayout = [
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road20", "road20", "road20", "road20", "road20"],
-  ["road20", "road20", "road20", "road20", "road20"],
-    ["road52", "road52", "road52", "road52", "road52"],
-    ["road18", "road48", "road48", "road48", "road48"],
-  ["road18", "road48", "road48", "road23", "road23"],
-  ["road18", "road48", "road48", "road16", "road51"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
-  ["road18", "road4", "road3", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],  
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+    ["road18", "road8", "road6", "road17", "road20"],
+    ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
+  ["road18", "road8", "road6", "road17", "road20"],
 ];
 
 // Tree positions
@@ -112,6 +116,7 @@ const treePositions = [
   { row: 16, col: 3.5, type: 'tree1' },
 ];
 
+// --- MODIFIED --- (Added NORTHWEST)
 const carSprites = {
   NORTH: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
@@ -121,6 +126,11 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
   ],
+  // ⚠️ Added NORTHWEST - update these paths if they are incorrect
+  NORTHWEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
+  ],
   EAST: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
@@ -129,19 +139,19 @@ const carSprites = {
 
 const questions = [
   {
-    question: "You're driving up Kennon Road to Baguio City when you see a SHARP TURN warning sign ahead. You're currently traveling at 50 kph, and there are several vehicles behind you. The weather is clear but you can't see around the curve.",
-    options: ["Maintain your speed since the road seems fine", "Reduce speed significantly and prepare for a sharp curve", "Speed up to get through the turn quickly"],
-    correct: "Reduce speed significantly and prepare for a sharp curve",
+    question: "You're traveling on SCTEX and encounter a WINDING ROAD warning sign. You're driving a private car with passengers, and traffic is moderate. Your current speed is 80 kph.",
+    options: ["Continue at 80 kph since it's an expressway", "Reduce speed and maintain extra following distance for the series of curves ahead", "Switch to the left lane and maintain speed"],
+    correct: "Reduce speed and maintain extra following distance for the series of curves ahead",
     wrongExplanation: {
-      "Maintain your speed since the road seems fine": "Accident prone! Warning signs indicate hazards ahead that require speed adjustment regardless of current road appearance.",
-      "Speed up to get through the turn quickly": "Accident Prone! Speeding up before a sharp turn greatly increases the risk of losing control."
+      "Continue at 80 kph since it's an expressway": "Wrong! Expressway speed limits don't override the need for caution on winding sections.",
+      "Switch to the left lane and maintain speed": "Wrong! Changing lanes doesn't address the hazard, and the curves affect all lanes."
     }
   },
 ];
 
 // Warning sign sprites
 const warningSignSprites = {
-  sharpRightTurn: require("../../../../../assets/signs/sharp_right_turn.png"),
+  sharpRightTurn: require("../../../../../assets/signs/winding_road.png"),
 };
 
 function DrivingGameContent() {
@@ -153,6 +163,7 @@ function DrivingGameContent() {
     sessionData
   } = useSession();
 
+  // ( ... updateProgress function is unchanged ... )
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
       const phaseId = sessionData?.phase_id;
@@ -181,6 +192,7 @@ function DrivingGameContent() {
     }
   };
 
+
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
   const mapHeight = mapLayout.length * tileSize;
@@ -189,9 +201,21 @@ function DrivingGameContent() {
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  const warningSignRowIndex = 9.5;
+  const warningSignRowIndex = 12.5;
   const warningSignColIndex = 3;
   const warningSignXOffset = 0;
+
+  // --- ⬇️ ADDED: Definitions for Lane Switching ---
+  const carWidth = 280; // From your car's style
+  const lane4X = width / 2 - (carWidth / 2); // Initial lane (center)
+  const lane3X = lane4X - tileSize;          // Target lane (one tile left)
+
+  // Animated.Value for car's X position
+  const carXAnim = useRef(new Animated.Value(lane4X)).current;
+  
+  // State for car visibility
+  const [isCarVisible, setIsCarVisible] = useState(true);
+  // --- ⬆️ END OF ADDITIONS ---
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -209,9 +233,15 @@ function DrivingGameContent() {
   const [carFrame, setCarFrame] = useState(0);
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carPaused, setCarPaused] = useState(false);
-  const carXAnim = useRef(new Animated.Value(0)).current; // Changed to 0 for translateX
 
+  // --- MODIFIED --- (Added reset logic)
   function startScrollAnimation() {
+    // Reset car state for the question
+    setIsCarVisible(true);      // Make car visible
+    carXAnim.setValue(lane4X);  // Put car in starting lane
+    setCarPaused(false);        // Start wheel animation
+    setCarDirection("NORTH");   // Face north
+
     scrollY.setValue(startOffset);
     const stopRow = 6;
     const stopOffset = startOffset + stopRow * tileSize;
@@ -221,6 +251,7 @@ function DrivingGameContent() {
       duration: 3000,
       useNativeDriver: true,
     }).start(() => {
+      setCarPaused(true); // Pause wheels when stopped
       setShowQuestion(true);
       setTimeout(() => {
         setShowAnswers(true);
@@ -236,7 +267,11 @@ function DrivingGameContent() {
     let iv;
     if (!carPaused) {
       iv = setInterval(() => {
-        setCarFrame((p) => (p + 1) % carSprites[carDirection].length);
+        // --- MODIFIED --- (Added check for carSprites[carDirection])
+        const sprites = carSprites[carDirection];
+        if (sprites) {
+          setCarFrame((p) => (p + 1) % sprites.length);
+        }
       }, 200);
     }
     return () => clearInterval(iv);
@@ -247,21 +282,7 @@ function DrivingGameContent() {
   const [animationType, setAnimationType] = useState(null);
   const [showNext, setShowNext] = useState(false);
 
-  // Turn animation function with configurable speed
-  function animateTurnRight(turnSpeed, onComplete) {
-    const sequence = ["NORTH", "NORTHEAST", "EAST"];
-    let step = 0;
-    const interval = setInterval(() => {
-      setCarDirection(sequence[step]);
-      setCarFrame(0);
-      step++;
-      if (step >= sequence.length) {
-        clearInterval(interval);
-        if (onComplete) onComplete();
-      }
-    }, turnSpeed);
-  }
-
+  // ( ... handleFeedback function is unchanged ... )
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
     if (answerGiven === currentQuestion.correct) {
@@ -289,93 +310,115 @@ function DrivingGameContent() {
     }
   };
 
-const handleAnswer = async (answer) => {
-  setSelectedAnswer(answer);
-  setShowQuestion(false);
-  setShowAnswers(false);
 
-  const currentQuestion = questions[questionIndex];
-  const isCorrect = answer === currentQuestion.correct;
-  await updateProgress(answer, isCorrect);
+  // --- MODIFIED --- (Added carXAnim.stopAnimation())
+  const handleAnswer = async (answer) => {
+    setSelectedAnswer(answer);
+    setShowQuestion(false);
+    setShowAnswers(false);
 
-  const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
-  const eastwardDistance = tileSize * 5; // Move 5 tiles east
-
-  if (answer === "Reduce speed significantly and prepare for a sharp curve") {
-    const targetRow = 8.5;
-    const rowsToMove = targetRow - currentRow;
-    const nextTarget = currentScroll.current + rowsToMove * tileSize;
+    // Stop any animations that might be running
+    scrollY.stopAnimation();
+    carXAnim.stopAnimation(); // 🛑 Stop X animation too
     
-    Animated.timing(scrollY, {
-      toValue: nextTarget,
-      duration: 6000,
-      useNativeDriver: true,
-    }).start(() => {
-      // Slow, smooth turn - 600ms per direction change
-      animateTurnRight(100, () => {
-        // Animate going east after turning right - slow and controlled
-        Animated.timing(carXAnim, {
-          toValue: eastwardDistance,
-          duration: 3000,
-          useNativeDriver: true,
-        }).start(() => {
-          handleFeedback(answer);
-        });
-      });
-    });
-  } else if (answer === "Maintain your speed since the road seems fine") {
-    const targetRow = 8.5;
-    const rowsToMove = targetRow - currentRow;
-    const nextTarget = currentScroll.current + rowsToMove * tileSize;
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
 
-    Animated.timing(scrollY, {
-      toValue: nextTarget,
-      duration: 4000,
-      useNativeDriver: true,
-    }).start(() => {
-      // Medium turn - 400ms per direction change
-      animateTurnRight(100, () => {
-        // Animate going east after turning right - medium speed
+    const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
+
+    if (answer === "Reduce speed and maintain extra following distance for the series of curves ahead") {
+      // Correct answer - slow and controlled speed
+      const targetRow = 16;
+      const rowsToMove = targetRow - currentRow;
+      const nextTarget = currentScroll.current + rowsToMove * tileSize;
+      
+      setCarPaused(false); // Unpause car for animation
+      setCarDirection("NORTH"); // Ensure car is facing north
+
+      Animated.timing(scrollY, {
+        toValue: nextTarget,
+        duration: 8000, // Slow speed - 8 seconds
+        useNativeDriver: true,
+      }).start(() => {
+        setCarPaused(true); // Pause car at destination
+        handleFeedback(answer);
+      });
+    } else if (answer === "Continue at 80 kph since it's an expressway") {
+      // Wrong answer - medium speed
+      const targetRow = 16;
+      const rowsToMove = targetRow - currentRow;
+      const nextTarget = currentScroll.current + rowsToMove * tileSize;
+
+      setCarPaused(false); // Unpause car for animation
+      setCarDirection("NORTH"); // Ensure car is facing north
+
+      Animated.timing(scrollY, {
+        toValue: nextTarget,
+        duration: 5000, // Medium speed - 5 seconds
+        useNativeDriver: true,
+      }).start(() => {
+        setCarPaused(true); // Pause car at destination
+        handleFeedback(answer);
+      });
+    } else if(answer === "Switch to the left lane and maintain speed"){
+      // --- START: LANE SWITCH LOGIC ---
+      // This will now work because carXAnim, lane3X, and setIsCarVisible are defined
+      
+      setCarPaused(false); // Unpause the car to start the animation
+      setCarDirection("NORTHWEST"); // 1. Face diagonally for the merge
+      setCarFrame(0);
+
+      const firstPartScroll = currentScroll.current + tileSize * 1;
+      const secondPartScroll = firstPartScroll + tileSize * 2;
+
+      // PART 1: The merge (diagonal)
+      Animated.parallel([
         Animated.timing(carXAnim, {
-          toValue: eastwardDistance,
+          toValue: lane3X, // Merge from Lane 4 to Lane 3
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scrollY, {
+          toValue: firstPartScroll,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // ---- Completion callback for Part 1 ----
+        
+        // 2. The merge is finished. NOW set the direction to NORTH.
+        setCarDirection("NORTH");
+
+        // PART 2: The second scroll (facing north)
+        Animated.timing(scrollY, {
+          toValue: secondPartScroll,
           duration: 2000,
           useNativeDriver: true,
         }).start(() => {
+          // ---- Completion callback for Part 2 ----
+          
+          // 3. The entire animation is done.
+          currentScroll.current = secondPartScroll;
+          setCarFrame(0);
+          setCarPaused(true); // Pause the car visually
+          setIsCarVisible(false);
           handleFeedback(answer);
         });
       });
-    });
-  } else if(answer === "Speed up to get through the turn quickly"){
-    const targetRow = 8.5;
-    const rowsToMove = targetRow - currentRow;
-    const nextTarget = currentScroll.current + rowsToMove * tileSize;
-    Animated.timing(scrollY, {
-      toValue: nextTarget,
-      duration: 2500,
-      useNativeDriver: true,
-    }).start(() => {
-      // Fast, aggressive turn - 200ms per direction change
-      animateTurnRight(200, () => {
-        // Animate going east after turning right - fast and aggressive
-        Animated.timing(carXAnim, {
-          toValue: eastwardDistance,
-          duration: 3500,
-          useNativeDriver: true,
-        }).start(() => {
-          handleFeedback(answer);
-        });
-      });
-    });
-  }
-};
 
+      return; // IMPORTANT: Stop the function here
+      // --- END: LANE SWITCH LOGIC ---
+    }
+  };
+
+  // ( ... handleNext function is unchanged ... )
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
     setSelectedAnswer(null);
     setCarFrame(0);
     setCarDirection("NORTH");
-    carXAnim.setValue(0); // Changed to 0 for translateX
     
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
@@ -408,20 +451,19 @@ const handleAnswer = async (answer) => {
         phaseNumber = phaseId - 6;
       }
 
-        //const nextScreen = `S${currentScenario + 1}P${phaseNumber}`;
-        //router.push(`/scenarios/traffic-signs/phase${phaseNumber}/${nextScreen}`);
-              router.push('scenarios/traffic-signs/phase3/S2P3');
-        
-               
+      router.push('scenarios/traffic-signs/phase3/S3P3');
     }
   };
+
 
   const warningSignLeft = warningSignColIndex * tileSize + warningSignXOffset;
   const warningSignTop = warningSignRowIndex * tileSize;
 
   const currentQuestionData = questions[questionIndex];
+  
+  // --- MODIFIED --- (Updated feedback text)
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Sharp turn signs require you to slow down significantly to safely navigate the upcoming curve."
+    ? "Correct! Reducing speed and increasing following distance is the safest way to navigate winding roads."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   return (
@@ -487,6 +529,7 @@ const handleAnswer = async (answer) => {
       </Animated.View>
 
       {/* Car */}
+      {/* --- MODIFIED --- (Car style now uses carXAnim and isCarVisible) */}
       <Animated.Image
         source={carSprites[carDirection][carFrame]}
         style={{
@@ -494,9 +537,9 @@ const handleAnswer = async (answer) => {
           height: 350,
           position: "absolute",
           bottom: 80,
-          left: width / 2 - (280 / 2), // Static left position
-          transform: [{ translateX: carXAnim }], // Use translateX for animation
           zIndex: 8,
+          opacity: isCarVisible ? 1 : 0, // Use visibility state
+          transform: [{ translateX: carXAnim }], // Use translateX for horizontal animation
         }}
       />
 
@@ -571,6 +614,7 @@ export default function DrivingGame() {
   );
 }
 
+// ( ... styles are unchanged ... )
 const styles = StyleSheet.create({
   // ✅ DATABASE INTEGRATION - Added loading styles
   loadingContainer: {
@@ -585,7 +629,7 @@ const styles = StyleSheet.create({
   },
   // No intro styles (responsive)
   // In-game responsive styles
- questionOverlay: {
+  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -687,6 +731,7 @@ const styles = StyleSheet.create({
     minWidth: width * 0.15,
     alignItems: "center",
   },
+
   nextButtonText: {
     color: "white",
     fontSize: Math.min(width * 0.045, 20),

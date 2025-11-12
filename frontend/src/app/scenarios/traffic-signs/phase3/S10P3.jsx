@@ -15,6 +15,8 @@ const roadTiles = {
   road3: require("../../../../../assets/road/road3.png"),
   road4: require("../../../../../assets/road/road4.png"),
   road16: require("../../../../../assets/road/road16.png"),
+    road6: require("../../../../../assets/road/road6.png"),
+      road8: require("../../../../../assets/road/road8.png"),
   road17: require("../../../../../assets/road/road17.png"),
   road18: require("../../../../../assets/road/road18.png"),
   road19: require("../../../../../assets/road/road19.png"),
@@ -39,15 +41,17 @@ const treeSprites = {
 
 const mapLayout = [
   ["road18", "road4", "road3", "road17", "road20"],
+  ["road18", "road4", "road3", "road17", "road20"],  
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
-  ["road20", "road20", "road20", "road20", "road20"],
-  ["road20", "road20", "road20", "road20", "road20"],
-    ["road52", "road52", "road52", "road52", "road52"],
-    ["road18", "road48", "road48", "road48", "road48"],
-  ["road18", "road48", "road48", "road23", "road23"],
-  ["road18", "road48", "road48", "road16", "road51"],
+  ["road18", "road4", "road3", "road17", "road20"],
+  ["road18", "road4", "road3", "road17", "road20"],
+  ["road18", "road4", "road3", "road17", "road20"],
+    ["road18", "road4", "road3", "road17", "road20"],
+    ["road18", "road4", "road3", "road17", "road20"],
+  ["road18", "road4", "road3", "road17", "road20"],
+  ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
   ["road18", "road4", "road3", "road17", "road20"],
@@ -129,19 +133,19 @@ const carSprites = {
 
 const questions = [
   {
-    question: "You're driving up Kennon Road to Baguio City when you see a SHARP TURN warning sign ahead. You're currently traveling at 50 kph, and there are several vehicles behind you. The weather is clear but you can't see around the curve.",
-    options: ["Maintain your speed since the road seems fine", "Reduce speed significantly and prepare for a sharp curve", "Speed up to get through the turn quickly"],
-    correct: "Reduce speed significantly and prepare for a sharp curve",
+    question: "You're driving near Clark International Airport when you encounter a LOW-FLYING AIRPLANE ZONE sign. You can hear aircraft engines overhead, and the road passes very close to the airport runway approach path.",
+    options: ["Ignore the sign since it doesn't affect driving", "Be aware of potential noise and distractions from low-flying aircraft", "Stop the vehicle when you hear aircraft approaching"],
+    correct: "Be aware of potential noise and distractions from low-flying aircraft", //correct explanation:Correct! This sign warns of potential distractions from aircraft noise and activity that require mental preparation.
     wrongExplanation: {
-      "Maintain your speed since the road seems fine": "Accident prone! Warning signs indicate hazards ahead that require speed adjustment regardless of current road appearance.",
-      "Speed up to get through the turn quickly": "Accident Prone! Speeding up before a sharp turn greatly increases the risk of losing control."
+      "Ignore the sign since it doesn't affect driving": " Wrong! Low-flying aircraft can create significant noise and visual distractions that affect driving concentration.",
+      "Stop the vehicle when you hear aircraft approaching": "Accident Prone! Stopping for every aircraft would create traffic hazards; awareness and continued cautious driving are appropriate."
     }
   },
 ];
 
 // Warning sign sprites
 const warningSignSprites = {
-  sharpRightTurn: require("../../../../../assets/signs/sharp_right_turn.png"),
+  sharpRightTurn: require("../../../../../assets/signs/low-flying_aircraft.png"),
 };
 
 function DrivingGameContent() {
@@ -189,7 +193,7 @@ function DrivingGameContent() {
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  const warningSignRowIndex = 9.5;
+  const warningSignRowIndex = 12;
   const warningSignColIndex = 3;
   const warningSignXOffset = 0;
 
@@ -209,7 +213,6 @@ function DrivingGameContent() {
   const [carFrame, setCarFrame] = useState(0);
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carPaused, setCarPaused] = useState(false);
-  const carXAnim = useRef(new Animated.Value(0)).current; // Changed to 0 for translateX
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -247,20 +250,7 @@ function DrivingGameContent() {
   const [animationType, setAnimationType] = useState(null);
   const [showNext, setShowNext] = useState(false);
 
-  // Turn animation function with configurable speed
-  function animateTurnRight(turnSpeed, onComplete) {
-    const sequence = ["NORTH", "NORTHEAST", "EAST"];
-    let step = 0;
-    const interval = setInterval(() => {
-      setCarDirection(sequence[step]);
-      setCarFrame(0);
-      step++;
-      if (step >= sequence.length) {
-        clearInterval(interval);
-        if (onComplete) onComplete();
-      }
-    }, turnSpeed);
-  }
+  // No turn animation needed - car goes straight
 
   const handleFeedback = (answerGiven) => {
     const currentQuestion = questions[questionIndex];
@@ -289,85 +279,106 @@ function DrivingGameContent() {
     }
   };
 
-const handleAnswer = async (answer) => {
-  setSelectedAnswer(answer);
-  setShowQuestion(false);
-  setShowAnswers(false);
-
-  const currentQuestion = questions[questionIndex];
-  const isCorrect = answer === currentQuestion.correct;
-  await updateProgress(answer, isCorrect);
-
-  const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
-  const eastwardDistance = tileSize * 5; // Move 5 tiles east
-
-  if (answer === "Reduce speed significantly and prepare for a sharp curve") {
-    const targetRow = 8.5;
-    const rowsToMove = targetRow - currentRow;
-    const nextTarget = currentScroll.current + rowsToMove * tileSize;
+  // ✅ --- START OF MODIFIED HANDLEANSWER ---
+  const handleAnswer = (answer) => {
+    console.log('🎯 Answer selected:', answer);
     
-    Animated.timing(scrollY, {
-      toValue: nextTarget,
-      duration: 6000,
-      useNativeDriver: true,
-    }).start(() => {
-      // Slow, smooth turn - 600ms per direction change
-      animateTurnRight(100, () => {
-        // Animate going east after turning right - slow and controlled
-        Animated.timing(carXAnim, {
-          toValue: eastwardDistance,
-          duration: 3000,
-          useNativeDriver: true,
-        }).start(() => {
-          handleFeedback(answer);
-        });
-      });
+    setSelectedAnswer(answer);
+    setShowQuestion(false);
+    setShowAnswers(false);
+
+    // 🛑 Stop any animation that might be running
+    scrollY.stopAnimation(); 
+
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    
+    console.log('✅ Is correct?', isCorrect);
+    
+    // ✅ Update backend progress (non-blocking)
+    updateProgress(answer, isCorrect).catch(error => {
+      console.error('❌ Failed to update progress:', error);
+      console.error('Error message:', error.message);
+      // Continue with animation even if backend update fails
     });
-  } else if (answer === "Maintain your speed since the road seems fine") {
-    const targetRow = 8.5;
+
+    const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
+    const targetRow = 16;
     const rowsToMove = targetRow - currentRow;
     const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-    Animated.timing(scrollY, {
-      toValue: nextTarget,
-      duration: 4000,
-      useNativeDriver: true,
-    }).start(() => {
-      // Medium turn - 400ms per direction change
-      animateTurnRight(100, () => {
-        // Animate going east after turning right - medium speed
-        Animated.timing(carXAnim, {
-          toValue: eastwardDistance,
-          duration: 2000,
+    console.log('🚗 Animation details:', {
+      currentRow,
+      targetRow,
+      rowsToMove,
+      nextTarget
+    });
+
+    let duration = 5000; // Default speed
+    let carMovement = "NORTH";
+    
+    // This flag controls whether the default animation runs at the end
+    let startAnimationImmediately = true; 
+
+    // --- Animations for LOW-FLYING AIRCRAFT scenario ---
+
+    if (answer === "Ignore the sign since it doesn't affect driving") {
+      duration = 5000; // Normal speed, unaware
+      carMovement = "NORTH";
+      console.log('⏱️ Ignoring sign - normal speed');
+
+    } else if (answer === "Be aware of potential noise and distractions from low-flying aircraft") {
+      duration = 8000; // Correct - slow, aware, and cautious speed
+      carMovement = "NORTH";
+      console.log('⏱️ Correct - slow and cautious');
+
+    } else if (answer === "Stop the vehicle when you hear aircraft approaching") {
+      // --- THIS IS THE STOPPING BLOCK ---
+      startAnimationImmediately = false; // Prevent default animation
+      carMovement = "NORTH";
+      duration = 5000; // The movement *after* the stop will take 5s
+      
+      console.log('⏱️ Stopping unnecessarily... will wait 10 seconds.');
+      
+      setCarDirection(carMovement);
+      setCarPaused(true); // 1. Stop the car visually RIGHT NOW
+
+      // 2. Wait for 10 seconds
+      setTimeout(() => {
+        console.log('⏱️ 10s wait over. Proceeding slowly.');
+        setCarPaused(false); // 3. Unpause the car to start moving
+
+        // 4. Proceed with the animation
+        Animated.timing(scrollY, {
+          toValue: nextTarget,
+          duration: duration, // Use the 5000ms duration
           useNativeDriver: true,
         }).start(() => {
+          setCarPaused(true); // Stop at the end
           handleFeedback(answer);
         });
+      }, 5000); // 10,000 milliseconds = 10 seconds
+      
+      // --- END OF STOPPING BLOCK ---
+    }
+
+    setCarDirection(carMovement); // Set visual direction
+
+    // Only run the default animation if our special case wasn't triggered
+    if (startAnimationImmediately) {
+      setCarPaused(false); // Unpause for immediate movement
+
+      Animated.timing(scrollY, {
+        toValue: nextTarget,
+        duration: duration, 
+        useNativeDriver: true,
+      }).start(() => {
+        setCarPaused(true);
+        handleFeedback(answer);
       });
-    });
-  } else if(answer === "Speed up to get through the turn quickly"){
-    const targetRow = 8.5;
-    const rowsToMove = targetRow - currentRow;
-    const nextTarget = currentScroll.current + rowsToMove * tileSize;
-    Animated.timing(scrollY, {
-      toValue: nextTarget,
-      duration: 2500,
-      useNativeDriver: true,
-    }).start(() => {
-      // Fast, aggressive turn - 200ms per direction change
-      animateTurnRight(200, () => {
-        // Animate going east after turning right - fast and aggressive
-        Animated.timing(carXAnim, {
-          toValue: eastwardDistance,
-          duration: 3500,
-          useNativeDriver: true,
-        }).start(() => {
-          handleFeedback(answer);
-        });
-      });
-    });
-  }
-};
+    }
+  };
+  // ✅ --- END OF MODIFIED HANDLEANSWER ---
 
   const handleNext = async () => {
     setAnimationType(null);
@@ -375,7 +386,6 @@ const handleAnswer = async (answer) => {
     setSelectedAnswer(null);
     setCarFrame(0);
     setCarDirection("NORTH");
-    carXAnim.setValue(0); // Changed to 0 for translateX
     
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
@@ -408,11 +418,7 @@ const handleAnswer = async (answer) => {
         phaseNumber = phaseId - 6;
       }
 
-        //const nextScreen = `S${currentScenario + 1}P${phaseNumber}`;
-        //router.push(`/scenarios/traffic-signs/phase${phaseNumber}/${nextScreen}`);
-              router.push('scenarios/traffic-signs/phase3/S2P3');
-        
-               
+      router.push('scenarios/traffic-signs/phase3/S1P3');
     }
   };
 
@@ -420,9 +426,11 @@ const handleAnswer = async (answer) => {
   const warningSignTop = warningSignRowIndex * tileSize;
 
   const currentQuestionData = questions[questionIndex];
+  // ✅ --- MODIFIED FEEDBACK MESSAGE ---
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Sharp turn signs require you to slow down significantly to safely navigate the upcoming curve."
+    ? "Correct! This sign warns of potential distractions from aircraft noise and activity that require mental preparation."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
+  // ✅ --- END OF MODIFIED FEEDBACK MESSAGE ---
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -494,8 +502,7 @@ const handleAnswer = async (answer) => {
           height: 350,
           position: "absolute",
           bottom: 80,
-          left: width / 2 - (280 / 2), // Static left position
-          transform: [{ translateX: carXAnim }], // Use translateX for animation
+          left: width / 2 - (280 / 2),
           zIndex: 8,
         }}
       />
@@ -536,7 +543,7 @@ const handleAnswer = async (answer) => {
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
-          <View style={styles.feedbackBox}>
+        <View style={styles.feedbackBox}>
             <Text style={styles.feedbackText}>{feedbackMessage}</Text>
           </View>
         </View>
@@ -581,11 +588,11 @@ const styles = StyleSheet.create({
   loadingText: {
     color: 'white',
     fontSize: 18,
-    fontWeight: 'bold',
+  fontWeight: 'bold',
   },
   // No intro styles (responsive)
   // In-game responsive styles
- questionOverlay: {
+  questionOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -595,7 +602,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     paddingBottom: 0,
-    zIndex: 10,
+  zIndex: 10,
   },
   ltoImage: {
     width: ltoWidth,
@@ -664,7 +671,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: Math.min(width * 0.06, 24),
     fontWeight: "bold",
-    textAlign: "center",
+  textAlign: "center",
   },
   nextButtonContainer: {
     position: "absolute",
