@@ -136,9 +136,9 @@ const questions = [
   {
     question: "You're approaching a roundabout in Iloilo and see roundabout holding lines at the entrance. There are several vehicles already circulating in the roundabout, including a jeepney that will pass in front of your entry point.",
     options: ["Enter the roundabout immediately after the jeepney passed", "Stop at the holding lines and wait for a clear gap in circulating traffic", "Enter slowly behind the jeepney to maintain traffic flow"],
-    correct: "Correct! Holding lines mark where vehicles should stop to yield to circulating traffic. Wait for a safe gap before entering.",
+    correct: "Stop at the holding lines and wait for a clear gap in circulating traffic",
     wrongExplanation: {
-      "Enter the roundabout immediately after the jeepney passe": "Wrong! Entering immediately after one vehicle doesn't ensure adequate gap for safe entry.",
+      "Enter the roundabout immediately after the jeepney passed": "Wrong! Entering immediately after one vehicle doesn't ensure adequate gap for safe entry.",
       "Enter slowly behind the jeepney to maintain traffic flow": "Wrong! Following too closely behind another vehicle into a roundabout can create dangerous situations if that vehicle stops or changes direction."
     }
   },
@@ -460,7 +460,7 @@ export default function DrivingGame() {
       });
       return;
     } else if (answer === "Stop at the holding lines and wait for a clear gap in circulating traffic") {
-        const targetRow = 8.5;
+        const targetRow = 9;
         const rowsToMove = targetRow - currentRow;
         const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
@@ -476,13 +476,13 @@ export default function DrivingGame() {
             });
         }, 1500);
     } else if(answer === "Enter slowly behind the jeepney to maintain traffic flow"){
-        const turnStartRow = 10;
+        const turnStartRow = 9;
 
         const initialScrollTarget = currentScroll.current + (turnStartRow - currentRow) * tileSize;
 
         Animated.timing(scrollY, {
           toValue: initialScrollTarget,
-          duration: 1000,
+          duration: 6000,
           useNativeDriver: true,
         }).start(() => {
           setTimeout(() => {
@@ -566,7 +566,7 @@ export default function DrivingGame() {
 
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! This is the fundamental roundabout rule - yield to traffic already circulating, then enter when there's a safe gap."
+    ? "Correct! Holding lines mark where vehicles should stop to yield to circulating traffic. Wait for a safe gap before entering."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   const currentCarSprite = carSprites[carDirection] && carSprites[carDirection][carFrame] 

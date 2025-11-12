@@ -172,7 +172,7 @@ export default function DrivingGame() {
   
   const npcCars = [
     { lane: 1, row: 8, color: 'red' },
-    { lane: 1, row: 12, color: 'black' },
+    { lane: 1, row: 13, color: 'black' },
   ];
 
   function startScrollAnimation() {
