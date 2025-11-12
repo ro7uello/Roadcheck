@@ -13,7 +13,7 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 // Map setup - Using single image like pedestrian game
-const mapImage = require("../../../../../assets/map/map7.png");
+const mapImage = require("../../../../../assets/map/map8.png");
 const mapWidth = 320;  // Original map width (5 columns * 64 pixels)
 const mapHeight = 768; // Original map height (12 rows * 64 pixels)
 const mapScale = width / mapWidth;
@@ -21,46 +21,43 @@ const scaledMapHeight = mapHeight * mapScale;
 
 const carSprites = {
   NORTH: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_012.png"),
   ],
   NORTHEAST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_012.png"),
   ],
-  EAST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+  NORTHWEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_012.png"),
   ],
 };
 
 const npcCarSprites = {
   blue: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_012.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_012.png"),
   ],
   red: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_012.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_012.png"),
   ],
   green: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_012.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_012.png"),
   ],
   yellow: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_012.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_012.png"),
   ],
 };
 
 const questions = [
   {
-    question: "You're driving along EDSA and approaching the Ortigas intersection. You see chevron markings on the road guiding traffic to the right, along with a traffic island separating the lanes. You need to turn right to Ortigas Avenue.",
-    options: ["Follow the chevron markings and stay in the guided lane", "Cross over the chevron markings to get to the leftmost lane", "Stop before the chevron markings to decide which lane to use"],
-    correct: "Follow the chevron markings and stay in the guided lane",
+    question: "You're driving on SLEX late at night and feeling drowsy. Suddenly, you hear and feel a loud humming sound and vibration as your vehicle drifts toward the shoulder. You realize you've hit the rumble strips.",
+    options: ["Quickly steer back to center and increase speed to stay more alert", "Gradually correct your steering and pull over at the next safe rest area", "Turn up the radio volume and open windows to stay awake while continuing to drive"],
+    correct: "Gradually correct your steering and pull over at the next safe rest area",
     wrongExplanation: {
-      "Cross over the chevron markings to get to the leftmost lane": "Wrong! Crossing over chevron markings defeats their safety purpose and may put you in the wrong position for turning.",
-      "Stop before the chevron markings to decide which lane to use": "Wrong! Stopping unnecessarily on a major road creates traffic hazards and rear-end collision risks."
+      "Quickly steer back to center and increase speed to stay more alert": "Accident Prone! Increasing speed when drowsy is extremely dangerous and doesn't address the root cause of fatigue. Quick steering movements can cause loss of vehicle control.",
+      "Turn up the radio volume and open windows to stay awake while continuing to drive": "Wrong! These are temporary measures that don't effectively combat serious drowsiness. Continuing to drive while fatigued puts yourself and others at serious risk."
     }
   },
 ];
@@ -77,9 +74,9 @@ export default function DrivingGame() {
   const [npcCars] = useState([
     { id: 1, color: 'red', x: width * 0.3, y: scaledMapHeight * 0.15, frame: 0 },
     { id: 2, color: 'green', x: width * 0.3, y: scaledMapHeight * 0.55, frame: 0 },
-    { id: 3, color: 'yellow', x: width * 0.9, y: scaledMapHeight * 0.45, frame: 0 },
-    { id: 4, color: 'blue', x: width * 0.3, y: scaledMapHeight * 0.45, frame: 0 },
-    { id: 5, color: 'red', x: width * 0.7, y: scaledMapHeight * 0.6, frame: 0 },
+    { id: 3, color: 'yellow', x: width * 0.1, y: scaledMapHeight * 0.35, frame: 0 },
+    { id: 4, color: 'blue', x: width * 0.3, y: scaledMapHeight * 0.40, frame: 0 },
+    { id: 5, color: 'red', x: width * 0.5, y: scaledMapHeight * 0.6, frame: 0 },
   ]);
 
   const [npcCarFrames, setNpcCarFrames] = useState(npcCars.map(() => 0));
@@ -102,7 +99,7 @@ export default function DrivingGame() {
   // Car
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
-  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+  const carXAnim = useRef(new Animated.Value(width / 1.3 - carWidth / 1.3)).current;
 
   // NPC Cars sprite animation
   useEffect(() => {
@@ -122,7 +119,7 @@ export default function DrivingGame() {
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
     // Move upward (increase the value, making it less negative)
-    const stopDistance = scaledMapHeight * 0.25;
+    const stopDistance = scaledMapHeight * 0.4;
     const stopOffset = startOffset + stopDistance;
 
     Animated.timing(scrollY, {
@@ -190,12 +187,12 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
-    if (answer === "Follow the chevron markings and stay in the guided lane") {
-      // Smooth lane change to right using NORTH and NORTHEAST
+    if (answer === "Quickly steer back to center and increase speed to stay more alert") {
+      // Smooth lane change to LEFT using NORTHWEST, then NORTH
       setCarDirection("NORTH");
       setCarFrame(0);
       
-      const rightLaneX = width * 0.7 - carWidth / 2;
+      const leftLaneX = width * 0.5 - carWidth / 2;
       
       // Move forward while changing lanes
       Animated.parallel([
@@ -208,11 +205,11 @@ export default function DrivingGame() {
 
       // Start lane change after brief delay
       setTimeout(() => {
-        setCarDirection("NORTHEAST");
+        setCarDirection("NORTHWEST");
         setCarFrame(0);
         
         Animated.timing(carXAnim, {
-          toValue: rightLaneX,
+          toValue: leftLaneX,
           duration: 1200,
           useNativeDriver: false,
         }).start(() => {
@@ -222,7 +219,7 @@ export default function DrivingGame() {
           
           // Continue forward
           Animated.timing(scrollY, {
-            toValue: currentScroll.current + scaledMapHeight * 0.35,
+            toValue: currentScroll.current + scaledMapHeight * 0.2,
             duration: 1500,
             useNativeDriver: true,
           }).start(() => {
@@ -233,20 +230,22 @@ export default function DrivingGame() {
       }, 800);
 
       return;
-    } else if (answer === "Cross over the chevron markings to get to the leftmost lane") {
-      // Move upward
-      const targetScroll = currentScroll.current + scaledMapHeight * 0.3;
+    } else if (answer === "Gradually correct your steering and pull over at the next safe rest area") {
+      // Drive 2 rows first, then change lane to right using NORTHEAST
+      const twoRowsDistance = scaledMapHeight * 0.2;
+      const targetScroll = currentScroll.current + twoRowsDistance;
       
       setCarDirection("NORTH");
       setCarFrame(0);
 
+      // Drive straight for 2 rows
       Animated.timing(scrollY, {
         toValue: targetScroll,
         duration: 2500,
         useNativeDriver: true,
       }).start(() => {
         // Change lane to right using NORTHEAST
-        const rightLaneX = width * 0.7 - carWidth / 2;
+        const rightLaneX = width * .9 - carWidth / 2;
         
         setCarDirection("NORTHEAST");
         setCarFrame(0);
@@ -258,7 +257,7 @@ export default function DrivingGame() {
             useNativeDriver: false,
           }),
           Animated.timing(scrollY, {
-            toValue: targetScroll + scaledMapHeight * 0.05,
+            toValue: targetScroll + scaledMapHeight * 0.08,
             duration: 1200,
             useNativeDriver: true,
           }),
@@ -268,7 +267,7 @@ export default function DrivingGame() {
           setCarFrame(0);
           
           Animated.timing(scrollY, {
-            toValue: targetScroll + scaledMapHeight * 0.1,
+            toValue: targetScroll + scaledMapHeight * 0.15,
             duration: 1000,
             useNativeDriver: true,
           }).start(() => {
@@ -278,26 +277,20 @@ export default function DrivingGame() {
         });
       });
       return;
-    } else if (answer === "Stop before the chevron markings to decide which lane to use") {
-      // Stop after moving a bit
-      const targetScroll = currentScroll.current + scaledMapHeight * 0.2;
+    } else if (answer === "Turn up the radio volume and open windows to stay awake while continuing to drive") {
+      // Just drive straight
+      const targetScroll = currentScroll.current + scaledMapHeight * 0.3;
 
       setCarDirection("NORTH");
       setCarFrame(0);
 
       Animated.timing(scrollY, {
         toValue: targetScroll,
-        duration: 2500,
+        duration: 3000,
         useNativeDriver: true,
       }).start(() => {
-        // Car stops
-        setCarPaused(true);
-        
-        // Wait a moment then show feedback
-        setTimeout(() => {
-          setIsCarVisible(false);
-          handleFeedback(answer);
-        }, 1000);
+        setIsCarVisible(false);
+        handleFeedback(answer);
       });
       return;
     }
@@ -311,7 +304,7 @@ export default function DrivingGame() {
     setIsCorrectAnswer(null);
     
     // Reset car position and visibility
-    const centerX = width / 2 - carWidth / 2;
+    const centerX = width / 1.3 - carWidth / 1.3;
     carXAnim.setValue(centerX);
     setCarDirection("NORTH");
     setIsCarVisible(true);
@@ -328,7 +321,7 @@ export default function DrivingGame() {
   // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Chevron markings are designed to guide traffic safely around islands and obstacles. Following them ensures proper lane positioning for your intended turn."
+    ? "Correct! Rumble strips are specifically designed to alert drowsy drivers. The safe response is gentle steering correction followed by addressing fatigue through proper rest."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction
@@ -521,7 +514,7 @@ const styles = StyleSheet.create({
   },
   answerText: {
     color: "white",
-    fontSize: Math.min(width * 0.04, 18),
+    fontSize: Math.min(width * 0.04, 16),
     textAlign: "center",
   },
   feedbackOverlay: {

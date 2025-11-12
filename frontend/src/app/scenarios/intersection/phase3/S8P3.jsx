@@ -12,12 +12,40 @@ const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
-// Map setup - Using single image like pedestrian game
-const mapImage = require("../../../../../assets/map/map7.png");
-const mapWidth = 320;  // Original map width (5 columns * 64 pixels)
-const mapHeight = 768; // Original map height (12 rows * 64 pixels)
-const mapScale = width / mapWidth;
-const scaledMapHeight = mapHeight * mapScale;
+const roadTiles = {
+    road2: require("../../../../../assets/road/road2.png"),
+    road3: require("../../../../../assets/road/road3.png"),
+    road80: require("../../../../../assets/road/road80.png"),
+    road92: require("../../../../../assets/road/road92.png"),
+    road20: require("../../../../../assets/road/road20.png"),
+};
+
+const mapLayout = [
+  ["road2", "road3", "road80", "road80", "road20"],
+  ["road2", "road3", "road80", "road80", "road20"],
+  ["road2", "road3", "road80", "road80", "road20"],
+  ["road2", "road3", "road80", "road80", "road20"],
+  ["road2", "road3", "road80", "road80", "road20"],
+  ["road2", "road3", "road80", "road80", "road20"],
+  ["road2", "road3", "road80", "road80", "road20"],
+  ["road2", "road3", "road92", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+  ["road2", "road2", "road3", "road80", "road20"],
+];
 
 const carSprites = {
   NORTH: [
@@ -28,61 +56,92 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
   ],
-  EAST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+  NORTHWEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
   ],
 };
 
 const npcCarSprites = {
+  red: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
+  ],
+  black: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_001.png"),
+  ],
   blue: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  red: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
+  brown: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_001.png"),
   ],
   green: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  yellow: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_001.png"),
+  white: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_001.png"),
   ],
 };
 
+const trafficSign = {
+    sign: require("../../../../../assets/signs/warning_sign.png"),
+};
+
+const treeSprites = {
+  tree1: require("../../../../../assets/tree/Tree3_idle_s.png"),
+};
+
+const treePositions = [
+  // right side trees
+  { row: 7, col: 4, type: 'tree1' },
+  { row: 8, col: 4, type: 'tree1' },
+  { row: 9, col: 4, type: 'tree1' },
+  { row: 10, col: 4, type: 'tree1' },
+  { row: 11, col: 4, type: 'tree1' },
+  { row: 12, col: 4, type: 'tree1' },
+  { row: 13, col: 4, type: 'tree1' },
+  { row: 14, col: 4, type: 'tree1' },
+  { row: 15, col: 4, type: 'tree1' },
+  { row: 16, col: 4, type: 'tree1' },
+  { row: 17, col: 4, type: 'tree1' },
+  { row: 18, col: 4, type: 'tree1' },
+  { row: 19, col: 4, type: 'tree1' },
+  { row: 20, col: 4, type: 'tree1' },
+];
+
 const questions = [
   {
-    question: "You're driving along EDSA and approaching the Ortigas intersection. You see chevron markings on the road guiding traffic to the right, along with a traffic island separating the lanes. You need to turn right to Ortigas Avenue.",
-    options: ["Follow the chevron markings and stay in the guided lane", "Cross over the chevron markings to get to the leftmost lane", "Stop before the chevron markings to decide which lane to use"],
-    correct: "Follow the chevron markings and stay in the guided lane",
+    question: "You're driving on NLEX in the rightmost lane and notice the continuity line pattern changing. The dashed line on your left indicates your lane is ending, while the solid line on your right shows the lane continues.",
+    options: ["Continue in your lane ", "Merge left immediately where the line pattern changes", "Speed up to get ahead before making any lane changes"],
+    correct: "Continue in your lane ",
     wrongExplanation: {
-      "Cross over the chevron markings to get to the leftmost lane": "Wrong! Crossing over chevron markings defeats their safety purpose and may put you in the wrong position for turning.",
-      "Stop before the chevron markings to decide which lane to use": "Wrong! Stopping unnecessarily on a major road creates traffic hazards and rear-end collision risks."
+      "Merge left immediately where the line pattern changes": "Wrong! The continuity line is not on your lane. Unnecessary lane changes increase risk.",
+      "Speed up to get ahead before making any lane changes": "Wrong! Speeding is unnecessary when your lane continues safely, and creates additional risks."
     }
   },
 ];
 
 export default function DrivingGame() {
+
+  const numColumns = mapLayout[0].length;
+  const tileSize = width / numColumns;
+  const mapHeight = mapLayout.length * tileSize;
+
   const [isCarVisible, setIsCarVisible] = useState(true);
 
-  // Start from bottom of map - map positioned so bottom is visible
-  const startOffset = -(scaledMapHeight - height);
+  const startOffset = -(mapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  // NPC Cars - static positions (positioned relative to map)
-  const [npcCars] = useState([
-    { id: 1, color: 'red', x: width * 0.3, y: scaledMapHeight * 0.15, frame: 0 },
-    { id: 2, color: 'green', x: width * 0.3, y: scaledMapHeight * 0.55, frame: 0 },
-    { id: 3, color: 'yellow', x: width * 0.9, y: scaledMapHeight * 0.45, frame: 0 },
-    { id: 4, color: 'blue', x: width * 0.3, y: scaledMapHeight * 0.45, frame: 0 },
-    { id: 5, color: 'red', x: width * 0.7, y: scaledMapHeight * 0.6, frame: 0 },
-  ]);
-
-  const [npcCarFrames, setNpcCarFrames] = useState(npcCars.map(() => 0));
+  const trafficSignRowIndex = 14;
+  const trafficSignColIndex = 3;
+  const trafficSignXOffset = 20;
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -99,31 +158,27 @@ export default function DrivingGame() {
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(null);
   const [carDirection, setCarDirection] = useState("NORTH");
 
-  // Car
+  // Car - start in middle lane
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
-  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+  const middleLaneX = width * .3 - carWidth / 2;
+  const carXAnim = useRef(new Animated.Value(middleLaneX)).current;
 
-  // NPC Cars sprite animation
-  useEffect(() => {
-    const intervals = npcCars.map((car, index) => {
-      return setInterval(() => {
-        setNpcCarFrames(prev => {
-          const newFrames = [...prev];
-          newFrames[index] = (newFrames[index] + 1) % 2;
-          return newFrames;
-        });
-      }, 200);
-    });
-
-    return () => intervals.forEach(iv => clearInterval(iv));
-  }, []);
+  // NPC Cars - static traffic in lanes 1 and 2 only, at row 8
+  const [npcCarFrames, setNpcCarFrames] = useState({
+    lane1: 0,
+    lane2: 0,
+  });
+  
+  const npcCars = [
+    { lane: 1, row: 8, color: 'red' },
+    { lane: 1, row: 13, color: 'black' },
+  ];
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    // Move upward (increase the value, making it less negative)
-    const stopDistance = scaledMapHeight * 0.25;
-    const stopOffset = startOffset + stopDistance;
+    const stopRow = 8;
+    const stopOffset = startOffset + stopRow * tileSize;
 
     Animated.timing(scrollY, {
       toValue: stopOffset,
@@ -141,7 +196,7 @@ export default function DrivingGame() {
     startScrollAnimation();
   }, []);
 
-  // Car sprite frame loop (stops when carPaused=true)
+  // Car sprite frame loop
   useEffect(() => {
     let iv;
     if (!carPaused && carSprites[carDirection]) {
@@ -151,6 +206,21 @@ export default function DrivingGame() {
     }
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
+
+  // NPC Car sprite frame loops
+  useEffect(() => {
+    const intervals = [];
+    Object.keys(npcCarFrames).forEach((key) => {
+      const interval = setInterval(() => {
+        setNpcCarFrames((prev) => ({
+          ...prev,
+          [key]: (prev[key] + 1) % 2,
+        }));
+      }, 200);
+      intervals.push(interval);
+    });
+    return () => intervals.forEach(clearInterval);
+  }, []);
 
   // feedback anims
   const correctAnim = useRef(new Animated.Value(0)).current;
@@ -163,25 +233,15 @@ export default function DrivingGame() {
     if (answerGiven === currentQuestion.correct) {
       setIsCorrectAnswer(true);
       setAnimationType("correct");
-      Animated.timing(correctAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }).start(() => {
-        correctAnim.setValue(0);
+      setTimeout(() => {
         setShowNext(true);
-      });
+      }, 1000);
     } else {
       setIsCorrectAnswer(false);
       setAnimationType("wrong");
-      Animated.timing(wrongAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }).start(() => {
-        wrongAnim.setValue(0);
+      setTimeout(() => {
         setShowNext(true);
-      });
+      }, 1000);
     }
   };
 
@@ -190,114 +250,73 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
-    if (answer === "Follow the chevron markings and stay in the guided lane") {
-      // Smooth lane change to right using NORTH and NORTHEAST
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+
+    if (answer === "Speed up to get ahead before making any lane changes") {
+      // Just drive straight
       setCarDirection("NORTH");
       setCarFrame(0);
       
-      const rightLaneX = width * 0.7 - carWidth / 2;
+      Animated.timing(scrollY, {
+        toValue: currentScroll.current + tileSize * 4,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start(() => {
+        setIsCarVisible(false);
+        handleFeedback(answer);
+      });
+      return;
+    } else if (answer === "Merge left immediately where the line pattern changes") {
+      // Smoothly merge to left lane using NORTHWEST then NORTH
+      const leftLaneX = width * .1 - carWidth / 2;
       
-      // Move forward while changing lanes
+      // Switch to NORTHWEST sprite for diagonal movement
+      setCarDirection("NORTHWEST");
+      setCarFrame(0);
+      
+      // Smooth diagonal movement to left lane
       Animated.parallel([
+        Animated.timing(carXAnim, {
+          toValue: leftLaneX,
+          duration: 2500,
+          useNativeDriver: false,
+        }),
         Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.1,
+          toValue: currentScroll.current + tileSize * 3,
           duration: 2500,
           useNativeDriver: true,
         }),
-      ]).start();
-
-      // Start lane change after brief delay
-      setTimeout(() => {
-        setCarDirection("NORTHEAST");
+      ]).start(() => {
+        // Switch back to NORTH sprite
+        setCarDirection("NORTH");
         setCarFrame(0);
         
-        Animated.timing(carXAnim, {
-          toValue: rightLaneX,
-          duration: 1200,
-          useNativeDriver: false,
-        }).start(() => {
-          // Switch back to NORTH after lane change
-          setCarDirection("NORTH");
-          setCarFrame(0);
-          
-          // Continue forward
+        // Continue forward
+        setTimeout(() => {
           Animated.timing(scrollY, {
-            toValue: currentScroll.current + scaledMapHeight * 0.35,
+            toValue: currentScroll.current + tileSize * 2,
             duration: 1500,
             useNativeDriver: true,
           }).start(() => {
             setIsCarVisible(false);
             handleFeedback(answer);
           });
-        });
-      }, 800);
-
-      return;
-    } else if (answer === "Cross over the chevron markings to get to the leftmost lane") {
-      // Move upward
-      const targetScroll = currentScroll.current + scaledMapHeight * 0.3;
-      
-      setCarDirection("NORTH");
-      setCarFrame(0);
-
-      Animated.timing(scrollY, {
-        toValue: targetScroll,
-        duration: 2500,
-        useNativeDriver: true,
-      }).start(() => {
-        // Change lane to right using NORTHEAST
-        const rightLaneX = width * 0.7 - carWidth / 2;
-        
-        setCarDirection("NORTHEAST");
-        setCarFrame(0);
-        
-        Animated.parallel([
-          Animated.timing(carXAnim, {
-            toValue: rightLaneX,
-            duration: 1200,
-            useNativeDriver: false,
-          }),
-          Animated.timing(scrollY, {
-            toValue: targetScroll + scaledMapHeight * 0.05,
-            duration: 1200,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          // Switch back to NORTH and continue
-          setCarDirection("NORTH");
-          setCarFrame(0);
-          
-          Animated.timing(scrollY, {
-            toValue: targetScroll + scaledMapHeight * 0.1,
-            duration: 1000,
-            useNativeDriver: true,
-          }).start(() => {
-            setIsCarVisible(false);
-            handleFeedback(answer);
-          });
-        });
+        }, 300);
       });
       return;
-    } else if (answer === "Stop before the chevron markings to decide which lane to use") {
-      // Stop after moving a bit
-      const targetScroll = currentScroll.current + scaledMapHeight * 0.2;
-
+    } else if (answer === "Continue in your lane ") {
+      // Just drive straight
       setCarDirection("NORTH");
       setCarFrame(0);
-
+      
       Animated.timing(scrollY, {
-        toValue: targetScroll,
-        duration: 2500,
+        toValue: currentScroll.current + tileSize * 7,
+        duration: 2000,
         useNativeDriver: true,
       }).start(() => {
-        // Car stops
-        setCarPaused(true);
-        
-        // Wait a moment then show feedback
-        setTimeout(() => {
-          setIsCarVisible(false);
-          handleFeedback(answer);
-        }, 1000);
+        setIsCarVisible(false);
+        handleFeedback(answer);
       });
       return;
     }
@@ -310,25 +329,28 @@ export default function DrivingGame() {
     setCarFrame(0);
     setIsCorrectAnswer(null);
     
-    // Reset car position and visibility
-    const centerX = width / 2 - carWidth / 2;
-    carXAnim.setValue(centerX);
+    // Reset car position and visibility to middle lane
+    const middleLaneX = width * 0.5 - carWidth / 2;
+    carXAnim.setValue(middleLaneX);
     setCarDirection("NORTH");
     setIsCarVisible(true);
     setCarPaused(false);
     
-    if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else {
-      Alert.alert('Complete', 'Scenario completed!');
-    }
-  };
+  if (questionIndex < questions.length - 1) {
+        setQuestionIndex(questionIndex + 1);
+        startScrollAnimation();
+      } else {
+        Alert.alert('Complete', 'Scenario completed!');
+      }
+    };
+
+  const trafficSignLeft = trafficSignColIndex * tileSize + trafficSignXOffset;  
+  const trafficSignTop = trafficSignRowIndex * tileSize;
 
   // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Chevron markings are designed to guide traffic safely around islands and obstacles. Following them ensures proper lane positioning for your intended turn."
+    ? "Correct!  Continuity lines specifically indicate whether a lane continues or ends. A solid line on the right means your lane continues unaffected."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction
@@ -338,45 +360,63 @@ export default function DrivingGame() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
-      {/* Map - Single image like pedestrian game */}
+      {/* Map */}
       <Animated.View
         style={{
           position: "absolute",
           width: width,
-          height: scaledMapHeight,
+          height: mapHeight,
           left: 0,
           transform: [{ translateY: scrollY }],
           zIndex: 1,
         }}
       >
+        {mapLayout.map((row, rowIndex) =>
+          row.map((tile, colIndex) => (
+            <Image
+              key={`${rowIndex}-${colIndex}`}  
+              source={roadTiles[tile]}
+              style={{
+                position: "absolute",
+                width: tileSize,
+                height: tileSize,
+                left: colIndex * tileSize,
+                top: rowIndex * tileSize,
+              }}
+              resizeMode="stretch"
+            />
+          ))
+        )}
         <Image
-          source={mapImage}
-          style={{
-            width: width,
-            height: scaledMapHeight,
-          }}
-          resizeMode="stretch"
+            source={trafficSign.sign}
+            style={{
+            width: tileSize * 1,
+            height: tileSize *1,
+            position: "absolute",
+            top: trafficSignTop,
+            left: trafficSignLeft,
+            zIndex: 11,
+                }}
+            resizeMode="contain"
         />
+        {treePositions.map((tree, index) => (
+          <Image
+            key={`tree-${index}`}
+            source={treeSprites[tree.type]}
+            style={{
+              position: "absolute",
+              width: tileSize * 0.8,
+              height: tileSize * 1.2,
+              left: tree.col * tileSize,
+              top: tree.row * tileSize,
+              zIndex: 2,
+            }}
+            resizeMode="contain"
+          />
+        ))}
       </Animated.View>
 
-      {/* NPC Cars - Static positions */}
-      {npcCars.map((car, index) => (
-        <Animated.Image
-          key={car.id}
-          source={npcCarSprites[car.color][npcCarFrames[index]]}
-          style={{
-            width: carWidth,
-            height: carHeight,
-            position: "absolute",
-            left: car.x - carWidth / 2,
-            top: car.y,
-            transform: [{ translateY: scrollY }],
-            zIndex: 5,
-          }}
-        />
-      ))}
-
-      {/* Player Car - fixed at bottom */}
+      {/* Car - fixed in middle lane */}
       {isCarVisible && (
         <Animated.Image
           source={currentCarSprite}
@@ -391,7 +431,33 @@ export default function DrivingGame() {
         />
       )}
 
-      {/* Question overlay - moved to bottom */}
+      {/* NPC Cars - static traffic in lanes 1 and 2 at row 8 */}
+      {npcCars.map((npc, index) => {
+        const lanePositions = [
+          width * 0.1 - carWidth / 2,  // lane 1
+          width * 0.3 - carWidth / 2,  // lane 2
+        ];
+        const laneIndex = [1, 2].indexOf(npc.lane);
+        const laneKey = `lane${npc.lane}`;
+        
+        return (
+          <Animated.Image
+            key={`npc-${index}`}
+            source={npcCarSprites[npc.color][npcCarFrames[laneKey] || 0]}
+            style={{
+              width: carWidth,
+              height: carHeight,
+              position: "absolute",
+              top: npc.row * tileSize,
+              left: lanePositions[laneIndex],
+              transform: [{ translateY: scrollY }],
+              zIndex: 7,
+            }}
+          />
+        );
+      })}
+
+      {/* Question overlay */}
       {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
@@ -408,7 +474,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Answers - moved above bottom overlay */}
+      {/* Answers */}
       {showAnswers && (
         <View style={styles.answersContainer}>
           {questions[questionIndex].options.map((option) => (
@@ -423,7 +489,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Feedback - moved to bottom */}
+      {/* Feedback */}
       {animationType === "correct" && (
         <View style={styles.feedbackOverlay}>
           <Image source={require("../../../../../assets/dialog/LTO.png")} style={styles.ltoImage} />
@@ -444,7 +510,7 @@ export default function DrivingGame() {
         </View>
       )}
 
-      {/* Next button - positioned above bottom overlay */}
+      {/* Next button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
           <TouchableOpacity onPress={handleNext} style={styles.nextButton}>

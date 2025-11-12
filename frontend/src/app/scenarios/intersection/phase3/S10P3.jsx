@@ -13,7 +13,7 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 // Map setup - Using single image like pedestrian game
-const mapImage = require("../../../../../assets/map/map7.png");
+const mapImage = require("../../../../../assets/map/map12.png");
 const mapWidth = 320;  // Original map width (5 columns * 64 pixels)
 const mapHeight = 768; // Original map height (12 rows * 64 pixels)
 const mapScale = width / mapWidth;
@@ -32,35 +32,39 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
   ],
+  NORTHWEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
+  ],
 };
 
 const npcCarSprites = {
   blue: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTH/SEPARATED/Blue_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/SOUTH/SEPARATED/Blue_CIVIC_CLEAN_SOUTH_001.png"),
   ],
   red: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/SOUTH/SEPARATED/Red_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/SOUTH/SEPARATED/Red_CIVIC_CLEAN_SOUTH_001.png"),
   ],
   green: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/SOUTH/SEPARATED/Green_CIVIC_CLEAN_SOUTH_001.png"),
   ],
   yellow: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_001.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/SOUTH/SEPARATED/Yellow_CIVIC_CLEAN_SOUTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/SOUTH/SEPARATED/Yellow_CIVIC_CLEAN_SOUTH_001.png"),
   ],
 };
 
 const questions = [
   {
-    question: "You're driving along EDSA and approaching the Ortigas intersection. You see chevron markings on the road guiding traffic to the right, along with a traffic island separating the lanes. You need to turn right to Ortigas Avenue.",
-    options: ["Follow the chevron markings and stay in the guided lane", "Cross over the chevron markings to get to the leftmost lane", "Stop before the chevron markings to decide which lane to use"],
-    correct: "Follow the chevron markings and stay in the guided lane",
+    question: "You're driving on a winding mountain road in Tagaytay and see chevron signs marking a sharp curve ahead. The signs have reflective arrows pointing to the right, and you notice the road curves sharply in that direction.",
+    options: ["Maintain your current speed since the signs are just suggestion", "Reduce speed and follow the direction indicated by the chevron arrows", "Speed up to get through the dangerous curve quickly"],
+    correct: "Reduce speed and follow the direction indicated by the chevron arrows",
     wrongExplanation: {
-      "Cross over the chevron markings to get to the leftmost lane": "Wrong! Crossing over chevron markings defeats their safety purpose and may put you in the wrong position for turning.",
-      "Stop before the chevron markings to decide which lane to use": "Wrong! Stopping unnecessarily on a major road creates traffic hazards and rear-end collision risks."
+      "Maintain your current speed since the signs are just suggestion": "Wrong! Chevron signs mark hazardous curves where speed reduction is necessary for safety. They're not merely suggestions.",
+      "Speed up to get through the dangerous curve quickly": "Wrong! Increasing speed on sharp curves greatly increases the risk of losing control and running off the road."
     }
   },
 ];
@@ -75,11 +79,11 @@ export default function DrivingGame() {
 
   // NPC Cars - static positions (positioned relative to map)
   const [npcCars] = useState([
-    { id: 1, color: 'red', x: width * 0.3, y: scaledMapHeight * 0.15, frame: 0 },
+    { id: 1, color: 'red', x: width * 0.3, y: scaledMapHeight * 0.25, frame: 0 },
     { id: 2, color: 'green', x: width * 0.3, y: scaledMapHeight * 0.55, frame: 0 },
-    { id: 3, color: 'yellow', x: width * 0.9, y: scaledMapHeight * 0.45, frame: 0 },
+    { id: 3, color: 'yellow', x: width * 0.3, y: scaledMapHeight * 0.45, frame: 0 },
     { id: 4, color: 'blue', x: width * 0.3, y: scaledMapHeight * 0.45, frame: 0 },
-    { id: 5, color: 'red', x: width * 0.7, y: scaledMapHeight * 0.6, frame: 0 },
+    { id: 5, color: 'red', x: width * 0.3, y: scaledMapHeight * 0.65, frame: 0 },
   ]);
 
   const [npcCarFrames, setNpcCarFrames] = useState(npcCars.map(() => 0));
@@ -190,114 +194,142 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
-    if (answer === "Follow the chevron markings and stay in the guided lane") {
-      // Smooth lane change to right using NORTH and NORTHEAST
-      setCarDirection("NORTH");
-      setCarFrame(0);
-      
-      const rightLaneX = width * 0.7 - carWidth / 2;
-      
-      // Move forward while changing lanes
-      Animated.parallel([
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.1,
-          duration: 2500,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      // Start lane change after brief delay
-      setTimeout(() => {
-        setCarDirection("NORTHEAST");
-        setCarFrame(0);
-        
-        Animated.timing(carXAnim, {
-          toValue: rightLaneX,
-          duration: 1200,
-          useNativeDriver: false,
-        }).start(() => {
-          // Switch back to NORTH after lane change
-          setCarDirection("NORTH");
-          setCarFrame(0);
-          
-          // Continue forward
-          Animated.timing(scrollY, {
-            toValue: currentScroll.current + scaledMapHeight * 0.35,
-            duration: 1500,
-            useNativeDriver: true,
-          }).start(() => {
-            setIsCarVisible(false);
-            handleFeedback(answer);
-          });
-        });
-      }, 800);
-
-      return;
-    } else if (answer === "Cross over the chevron markings to get to the leftmost lane") {
-      // Move upward
-      const targetScroll = currentScroll.current + scaledMapHeight * 0.3;
+    if (answer === "Maintain your current speed since the signs are just suggestion") {
+      // Step 1: Move forward at normal speed
+      const initialScroll = currentScroll.current + scaledMapHeight * 0.38;
       
       setCarDirection("NORTH");
       setCarFrame(0);
 
       Animated.timing(scrollY, {
-        toValue: targetScroll,
-        duration: 2500,
+        toValue: initialScroll,
+        duration: 1800,
         useNativeDriver: true,
       }).start(() => {
-        // Change lane to right using NORTHEAST
-        const rightLaneX = width * 0.7 - carWidth / 2;
-        
+        // Step 2: Start curve with NORTHEAST
         setCarDirection("NORTHEAST");
         setCarFrame(0);
         
         Animated.parallel([
           Animated.timing(carXAnim, {
-            toValue: rightLaneX,
-            duration: 1200,
+            toValue: width * 0.7 - carWidth / 2.2,
+            duration: 1000,
             useNativeDriver: false,
           }),
           Animated.timing(scrollY, {
-            toValue: targetScroll + scaledMapHeight * 0.05,
-            duration: 1200,
+            toValue: initialScroll + scaledMapHeight * 0.05,
+            duration: 1000,
             useNativeDriver: true,
           }),
         ]).start(() => {
-          // Switch back to NORTH and continue
-          setCarDirection("NORTH");
+          // Step 3: Turn to EAST and exit right
+          setCarDirection("EAST");
           setCarFrame(0);
           
-          Animated.timing(scrollY, {
-            toValue: targetScroll + scaledMapHeight * 0.1,
-            duration: 1000,
-            useNativeDriver: true,
+          Animated.timing(carXAnim, {
+            toValue: width + carWidth,
+            duration: 1500,
+            useNativeDriver: false,
           }).start(() => {
-            setIsCarVisible(false);
-            handleFeedback(answer);
+            setCarPaused(true);
+            setTimeout(() => {
+              setIsCarVisible(false);
+              handleFeedback(answer);
+            }, 500);
           });
         });
       });
       return;
-    } else if (answer === "Stop before the chevron markings to decide which lane to use") {
-      // Stop after moving a bit
-      const targetScroll = currentScroll.current + scaledMapHeight * 0.2;
-
+    } else if (answer === "Reduce speed and follow the direction indicated by the chevron arrows") {
+      // Step 1: Slow down and move forward
+      const initialScroll = currentScroll.current + scaledMapHeight * 0.38;
+      
       setCarDirection("NORTH");
       setCarFrame(0);
 
       Animated.timing(scrollY, {
-        toValue: targetScroll,
-        duration: 2500,
+        toValue: initialScroll,
+        duration: 2500, // Slower speed
         useNativeDriver: true,
       }).start(() => {
-        // Car stops
-        setCarPaused(true);
+        // Step 2: Start curve with NORTHEAST (smooth and controlled)
+        setCarDirection("NORTHEAST");
+        setCarFrame(0);
         
-        // Wait a moment then show feedback
-        setTimeout(() => {
-          setIsCarVisible(false);
-          handleFeedback(answer);
-        }, 1000);
+        Animated.parallel([
+          Animated.timing(carXAnim, {
+            toValue: width * 0.65 - carWidth / 2,
+            duration: 1800, // Controlled turn
+            useNativeDriver: false,
+          }),
+          Animated.timing(scrollY, {
+            toValue: initialScroll + scaledMapHeight * 0.05,
+            duration: 1800,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          // Step 3: Continue curve with EAST and exit eastward
+          setCarDirection("EAST");
+          setCarFrame(0);
+          
+          Animated.timing(carXAnim, {
+            toValue: width + carWidth,
+            duration: 2000,
+            useNativeDriver: false,
+          }).start(() => {
+            setCarPaused(true);
+            setTimeout(() => {
+              setIsCarVisible(false);
+              handleFeedback(answer);
+            }, 500);
+          });
+        });
+      });
+      return;
+    } else if (answer === "Speed up to get through the dangerous curve quickly") {
+      // Step 1: Speed up going forward
+      const initialScroll = currentScroll.current + scaledMapHeight * 0.38;
+      
+      setCarDirection("NORTH");
+      setCarFrame(0);
+
+      Animated.timing(scrollY, {
+        toValue: initialScroll,
+        duration: 1200, // Faster speed
+        useNativeDriver: true,
+      }).start(() => {
+        // Step 2: Aggressive curve entry with NORTHEAST
+        setCarDirection("NORTHEAST");
+        setCarFrame(0);
+        
+        Animated.parallel([
+          Animated.timing(carXAnim, {
+            toValue: width * 0.65 - carWidth / 2,
+            duration: 700, // Fast/aggressive turn
+            useNativeDriver: false,
+          }),
+          Animated.timing(scrollY, {
+            toValue: initialScroll + scaledMapHeight * 0.05,
+            duration: 700,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          // Step 3: Sharp turn with EAST and exit eastward
+          setCarDirection("EAST");
+          setCarFrame(0);
+          
+          Animated.timing(carXAnim, {
+            toValue: width + carWidth,
+            duration: 1200,
+            useNativeDriver: false,
+          }).start(() => {
+            setCarPaused(true);
+            setTimeout(() => {
+              setIsCarVisible(false);
+              handleFeedback(answer);
+            }, 500);
+          });
+        });
       });
       return;
     }
@@ -328,7 +360,7 @@ export default function DrivingGame() {
   // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Chevron markings are designed to guide traffic safely around islands and obstacles. Following them ensures proper lane positioning for your intended turn."
+    ? "Correct! Chevron signs warn of sharp horizontal changes in road alignment and indicate the safe path through the curve at reduced speed."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction
@@ -505,7 +537,7 @@ const styles = StyleSheet.create({
   },
   answersContainer: {
     position: "absolute",
-    top: height * 0.16,
+    top: height * 0.12,
     right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,

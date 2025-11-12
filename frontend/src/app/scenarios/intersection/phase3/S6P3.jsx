@@ -13,7 +13,7 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 // Map setup - Using single image like pedestrian game
-const mapImage = require("../../../../../assets/map/map7.png");
+const mapImage = require("../../../../../assets/map/map10.png");
 const mapWidth = 320;  // Original map width (5 columns * 64 pixels)
 const mapHeight = 768; // Original map height (12 rows * 64 pixels)
 const mapScale = width / mapWidth;
@@ -28,9 +28,9 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
   ],
-  EAST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+  NORTHWEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
   ],
 };
 
@@ -51,16 +51,20 @@ const npcCarSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Yellow/MOVE/NORTH/SEPARATED/Yellow_CIVIC_CLEAN_NORTH_001.png"),
   ],
+  truck: [
+    require("../../../../../assets/car/BOX TRUCK TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_BOXTRUCK_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/BOX TRUCK TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_BOXTRUCK_CLEAN_NORTH_001.png"),
+  ]
 };
 
 const questions = [
   {
-    question: "You're driving along EDSA and approaching the Ortigas intersection. You see chevron markings on the road guiding traffic to the right, along with a traffic island separating the lanes. You need to turn right to Ortigas Avenue.",
-    options: ["Follow the chevron markings and stay in the guided lane", "Cross over the chevron markings to get to the leftmost lane", "Stop before the chevron markings to decide which lane to use"],
-    correct: "Follow the chevron markings and stay in the guided lane",
+    question: "You're driving in Makati CBD and see a Loading and Unloading Bay Lane marked with solid white lines and signage. A delivery truck is parked there unloading goods, but you need to pass through this area to reach your destination.",
+    options: ["Drive through the loading bay since there's space beside the truck", "Wait behind the loading bay until the truck finishes unloading", "Change to an adjacent lane to go around the loading bay area"],
+    correct: "Change to an adjacent lane to go around the loading bay area",
     wrongExplanation: {
-      "Cross over the chevron markings to get to the leftmost lane": "Wrong! Crossing over chevron markings defeats their safety purpose and may put you in the wrong position for turning.",
-      "Stop before the chevron markings to decide which lane to use": "Wrong! Stopping unnecessarily on a major road creates traffic hazards and rear-end collision risks."
+      "Drive through the loading bay since there's space beside the truck": "Wrong! Loading bays are designated for specific vehicles and activities. Regular traffic should not use these areas.",
+      "Wait behind the loading bay until the truck finishes unloading": "Wrong! Waiting unnecessarily when alternative lanes are available creates traffic congestion."
     }
   },
 ];
@@ -77,9 +81,10 @@ export default function DrivingGame() {
   const [npcCars] = useState([
     { id: 1, color: 'red', x: width * 0.3, y: scaledMapHeight * 0.15, frame: 0 },
     { id: 2, color: 'green', x: width * 0.3, y: scaledMapHeight * 0.55, frame: 0 },
-    { id: 3, color: 'yellow', x: width * 0.9, y: scaledMapHeight * 0.45, frame: 0 },
+    { id: 3, color: 'yellow', x: width * 0.3, y: scaledMapHeight * 0.45, frame: 0 },
     { id: 4, color: 'blue', x: width * 0.3, y: scaledMapHeight * 0.45, frame: 0 },
-    { id: 5, color: 'red', x: width * 0.7, y: scaledMapHeight * 0.6, frame: 0 },
+    { id: 5, color: 'red', x: width * 0.5, y: scaledMapHeight * 0.6, frame: 0 },
+    { id: 6, color: 'truck', x: width * 0.7, y: scaledMapHeight * 0.45, frame: 0 },
   ]);
 
   const [npcCarFrames, setNpcCarFrames] = useState(npcCars.map(() => 0));
@@ -102,7 +107,7 @@ export default function DrivingGame() {
   // Car
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
-  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+  const carXAnim = useRef(new Animated.Value(width / 1.45 - carWidth / 2)).current;
 
   // NPC Cars sprite animation
   useEffect(() => {
@@ -190,63 +195,68 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
-    if (answer === "Follow the chevron markings and stay in the guided lane") {
-      // Smooth lane change to right using NORTH and NORTHEAST
-      setCarDirection("NORTH");
-      setCarFrame(0);
-      
-      const rightLaneX = width * 0.7 - carWidth / 2;
-      
-      // Move forward while changing lanes
-      Animated.parallel([
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.1,
-          duration: 2500,
-          useNativeDriver: true,
-        }),
-      ]).start();
+    if (answer === "Drive through the loading bay since there's space beside the truck") {
+            const targetScroll = currentScroll.current + scaledMapHeight * 0.05;
 
-      // Start lane change after brief delay
-      setTimeout(() => {
-        setCarDirection("NORTHEAST");
-        setCarFrame(0);
-        
-        Animated.timing(carXAnim, {
-          toValue: rightLaneX,
-          duration: 1200,
-          useNativeDriver: false,
-        }).start(() => {
-          // Switch back to NORTH after lane change
-          setCarDirection("NORTH");
-          setCarFrame(0);
-          
-          // Continue forward
-          Animated.timing(scrollY, {
-            toValue: currentScroll.current + scaledMapHeight * 0.35,
-            duration: 1500,
-            useNativeDriver: true,
-          }).start(() => {
-            setIsCarVisible(false);
-            handleFeedback(answer);
-          });
-        });
-      }, 800);
-
-      return;
-    } else if (answer === "Cross over the chevron markings to get to the leftmost lane") {
-      // Move upward
-      const targetScroll = currentScroll.current + scaledMapHeight * 0.3;
-      
       setCarDirection("NORTH");
       setCarFrame(0);
 
       Animated.timing(scrollY, {
         toValue: targetScroll,
-        duration: 2500,
+        duration: 1500,
         useNativeDriver: true,
       }).start(() => {
-        // Change lane to right using NORTHEAST
-        const rightLaneX = width * 0.7 - carWidth / 2;
+        // Car stops
+        setCarPaused(true);
+        
+        // Wait a moment then show feedback
+        setTimeout(() => {
+          setIsCarVisible(false);
+          handleFeedback(answer);
+        }, 1000);
+      });
+      return;
+} else if (answer === "Change to an adjacent lane to go around the loading bay area") {
+  // Step 1: Move forward slightly
+  const initialScroll = currentScroll.current + scaledMapHeight * 0.05;
+  
+  setCarDirection("NORTH");
+  setCarFrame(0);
+
+  Animated.timing(scrollY, {
+    toValue: initialScroll,
+    duration: 1500,
+    useNativeDriver: true,
+  }).start(() => {
+    // Step 2: Change lane to LEFT using NORTHWEST
+    const leftLaneX = width * 0.5 - carWidth / 2;
+    
+    setCarDirection("NORTHWEST");
+    setCarFrame(0);
+    
+    Animated.parallel([
+      Animated.timing(carXAnim, {
+        toValue: leftLaneX,
+        duration: 1500,
+        useNativeDriver: false,
+      }),
+      Animated.timing(scrollY, {
+        toValue: initialScroll + scaledMapHeight * 0.08,
+        duration: 1500,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Step 3: Continue forward in left lane
+      setCarDirection("NORTH");
+      setCarFrame(0);
+      
+      Animated.timing(scrollY, {
+        toValue: initialScroll + scaledMapHeight * 0.1,
+        duration: 1800,
+        useNativeDriver: true,
+      }).start(() => {
+        // Step 4: Merge back to RIGHT lane using NORTHEAST
+        const rightLaneX = width / 1.45 - carWidth / 2;
         
         setCarDirection("NORTHEAST");
         setCarFrame(0);
@@ -254,21 +264,21 @@ export default function DrivingGame() {
         Animated.parallel([
           Animated.timing(carXAnim, {
             toValue: rightLaneX,
-            duration: 1200,
+            duration: 1500,
             useNativeDriver: false,
           }),
           Animated.timing(scrollY, {
-            toValue: targetScroll + scaledMapHeight * 0.05,
-            duration: 1200,
+            toValue: initialScroll + scaledMapHeight * 0.17,
+            duration: 1500,
             useNativeDriver: true,
           }),
         ]).start(() => {
-          // Switch back to NORTH and continue
+          // Step 5: Continue forward briefly
           setCarDirection("NORTH");
           setCarFrame(0);
           
           Animated.timing(scrollY, {
-            toValue: targetScroll + scaledMapHeight * 0.1,
+            toValue: initialScroll + scaledMapHeight * 0.2,
             duration: 1000,
             useNativeDriver: true,
           }).start(() => {
@@ -277,10 +287,12 @@ export default function DrivingGame() {
           });
         });
       });
-      return;
-    } else if (answer === "Stop before the chevron markings to decide which lane to use") {
+    });
+  });
+  return;
+    } else if (answer === "Wait behind the loading bay until the truck finishes unloading") {
       // Stop after moving a bit
-      const targetScroll = currentScroll.current + scaledMapHeight * 0.2;
+      const targetScroll = currentScroll.current + scaledMapHeight * 0.05;
 
       setCarDirection("NORTH");
       setCarFrame(0);
@@ -328,7 +340,7 @@ export default function DrivingGame() {
   // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Chevron markings are designed to guide traffic safely around islands and obstacles. Following them ensures proper lane positioning for your intended turn."
+    ? "Correct! Loading bays are reserved spaces. Regular traffic should use adjacent lanes while commercial vehicles use designated loading areas."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction

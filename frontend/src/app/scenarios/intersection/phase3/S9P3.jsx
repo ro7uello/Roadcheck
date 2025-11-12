@@ -13,7 +13,7 @@ const ltoHeight = ltoWidth * (300/240);
 const sideMargin = width * 0.05;
 
 // Map setup - Using single image like pedestrian game
-const mapImage = require("../../../../../assets/map/map7.png");
+const mapImage = require("../../../../../assets/map/map11.png");
 const mapWidth = 320;  // Original map width (5 columns * 64 pixels)
 const mapHeight = 768; // Original map height (12 rows * 64 pixels)
 const mapScale = width / mapWidth;
@@ -28,9 +28,9 @@ const carSprites = {
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
   ],
-  EAST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
+  NORTHWEST: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHWEST/SEPARATED/Blue_CIVIC_CLEAN_NORTHWEST_001.png"),
   ],
 };
 
@@ -55,12 +55,12 @@ const npcCarSprites = {
 
 const questions = [
   {
-    question: "You're driving along EDSA and approaching the Ortigas intersection. You see chevron markings on the road guiding traffic to the right, along with a traffic island separating the lanes. You need to turn right to Ortigas Avenue.",
-    options: ["Follow the chevron markings and stay in the guided lane", "Cross over the chevron markings to get to the leftmost lane", "Stop before the chevron markings to decide which lane to use"],
-    correct: "Follow the chevron markings and stay in the guided lane",
+    question: "You're driving on a mountain highway in Baguio and encounter transition lines that guide traffic around a bridge support structure. The lines gradually shift your lane position to avoid the obstacle.",
+    options: ["Follow the transition lines smoothly and gradually", "Maintain your original lane position and ignore the transition markings", "Change lanes abruptly to avoid following the curved path"],
+    correct: "Follow the transition lines smoothly and gradually",
     wrongExplanation: {
-      "Cross over the chevron markings to get to the leftmost lane": "Wrong! Crossing over chevron markings defeats their safety purpose and may put you in the wrong position for turning.",
-      "Stop before the chevron markings to decide which lane to use": "Wrong! Stopping unnecessarily on a major road creates traffic hazards and rear-end collision risks."
+      "Maintain your original lane position and ignore the transition markings": "Wrong! Ignoring transition lines could lead to collision with the obstacle they're designed to help you avoid.",
+      "Change lanes abruptly to avoid following the curved path": "Wrong! Abrupt lane changes defeat the purpose of the gradual transition system and create hazards for other drivers."
     }
   },
 ];
@@ -77,9 +77,9 @@ export default function DrivingGame() {
   const [npcCars] = useState([
     { id: 1, color: 'red', x: width * 0.3, y: scaledMapHeight * 0.15, frame: 0 },
     { id: 2, color: 'green', x: width * 0.3, y: scaledMapHeight * 0.55, frame: 0 },
-    { id: 3, color: 'yellow', x: width * 0.9, y: scaledMapHeight * 0.45, frame: 0 },
+    { id: 3, color: 'yellow', x: width * 0.3, y: scaledMapHeight * 0.45, frame: 0 },
     { id: 4, color: 'blue', x: width * 0.3, y: scaledMapHeight * 0.45, frame: 0 },
-    { id: 5, color: 'red', x: width * 0.7, y: scaledMapHeight * 0.6, frame: 0 },
+    { id: 5, color: 'red', x: width * 0.5, y: scaledMapHeight * 0.6, frame: 0 },
   ]);
 
   const [npcCarFrames, setNpcCarFrames] = useState(npcCars.map(() => 0));
@@ -102,7 +102,7 @@ export default function DrivingGame() {
   // Car
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
-  const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+  const carXAnim = useRef(new Animated.Value(width / 1.1 - carWidth / 2)).current;
 
   // NPC Cars sprite animation
   useEffect(() => {
@@ -190,98 +190,58 @@ export default function DrivingGame() {
     setShowQuestion(false);
     setShowAnswers(false);
 
-    if (answer === "Follow the chevron markings and stay in the guided lane") {
-      // Smooth lane change to right using NORTH and NORTHEAST
-      setCarDirection("NORTH");
-      setCarFrame(0);
-      
-      const rightLaneX = width * 0.7 - carWidth / 2;
-      
-      // Move forward while changing lanes
-      Animated.parallel([
-        Animated.timing(scrollY, {
-          toValue: currentScroll.current + scaledMapHeight * 0.1,
-          duration: 2500,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      // Start lane change after brief delay
-      setTimeout(() => {
-        setCarDirection("NORTHEAST");
-        setCarFrame(0);
-        
-        Animated.timing(carXAnim, {
-          toValue: rightLaneX,
-          duration: 1200,
-          useNativeDriver: false,
-        }).start(() => {
-          // Switch back to NORTH after lane change
-          setCarDirection("NORTH");
-          setCarFrame(0);
-          
-          // Continue forward
-          Animated.timing(scrollY, {
-            toValue: currentScroll.current + scaledMapHeight * 0.35,
-            duration: 1500,
-            useNativeDriver: true,
-          }).start(() => {
-            setIsCarVisible(false);
-            handleFeedback(answer);
-          });
-        });
-      }, 800);
-
-      return;
-    } else if (answer === "Cross over the chevron markings to get to the leftmost lane") {
-      // Move upward
-      const targetScroll = currentScroll.current + scaledMapHeight * 0.3;
+    if (answer === "Follow the transition lines smoothly and gradually") {
+      // Step 1: Move forward slightly
+      const initialScroll = currentScroll.current + scaledMapHeight * 0.05;
       
       setCarDirection("NORTH");
       setCarFrame(0);
 
       Animated.timing(scrollY, {
-        toValue: targetScroll,
-        duration: 2500,
+        toValue: initialScroll,
+        duration: 1500,
         useNativeDriver: true,
       }).start(() => {
-        // Change lane to right using NORTHEAST
-        const rightLaneX = width * 0.7 - carWidth / 2;
+        // Step 2: Smoothly transition to left lane using NORTHWEST
+        const leftLaneX = width * 0.7 - carWidth / 2;
         
-        setCarDirection("NORTHEAST");
+        setCarDirection("NORTHWEST");
         setCarFrame(0);
         
         Animated.parallel([
           Animated.timing(carXAnim, {
-            toValue: rightLaneX,
-            duration: 1200,
+            toValue: leftLaneX,
+            duration: 1500,
             useNativeDriver: false,
           }),
           Animated.timing(scrollY, {
-            toValue: targetScroll + scaledMapHeight * 0.05,
-            duration: 1200,
+            toValue: initialScroll + scaledMapHeight * 0.08,
+            duration: 1500,
             useNativeDriver: true,
           }),
         ]).start(() => {
-          // Switch back to NORTH and continue
+          // Step 3: Continue forward in left lane
           setCarDirection("NORTH");
           setCarFrame(0);
           
           Animated.timing(scrollY, {
-            toValue: targetScroll + scaledMapHeight * 0.1,
-            duration: 1000,
+            toValue: initialScroll + scaledMapHeight * 0.12,
+            duration: 1500,
             useNativeDriver: true,
           }).start(() => {
-            setIsCarVisible(false);
-            handleFeedback(answer);
+            setCarPaused(true);
+            setTimeout(() => {
+              setIsCarVisible(false);
+              handleFeedback(answer);
+            }, 1000);
           });
         });
       });
       return;
-    } else if (answer === "Stop before the chevron markings to decide which lane to use") {
-      // Stop after moving a bit
-      const targetScroll = currentScroll.current + scaledMapHeight * 0.2;
-
+    } else if (answer === "Maintain your original lane position and ignore the transition markings") {
+      // Just drive straight forward
+      const targetScroll = currentScroll.current + scaledMapHeight * 0.15;
+      
       setCarDirection("NORTH");
       setCarFrame(0);
 
@@ -290,14 +250,47 @@ export default function DrivingGame() {
         duration: 2500,
         useNativeDriver: true,
       }).start(() => {
-        // Car stops
         setCarPaused(true);
-        
-        // Wait a moment then show feedback
         setTimeout(() => {
           setIsCarVisible(false);
           handleFeedback(answer);
         }, 1000);
+      });
+      return;
+    } else if (answer === "Change lanes abruptly to avoid following the curved path") {
+      // Immediately change to left lane (abrupt)
+      const leftLaneX = width * 0.7 - carWidth / 2;
+      
+      setCarDirection("NORTHWEST");
+      setCarFrame(0);
+
+      Animated.parallel([
+        Animated.timing(carXAnim, {
+          toValue: leftLaneX,
+          duration: 800, // Faster/abrupt movement
+          useNativeDriver: false,
+        }),
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + scaledMapHeight * 0.05,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        // Continue forward in left lane
+        setCarDirection("NORTH");
+        setCarFrame(0);
+        
+        Animated.timing(scrollY, {
+          toValue: currentScroll.current + scaledMapHeight * 0.1,
+          duration: 1500,
+          useNativeDriver: true,
+        }).start(() => {
+          setCarPaused(true);
+          setTimeout(() => {
+            setIsCarVisible(false);
+            handleFeedback(answer);
+          }, 1000);
+        });
       });
       return;
     }
@@ -328,7 +321,7 @@ export default function DrivingGame() {
   // Calculate feedback message
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
-    ? "Correct! Chevron markings are designed to guide traffic safely around islands and obstacles. Following them ensures proper lane positioning for your intended turn."
+    ? "Correcty! Transition lines are specifically designed to guide traffic safely around obstacles while maintaining proper lane spacing and traffic flow."
     : currentQuestionData.wrongExplanation[selectedAnswer] || "Wrong!";
 
   // Ensure car sprite exists for current direction
