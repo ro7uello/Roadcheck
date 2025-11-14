@@ -1,6 +1,6 @@
 // src/app/categorySelectionScreen.tsx
 import React, { useRef, useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, ImageBackground, SafeAreaView, Animated, Image, ScrollView, Linking, } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, ImageBackground, SafeAreaView, Animated, Image, ScrollView, Linking, Modal, } from 'react-native';
 import { router } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as Haptics from 'expo-haptics';
@@ -25,6 +25,9 @@ export default function CategorySelectionScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [userProgress, setUserProgress] = useState({});
   const [libraryVisible, setLibraryVisible] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [modalScrolledToBottom, setModalScrolledToBottom] = useState(false);
 
   // Animations
   const backgroundAnimation = useRef(new Animated.Value(0)).current;
@@ -158,7 +161,14 @@ export default function CategorySelectionScreen() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      saveUserProgress(1, 'Road Markings', '/phaseSelectionScreen?categoryId=1&categoryName=Road Markings&categorySlug=road-markings');
+      setSelectedCategory({
+        id: 1,
+        name: 'Road Markings',
+        slug: 'road-markings',
+        route: '/phaseSelectionScreen?categoryId=1&categoryName=Road Markings&categorySlug=road-markings'
+      });
+      setModalScrolledToBottom(false);
+      setShowCategoryModal(true);
     });
   };
 
@@ -177,7 +187,14 @@ export default function CategorySelectionScreen() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      saveUserProgress(2, 'Traffic Signs', '/phaseSelectionScreen?categoryId=2&categoryName=Traffic Signs&categorySlug=traffic-signs');
+      setSelectedCategory({
+        id: 2,
+        name: 'Traffic Signs',
+        slug: 'traffic-signs',
+        route: '/phaseSelectionScreen?categoryId=2&categoryName=Traffic Signs&categorySlug=traffic-signs'
+      });
+      setModalScrolledToBottom(false);
+      setShowCategoryModal(true);
     });
   };
 
@@ -196,7 +213,14 @@ export default function CategorySelectionScreen() {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      saveUserProgress(3, 'Intersection and Others', '/phaseSelectionScreen?categoryId=3&categoryName=Intersection and Others&categorySlug=intersection-and-others');
+      setSelectedCategory({
+        id: 3,
+        name: 'Intersection and Others',
+        slug: 'intersection-and-others',
+        route: '/phaseSelectionScreen?categoryId=3&categoryName=Intersection and Others&categorySlug=intersection-and-others'
+      });
+      setModalScrolledToBottom(false);
+      setShowCategoryModal(true);
     });
   };
 
@@ -211,6 +235,75 @@ export default function CategorySelectionScreen() {
       // Haptics not available
     }
     setLibraryVisible(true);
+  };
+
+  const handleModalScroll = (event) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const paddingToBottom = 20;
+    
+    const contentFitsInView = contentSize.height <= layoutMeasurement.height + paddingToBottom;
+    const isCloseToBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+    
+    if (contentFitsInView || isCloseToBottom) {
+      setModalScrolledToBottom(true);
+    }
+  };
+
+  const handleContinue = () => {
+    if (modalScrolledToBottom && selectedCategory) {
+      setShowCategoryModal(false);
+      saveUserProgress(selectedCategory.id, selectedCategory.name, selectedCategory.route);
+    }
+  };
+
+  const getCategoryContent = () => {
+    if (!selectedCategory) return null;
+
+    switch (selectedCategory.id) {
+      case 1:
+        return {
+          title: 'ROAD MARKINGS',
+          content: `Welcome to the Road Markings module. In this Module, You will be learning about the following divided in 3 phases.
+
+A. Longitudinal lines
+B. Traverse lines
+C. Other lines
+D. Object markings
+E. Message and symbols
+F. Raised pavement markings
+G. Other markings
+
+Additionally, this chapter would also feature some right of way rules that you may encounter with some of the signs.`
+        };
+      case 2:
+        return {
+          title: 'TRAFFIC SIGNS',
+          content: `Welcome to the Traffic Signs module. In this Module, You will be learning about the following divided in 3 phases.
+
+A. Regulatory Signs
+B. Warning Signs
+C. Informative/Guide Signs
+D. Traffic Signs
+F. Roadwork Signs
+G. Hazard Markers
+
+Additionally, this chapter would also feature some right of way rules that you may encounter with some of the signs.`
+        };
+      case 3:
+        return {
+          title: 'RIGHT OF WAY',
+          content: `Welcome to the Right of Way module. In this Module, You will be learning about the following divided in 3 phases.
+
+A. Pedestrian Lanes
+B. Emergency Vehicles
+C. Intersections
+D. Expressways Rules and Regulations
+
+Additionally, this chapter would also feature some right of way rules that you may encounter with traffic signs and road markings.`
+        };
+      default:
+        return null;
+    }
   };
 
   const goBack = () => {
@@ -494,6 +587,52 @@ export default function CategorySelectionScreen() {
           </TouchableOpacity>
         </Animated.View>
       )}
+
+      {/* Category Modal */}
+      {showCategoryModal && (
+        <View style={styles.categoryModal}>
+          <View style={styles.categoryModalHeader}>
+            <Text style={styles.categoryModalTitle}>
+              {getCategoryContent()?.title}
+            </Text>
+          </View>
+          
+          <ScrollView 
+            style={styles.categoryModalScrollView}
+            contentContainerStyle={styles.categoryModalContent}
+            showsVerticalScrollIndicator={true}
+            onScroll={handleModalScroll}
+            scrollEventThrottle={16}
+            onContentSizeChange={(contentWidth, contentHeight) => {
+              const modalScrollViewHeight = height * 0.60 - 120;
+              if (contentHeight <= modalScrollViewHeight) {
+                setModalScrolledToBottom(true);
+              }
+            }}
+          >
+            <Text style={styles.categoryModalText}>
+              {getCategoryContent()?.content}
+            </Text>
+          </ScrollView>
+
+          <TouchableOpacity 
+            style={[
+              styles.categoryModalButton,
+              !modalScrolledToBottom && styles.categoryModalButtonDisabled
+            ]}
+            onPress={handleContinue}
+            activeOpacity={modalScrolledToBottom ? 0.8 : 1}
+            disabled={!modalScrolledToBottom}
+          >
+            <Text style={[
+              styles.categoryModalButtonText,
+              !modalScrolledToBottom && styles.categoryModalButtonTextDisabled
+            ]}>
+              {modalScrolledToBottom ? "CONTINUE" : "SCROLL TO CONTINUE"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -743,5 +882,64 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 5,
     textDecorationLine: 'underline',
+  },
+  categoryModal: {
+    position: 'absolute',
+    top: height * 0.2,
+    alignSelf: 'center',
+    backgroundColor: 'white',
+    borderRadius: 15,
+    width: width * 0.85,
+    height: height * 0.60,
+    overflow: 'hidden',
+    zIndex: 10,
+  },
+  categoryModalScrollView: {
+    flex: 1,
+  },
+  categoryModalHeader: {
+    backgroundColor: '#4ef5a2',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  categoryModalTitle: {
+    fontSize: 16,
+    fontFamily: 'pixel',
+    fontWeight: 'bold',
+    color: 'black',
+    textAlign: 'center',
+  },
+  categoryModalContent: {
+    padding: 20,
+    paddingBottom: 10,
+    },
+  categoryModalText: {
+    fontSize: 15,
+    fontFamily: 'spaceMono',
+    color: '#333',
+    lineHeight: 18,
+    textAlign: 'left',
+  },
+  categoryModalButton: {
+    backgroundColor: '#4ef5a2',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    marginTop: 5,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  categoryModalButtonText: {
+    color: 'black',
+    fontFamily: 'pixel',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  categoryModalButtonDisabled: {
+    backgroundColor: '#cccccc',
+  },
+  categoryModalButtonTextDisabled: {
+    color: '#666666',
   },
 });
