@@ -27,24 +27,6 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
   const [cacheStatus, setCacheStatus] = useState({ scenarios: false, session: false });
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  useEffect(() => {
-    // Initialize TTS
-    Tts.setDefaultLanguage('en-US');
-    Tts.setDefaultRate(0.5); // Adjust speaking speed
-    Tts.setDefaultPitch(1.0);
-
-    // Listener for when speech finishes
-    Tts.addEventListener('tts-finish', () => setIsSpeaking(false));
-
-    initializeSession();
-
-    // Cleanup
-    return () => {
-      Tts.stop();
-      Tts.removeAllListeners('tts-finish');
-    };
-  }, []);
-
   const getDisplayPhaseNumber = () => {
     if (categoryId === 1) return phaseId;
     if (categoryId === 2) return phaseId - 3;
@@ -265,18 +247,6 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     }
   };
 
-  const speakQuestion = (text) => {
-    if (text) {
-      setIsSpeaking(true);
-      Tts.speak(text);
-    }
-  };
-
-  const stopSpeaking = () => {
-    Tts.stop();
-    setIsSpeaking(false);
-  };
-
   const moveToNextScenario = () => {
     console.log('➡️ Moving from scenario', currentScenario, 'to', currentScenario + 1);
     if (currentScenario < 10) {
@@ -374,27 +344,65 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
   };
 
   const value = {
-    sessionData,
-    sessionProgress,
-    currentScenario,
-    scenarios,
-    scenariosLoaded,
-    cacheStatus,
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-    getCurrentScenarioData,
-    getCacheInfo,
-    speakQuestion,
-    stopSpeaking,
-    isSpeaking,
-    getScenarioProgress: (scenarioNum) => {
-      return sessionProgress.find(s => s.scenario_number === scenarioNum) || {
-        is_attempted: false,
-        is_correct: false
-      };
-    }
+  sessionData,
+  sessionProgress,
+  currentScenario,
+  scenarios,
+  scenariosLoaded,
+  cacheStatus,
+  updateScenarioProgress,
+  moveToNextScenario,
+  completeSession,
+  getCurrentScenarioData,
+  getCacheInfo,
+  speakScenario,
+  stopSpeaking,
+  toggleSpeech,
+  isSpeaking,
+  getScenarioProgress: (scenarioNum) => {
+    return sessionProgress.find(s => s.scenario_number === scenarioNum) || {
+      is_attempted: false,
+      is_correct: false
+    };
+  }
+};
+  
+  useEffect(() => {
+  // Initialize TTS
+  Tts.setDefaultLanguage('en-US');
+  Tts.setDefaultRate(0.5); // Adjust speed (0.01 to 0.99)
+  Tts.setDefaultPitch(1.0);
+  
+  // Add listener for when speech finishes
+  Tts.addEventListener('tts-finish', () => setIsSpeaking(false));
+  
+  // Cleanup
+  return () => {
+    Tts.stop();
+    Tts.removeAllListeners('tts-finish');
   };
+}, []);
+
+// Add TTS functions before the value object
+const speakScenario = (text) => {
+  if (text) {
+    setIsSpeaking(true);
+    Tts.speak(text);
+  }
+};
+
+const stopSpeaking = () => {
+  Tts.stop();
+  setIsSpeaking(false);
+};
+
+const toggleSpeech = (text) => {
+  if (isSpeaking) {
+    stopSpeaking();
+  } else {
+    speakScenario(text);
+  }
+};
 
   return (
     <SessionContext.Provider value={value}>
