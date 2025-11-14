@@ -1,10 +1,10 @@
-// SessionManager.jsx - FULLY OPTIMIZED WITH CACHING - FIXED
+// SessionManager.jsx - FIXED WITH EXPO-SPEECH
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../../config/api';
 import CachedApiService from './CachedApiService';
-import Tts from 'react-native-tts';
+import * as Speech from 'expo-speech'; // ✅ CHANGED: Use expo-speech instead
 
 const SessionContext = createContext();
 
@@ -53,10 +53,8 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
 
       console.log('🔍 Initializing session with userId:', userId);
 
-      // 🚀 Load scenarios from cache first (parallel with session creation)
       const scenariosPromise = loadScenariosOptimized();
 
-      // Start session
       const response = await fetch(`${API_URL}/sessions/start`, {
         method: 'POST',
         headers: {
@@ -75,8 +73,6 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
         setSessionData(result.data);
         console.log('✅ Session initialized:', result.data.id);
 
-        // 🔥 CRITICAL: Immediately warm the session cache for result page
-        // This runs in background, doesn't block UI
         CachedApiService.getSessionProgress(result.data.id)
           .then(() => {
             console.log('📦 Session cache warmed up');
@@ -84,14 +80,12 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
           })
           .catch(err => console.log('⚠️ Session cache warm failed (non-critical):', err));
 
-        // Load current session progress
         await loadSessionProgressOptimized(result.data.id);
       } else {
         const errorText = await response.text();
         console.error('Failed to initialize session:', response.status, errorText);
       }
 
-      // Wait for scenarios to load
       await scenariosPromise;
 
     } catch (error) {
@@ -99,13 +93,11 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     }
   };
 
-  // ✅ FIXED: Load scenarios with better caching
   const loadScenariosOptimized = async () => {
     try {
       console.log(`🚀 Loading scenarios for category ${categoryId}, phase ${phaseId}...`);
       const startTime = Date.now();
 
-      // Try to get scenarios with choices (cached)
       const result = await CachedApiService.getScenariosWithChoices(categoryId, phaseId);
 
       const loadTime = Date.now() - startTime;
@@ -125,13 +117,11 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     }
   };
 
-  // 🆕 OPTIMIZED: Load session progress with caching
   const loadSessionProgressOptimized = async (sessionId) => {
     try {
       console.log('📊 Loading session progress...');
       const startTime = Date.now();
 
-      // Use cached API service
       const result = await CachedApiService.getSessionProgress(sessionId);
 
       const loadTime = Date.now() - startTime;
@@ -150,7 +140,6 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     }
   };
 
-  // 🆕 OPTIMIZED: Update scenario progress with cache management
   const updateScenarioProgress = async (scenarioId, selectedAnswer, isCorrect) => {
     if (!sessionData) {
       console.warn('⚠️ No session data available');
@@ -171,7 +160,6 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
         timeTaken
       });
 
-      // 1️⃣ Submit attempt using cached API (auto-invalidates caches)
       await CachedApiService.submitScenarioAttempt(
         userId,
         scenarioId,
@@ -180,7 +168,6 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
       );
       console.log('✅ Attempt submitted via CachedApiService');
 
-      // 2️⃣ Update session scenario progress
       const response = await fetch(
         `${API_URL}/sessions/${sessionData.id}/scenario/${scenarioId}`,
         {
@@ -201,8 +188,6 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
       if (response.ok) {
         console.log('✅ Session scenario progress updated');
 
-        // 3️⃣ 🔥 CRITICAL: Refresh session cache in background for result page
-        // This ensures result page will load instantly when user finishes
         CachedApiService.getSessionProgress(sessionData.id, true)
           .then(() => {
             console.log('🔄 Session cache refreshed for result page');
@@ -211,7 +196,6 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
             console.warn('⚠️ Session cache refresh failed (non-critical):', err);
           });
 
-        // 4️⃣ Update local state
         const updatedProgress = [...sessionProgress];
         const progressIndex = updatedProgress.findIndex(
           p => p.scenario_id === scenarioId || p.scenario_number === currentScenario
@@ -255,7 +239,6 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     }
   };
 
-  // 🆕 OPTIMIZED: Complete session with cache refresh
   const completeSession = async () => {
     if (!sessionData) {
       console.warn('⚠️ No session data available');
@@ -292,12 +275,9 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
         const result = await response.json();
         console.log('✅ Session completed successfully');
 
-        // 🔥 CRITICAL: Final cache refresh before going to result page
-        // This ensures result page has the absolute latest data
         await CachedApiService.getSessionProgress(sessionData.id, true);
         console.log('📦 Final session cache refresh complete');
 
-        // Also refresh user stats and progress
         await Promise.all([
           CachedApiService.getUserProgress(userId, true),
           CachedApiService.refreshStats(userId)
@@ -330,7 +310,6 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     }
   };
 
-  // Get current scenario data
   const getCurrentScenarioData = () => {
     if (!scenariosLoaded || scenarios.length === 0) {
       return null;
@@ -338,78 +317,70 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     return scenarios[currentScenario - 1] || null;
   };
 
-  // 🆕 Get cache performance info
   const getCacheInfo = () => {
     return cacheStatus;
   };
 
-  const value = {
-  sessionData,
-  sessionProgress,
-  currentScenario,
-  scenarios,
-  scenariosLoaded,
-  cacheStatus,
-  updateScenarioProgress,
-  moveToNextScenario,
-  completeSession,
-  getCurrentScenarioData,
-  getCacheInfo,
-  speakScenario,
-  stopSpeaking,
-  toggleSpeech,
-  isSpeaking,
-  getScenarioProgress: (scenarioNum) => {
-    return sessionProgress.find(s => s.scenario_number === scenarioNum) || {
-      is_attempted: false,
-      is_correct: false
-    };
-  }
-};
-  
-  useEffect(() => {
-  // Initialize TTS
-  Tts.setDefaultLanguage('en-US');
-  Tts.setDefaultRate(0.5); // Adjust speed (0.01 to 0.99)
-  Tts.setDefaultPitch(1.0);
-  
-  // Add listener for when speech finishes
-  Tts.addEventListener('tts-finish', () => setIsSpeaking(false));
-  
-  // Cleanup
-  return () => {
-    Tts.stop();
-    Tts.removeAllListeners('tts-finish');
+  // ✅ FIXED: TTS Functions using expo-speech
+  const speakQuestion = (text) => {
+    if (text) {
+      setIsSpeaking(true);
+      Speech.speak(text, {
+        language: 'en-US',
+        pitch: 1.0,
+        rate: 0.75, // Slightly slower for clarity
+        onDone: () => setIsSpeaking(false),
+        onStopped: () => setIsSpeaking(false),
+        onError: () => setIsSpeaking(false),
+      });
+    }
   };
-}, []);
 
-// Add TTS functions before the value object
-const speakScenario = (text) => {
-  if (text) {
-    setIsSpeaking(true);
-    Tts.speak(text);
-  }
-};
+  const stopSpeaking = () => {
+    Speech.stop();
+    setIsSpeaking(false);
+  };
 
-const stopSpeaking = () => {
-  Tts.stop();
-  setIsSpeaking(false);
-};
+  const toggleSpeech = (text) => {
+    if (isSpeaking) {
+      stopSpeaking();
+    } else {
+      speakQuestion(text);
+    }
+  };
 
-const toggleSpeech = (text) => {
-  if (isSpeaking) {
-    stopSpeaking();
-  } else {
-    speakScenario(text);
-  }
-};
+  // ✅ FIXED: Added TTS functions to value object
+  const value = {
+    sessionData,
+    sessionProgress,
+    currentScenario,
+    scenarios,
+    scenariosLoaded,
+    cacheStatus,
+    updateScenarioProgress,
+    moveToNextScenario,
+    completeSession,
+    getCurrentScenarioData,
+    getCacheInfo,
+    speakQuestion,    // ✅ Now exported
+    stopSpeaking,     // ✅ Now exported
+    toggleSpeech,     // ✅ Now exported
+    isSpeaking,       // ✅ Now exported
+    getScenarioProgress: (scenarioNum) => {
+      return sessionProgress.find(s => s.scenario_number === scenarioNum) || {
+        is_attempted: false,
+        is_correct: false
+      };
+    }
+  };
+
+  // ✅ REMOVED: No more useEffect for TTS initialization (expo-speech doesn't need it)
 
   return (
     <SessionContext.Provider value={value}>
       <View style={styles.container}>
         {children}
 
-        {/* Progression Indicator with Cache Status */}
         <View style={styles.progressContainer}>
           <Text style={styles.progressText}>
             {categoryName} - Phase {displayPhaseNumber}
@@ -418,7 +389,6 @@ const toggleSpeech = (text) => {
             <Text style={styles.progressNumber}>
               Scenario {currentScenario} / 10
             </Text>
-            {/* Cache indicators */}
             <View style={styles.cacheIndicators}>
               {scenariosLoaded && cacheStatus.scenarios && (
                 <View style={styles.cacheIndicator}>

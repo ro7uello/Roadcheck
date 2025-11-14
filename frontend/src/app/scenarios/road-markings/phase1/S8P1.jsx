@@ -123,13 +123,15 @@ const questions = [
 export default function DrivingGame() {
   const navigation = useNavigation();
 
-  const {
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-    currentScenario: sessionCurrentScenario,
-    sessionData
-  } = useSession();
+    const {
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario: sessionCurrentScenario,
+      sessionData,
+      speakQuestion,
+      stopSpeaking
+    } = useSession();
 
   const currentScenario = 8;
 
@@ -162,6 +164,20 @@ export default function DrivingGame() {
     });
     return () => scrollY.removeListener(id);
   }, [scrollY]);
+
+  useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        // Auto-play question after 1 second delay (gives time for animation)
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking(); // Stop speaking when question disappears
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
   const [questionIndex, setQuestionIndex] = useState(0);
   const [showQuestion, setShowQuestion] = useState(false);
