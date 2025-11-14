@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Easing, Alert } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
+import Tts from 'react-native-tts';
 
 const { width, height } = Dimensions.get("window");
 
@@ -120,7 +121,9 @@ export default function DrivingGame() {
     moveToNextScenario,
     completeSession,
     currentScenario: sessionCurrentScenario,
-    sessionData
+    sessionData,
+    speakQuestion,        // ADD THIS
+    stopSpeaking         // ADD THIS
   } = useSession();
 
   const currentScenario = 1; 
@@ -151,6 +154,20 @@ export default function DrivingGame() {
     });
     return () => scrollY.removeListener(id);
   }, [scrollY]);
+
+  useEffect(() => {
+    if (showQuestion && questions[questionIndex]) {
+      // Auto-play question after 1 second delay (gives time for animation)
+      const timer = setTimeout(() => {
+        speakQuestion(questions[questionIndex].question);
+      }, 1000);
+      
+      return () => {
+        clearTimeout(timer);
+        stopSpeaking(); // Stop speaking when question disappears
+      };
+    }
+  }, [showQuestion, questionIndex]);
 
   const [questionIndex, setQuestionIndex] = useState(0);
   const [showQuestion, setShowQuestion] = useState(false);

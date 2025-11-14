@@ -51,7 +51,7 @@
       "newArchEnabled": true
     },
     "extra": {
-      "apiUrl": "https://roadcheck.onrender.com",
+      "apiUrl": "https://roadcheck-djtq.onrender.com",
       "router": {},
       "eas": {
         "projectId": "a8936058-bc96-47d8-a54c-2d7f568426ca"

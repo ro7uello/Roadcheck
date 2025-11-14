@@ -4,6 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../../config/api';
 import CachedApiService from './CachedApiService';
+import Tts from 'react-native-tts';
 
 const SessionContext = createContext();
 
@@ -24,6 +25,25 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
   const [scenarios, setScenarios] = useState([]);
   const [scenariosLoaded, setScenariosLoaded] = useState(false);
   const [cacheStatus, setCacheStatus] = useState({ scenarios: false, session: false });
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  useEffect(() => {
+    // Initialize TTS
+    Tts.setDefaultLanguage('en-US');
+    Tts.setDefaultRate(0.5); // Adjust speaking speed
+    Tts.setDefaultPitch(1.0);
+
+    // Listener for when speech finishes
+    Tts.addEventListener('tts-finish', () => setIsSpeaking(false));
+
+    initializeSession();
+
+    // Cleanup
+    return () => {
+      Tts.stop();
+      Tts.removeAllListeners('tts-finish');
+    };
+  }, []);
 
   const getDisplayPhaseNumber = () => {
     if (categoryId === 1) return phaseId;
@@ -245,6 +265,18 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     }
   };
 
+  const speakQuestion = (text) => {
+    if (text) {
+      setIsSpeaking(true);
+      Tts.speak(text);
+    }
+  };
+
+  const stopSpeaking = () => {
+    Tts.stop();
+    setIsSpeaking(false);
+  };
+
   const moveToNextScenario = () => {
     console.log('➡️ Moving from scenario', currentScenario, 'to', currentScenario + 1);
     if (currentScenario < 10) {
@@ -353,6 +385,9 @@ export const SessionProvider = ({ children, categoryId, phaseId, categoryName })
     completeSession,
     getCurrentScenarioData,
     getCacheInfo,
+    speakQuestion,
+    stopSpeaking,
+    isSpeaking,
     getScenarioProgress: (scenarioNum) => {
       return sessionProgress.find(s => s.scenario_number === scenarioNum) || {
         is_attempted: false,

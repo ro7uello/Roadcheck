@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 
 // Fallback URLs
-const PRODUCTION_URL = 'https://roadcheck.onrender.com';
+const PRODUCTION_URL = 'https://roadcheck-djtq.onrender.com';
 const DEVELOPMENT_URL = 'http://192.168.0.28:3001';
 
 // Use app.json config, or auto-detect dev/production
