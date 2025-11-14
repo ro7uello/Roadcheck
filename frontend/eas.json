@@ -7,18 +7,26 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "environment": "development"
+      "env": {
+        "APP_ENV": "development"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "environment": "preview"
+      "env": {
+        "APP_ENV": "preview"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "environment": "production"
+      "env": {
+        "APP_ENV": "production"
+      }
     },
     "my-profile": {
-      "environment": "production"
+      "env": {
+        "APP_ENV": "production"
+      }
     }
   },
   "submit": {

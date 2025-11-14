@@ -15,13 +15,17 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.camcie.lokcalbite"
+      "bundleIdentifier": "com.ro7ello.roadcheck",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#000000"
       },
       "package": "com.ro7ello.roadcheck",
+      "versionCode": 1,
       "intentFilters": [
         {
           "action": "VIEW",
@@ -47,16 +51,10 @@
       "newArchEnabled": true
     },
     "extra": {
-      "apiUrl": "https://roadcheck.onrender.com",
+      "apiUrl": "https://roadcheck-djtq.onrender.com",
       "router": {},
       "eas": {
         "projectId": "a8936058-bc96-47d8-a54c-2d7f568426ca"
-      }
-    },
-    "ios": {
-      "bundleIdentifier": "com.ro7ello.roadcheck",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
       }
     }
   }
