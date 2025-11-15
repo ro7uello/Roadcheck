@@ -476,7 +476,7 @@ Additionally, this chapter would also feature some right of way rules that you m
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.optionLabel}>INTERSECTION</Text>
+            <Text style={styles.optionLabel}>RIGHT-OF-WAY</Text>
             {userProgress.intersection && (
               <View style={styles.progressIndicator}>
                 <Text style={styles.progressText}>
