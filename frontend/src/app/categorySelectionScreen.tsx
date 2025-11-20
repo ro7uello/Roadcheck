@@ -163,9 +163,9 @@ export default function CategorySelectionScreen() {
     ]).start(() => {
       setSelectedCategory({
         id: 1,
-        name: 'Road Markings',
-        slug: 'road-markings',
-        route: '/phaseSelectionScreen?categoryId=1&categoryName=Road Markings&categorySlug=road-markings'
+        name: 'Highway Driving',
+        slug: 'highway-driving',
+        route: '/phaseSelectionScreen?categoryId=1&categoryName=Highway Driving&categorySlug=highway-driving'
       });
       setModalScrolledToBottom(false);
       setShowCategoryModal(true);
@@ -215,9 +215,9 @@ export default function CategorySelectionScreen() {
     ]).start(() => {
       setSelectedCategory({
         id: 3,
-        name: 'Intersection and Others',
-        slug: 'intersection-and-others',
-        route: '/phaseSelectionScreen?categoryId=3&categoryName=Intersection and Others&categorySlug=intersection-and-others'
+        name: 'Defensive Driving',
+        slug: 'defensive-driving',
+        route: '/phaseSelectionScreen?categoryId=3&categoryName=Defensive Driving&categorySlug=defensive-driving'
       });
       setModalScrolledToBottom(false);
       setShowCategoryModal(true);
@@ -262,8 +262,8 @@ export default function CategorySelectionScreen() {
     switch (selectedCategory.id) {
       case 1:
         return {
-          title: 'ROAD MARKINGS',
-          content: `Welcome to the Road Markings module. In this Module, You will be learning about the following divided in 3 phases.
+          title: 'HIGHWAY DRIVING',
+          content: `Welcome to the Highway Driving module. In this Module, You will be learning about the following divided in 3 phases.
 
 A. Longitudinal lines
 B. Traverse lines
@@ -291,8 +291,8 @@ Additionally, this chapter would also feature some right of way rules that you m
         };
       case 3:
         return {
-          title: 'RIGHT OF WAY',
-          content: `Welcome to the Right of Way module. In this Module, You will be learning about the following divided in 3 phases.
+          title: 'DEFENSIVE DRIVING',
+          content: `Welcome to the Defensive Driving module. In this Module, You will be learning about the following divided in 3 phases.
 
 A. Pedestrian Lanes
 B. Emergency Vehicles
@@ -424,7 +424,7 @@ Additionally, this chapter would also feature some right of way rules that you m
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.optionLabel}>ROAD MARKINGS</Text>
+            <Text style={styles.optionLabel}>HIGHWAY DRIVING</Text>
             {userProgress.roadMarkings && (
               <View style={styles.progressIndicator}>
                 <Text style={styles.progressText}>
@@ -450,7 +450,7 @@ Additionally, this chapter would also feature some right of way rules that you m
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.optionLabel}>SIGNS</Text>
+            <Text style={styles.optionLabel}>TRAFFIC SIGNS</Text>
             {userProgress.signs && (
               <View style={styles.progressIndicator}>
                 <Text style={styles.progressText}>
@@ -476,7 +476,7 @@ Additionally, this chapter would also feature some right of way rules that you m
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.optionLabel}>RIGHT-OF-WAY</Text>
+            <Text style={styles.optionLabel}>DEFENSIVE DRIVING</Text>
             {userProgress.intersection && (
               <View style={styles.progressIndicator}>
                 <Text style={styles.progressText}>
@@ -905,6 +905,17 @@ const styles = StyleSheet.create({
   },
   categoryModalTitle: {
     fontSize: 16,
+    fontFamily: 'pixel',
+    fontWeight: 'bold',
+    color: 'black',
+    textAlign: 'center',
+  },
+  categoryModalContent: {
+    padding: 20,
+    paddingBottom: 10,
+    },
+  categoryModalText: {
+    fontSize: 15,
     fontFamily: 'pixel',
     fontWeight: 'bold',
     color: 'black',
