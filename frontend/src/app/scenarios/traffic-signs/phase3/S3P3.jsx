@@ -193,11 +193,11 @@ function DrivingGameContent() {
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  const warningSignRowIndex = 12.5;
+  const warningSignRowIndex = 10.5;
   const warningSignColIndex = 3;
   const warningSignXOffset = 0;
 
-  // Jeepney position on map (adjust row to change distance ahead)
+  // Jeepney position - starts at row 3 (will be visible when car stops at row 6)
   const jeepneyRowIndex = 3;
   const jeepneyColIndex = 1.8;
 
@@ -234,6 +234,7 @@ function DrivingGameContent() {
   const [jeepneyFrame, setJeepneyFrame] = useState(0);
 
   function startScrollAnimation() {
+    // Reset positions
     scrollY.setValue(startOffset);
     jeepneyRowAnim.setValue(jeepneyRowIndex);
     currentJeepneyRow.current = jeepneyRowIndex;
@@ -241,6 +242,7 @@ function DrivingGameContent() {
     const stopRow = 6;
     const stopOffset = startOffset + stopRow * tileSize;
 
+    // Show jeepney immediately when animation starts
     setShowJeepney(true);
 
     Animated.timing(scrollY, {
@@ -327,62 +329,43 @@ function DrivingGameContent() {
     const rowsToMove = targetRow - currentRow;
     const nextTarget = currentScroll.current + rowsToMove * tileSize;
 
-    // Jeepney animation logic - move north (decreasing row numbers)
+    // Jeepney animation logic - moves SLOWER than car
     const jeepneyStartRow = currentJeepneyRow.current;
     
-    // Calculate how far north the player car will travel
-    const jeepneyTargetRow = Math.max(0, jeepneyStartRow - rowsToMove);
+    // Jeepney moves only 40% of the distance the car moves (slower speed)
+    const jeepneyMoveDistance = rowsToMove * 0.4;
+    const jeepneyTargetRow = Math.max(-2, jeepneyStartRow - jeepneyMoveDistance);
+
+    let carDuration, jeepneyDuration;
 
     if (answer === "Slow down and use engine breaking.") {
-      const duration = 8000;
-      // Correct answer - slow and controlled speed
-      Animated.parallel([
-        Animated.timing(scrollY, {
-          toValue: nextTarget,
-          duration: duration, 
-          useNativeDriver: true,
-        }),
-        Animated.timing(jeepneyRowAnim, {
-          toValue: jeepneyTargetRow,
-          duration: duration,
-          useNativeDriver: true,
-        })
-      ]).start(() => {
-        handleFeedback(answer);
-      });
+      // CORRECT: Slow and controlled speed - maintains safe distance
+      carDuration = 8000;
+      jeepneyDuration = 10000; // Jeepney slightly slower, safe distance maintained
     } else if (answer === "Rely on your brakes to control speed") {
-      const duration = 5000;
-      Animated.parallel([
-        Animated.timing(scrollY, {
-          toValue: nextTarget,
-          duration: duration,
-          useNativeDriver: true,
-        }),
-        Animated.timing(jeepneyRowAnim, {
-          toValue: jeepneyTargetRow,
-          duration: duration,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        handleFeedback(answer);
-      });
+      // WRONG: Car speeds up dangerously due to brake failure
+      carDuration = 4800; // Very fast - brake fade causes dangerous speed
+      jeepneyDuration = 10000; // Jeepney maintains normal speed - car catches up fast
     } else if (answer === "Follow the trucks closely to benefit from their slower speed") {
-      const duration = 3000;
-      Animated.parallel([
-        Animated.timing(scrollY, {
-          toValue: nextTarget,
-          duration: duration,
-          useNativeDriver: true,
-        }),
-        Animated.timing(jeepneyRowAnim, {
-          toValue: jeepneyTargetRow,
-          duration: duration,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        handleFeedback(answer);
-      });
+      // WRONG: Car follows too close, tailgating
+      carDuration = 5300; // Fast speed, following dangerously close
+      jeepneyDuration = 10100; // Jeepney normal speed - unsafe following distance
     }
+
+    Animated.parallel([
+      Animated.timing(scrollY, {
+        toValue: nextTarget,
+        duration: carDuration,
+        useNativeDriver: true,
+      }),
+      Animated.timing(jeepneyRowAnim, {
+        toValue: jeepneyTargetRow,
+        duration: jeepneyDuration,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      handleFeedback(answer);
+    });
   };
 
   const handleNext = async () => {
@@ -392,6 +375,7 @@ function DrivingGameContent() {
     setCarFrame(0);
     setCarDirection("NORTH");
     setShowJeepney(false);
+    setIsCorrectAnswer(null);
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
@@ -424,7 +408,7 @@ function DrivingGameContent() {
         phaseNumber = phaseId - 6;
       }
 
-      router.push('scenarios/traffic-signs/phase3/S3P3');
+      router.push('scenarios/traffic-signs/phase3/S4P3');
     }
   };
 
@@ -500,30 +484,33 @@ function DrivingGameContent() {
           resizeMode="contain"
         />
 
-        {/* Jeepney */}
-{/* Jeepney */}
-{showJeepney && (
-  <Animated.View
-    style={{
-      position: "absolute",
-      width: 350,
-      height: 350,
-      left: jeepneyLeft - 50,
-      transform: [
-        { 
-          translateY: Animated.multiply(jeepneyRowAnim, tileSize)
-        }
-      ],
-      zIndex: 7,
-    }}
-  >
-    <Image
-      source={jeepneySprites.NORTH[jeepneyFrame]}
-      style={styles.jeepneyImage}
-      resizeMode="contain"
-    />
-  </Animated.View>
-)}
+        {/* Jeepney - FIXED positioning */}
+        {showJeepney && (
+          <Animated.View
+            style={{
+              position: "absolute",
+              width: 350,
+              height: 350,
+              left: jeepneyLeft - 50,
+              top: 0,
+              transform: [
+                { 
+                  translateY: Animated.multiply(jeepneyRowAnim, tileSize)
+                }
+              ],
+              zIndex: 9,
+            }}
+          >
+            <Image
+              source={jeepneySprites.NORTH[jeepneyFrame]}
+              style={{
+                width: 350,
+                height: 350,
+              }}
+              resizeMode="contain"
+            />
+          </Animated.View>
+        )}
       </Animated.View>
 
       {/* Car */}
@@ -537,6 +524,7 @@ function DrivingGameContent() {
           left: width / 2 - (280 / 2),
           zIndex: 8,
         }}
+        resizeMode="contain"
       />
 
       {/* Question overlay */}
@@ -728,10 +716,5 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: Math.min(width * 0.045, 20),
     fontWeight: "bold",
-  },
-  // Jeepney styles
-  jeepneyImage: {
-    width: 350,
-    height: 350,
   },
 });

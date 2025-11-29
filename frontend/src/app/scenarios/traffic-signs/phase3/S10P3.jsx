@@ -418,7 +418,7 @@ function DrivingGameContent() {
         phaseNumber = phaseId - 6;
       }
 
-      router.push('scenarios/traffic-signs/phase3/S1P3');
+      router.push('scenarios/traffic-signs/phase3/S9P3');
     }
   };
 

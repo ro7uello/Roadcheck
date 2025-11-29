@@ -11,141 +11,37 @@ const ltoWidth = Math.min(width * 0.3, 240);
 const ltoHeight = ltoWidth * (300 / 240);
 const sideMargin = width * 0.05;
 
-const roadTiles = {
-  road3: require("../../../../../assets/road/road3.png"),
-  road4: require("../../../../../assets/road/road4.png"),
-  road16: require("../../../../../assets/road/road16.png"),
-  road6: require("../../../../../assets/road/road6.png"),
-  road8: require("../../../../../assets/road/road8.png"),
-  road17: require("../../../../../assets/road/road17.png"),
-  road18: require("../../../../../assets/road/road18.png"),
-  road19: require("../../../../../assets/road/road19.png"),
-  road20: require("../../../../../assets/road/road20.png"),
-  road23: require("../../../../../assets/road/road23.png"),
-  road24: require("../../../../../assets/road/road24.png"),
-  road48: require("../../../../../assets/road/road48.png"),
-  road49: require("../../../../../assets/road/road49.png"),
-  road50: require("../../../../../assets/road/road50.png"),
-  road51: require("../../../../../assets/road/road51.png"),
-  road52: require("../../../../../assets/road/road52.png"),
-  road57: require("../../../../../assets/road/road57.png"),
-  road58: require("../../../../../assets/road/road58.png"),
-  road59: require("../../../../../assets/road/road59.png"),
-  road60: require("../../../../../assets/road/road60.png"),
-};
-
-const treeSprites = {
-  tree1: require("../../../../../assets/tree/Tree3_idle_s.png"),
-};
-
-const mapLayout = [
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-  ["road18", "road8", "road6", "road17", "road20"],
-];
-
-const treePositions = [
-  { row: 0, col: 0, type: "tree1" },
-  { row: 1, col: 0, type: "tree1" },
-  { row: 2, col: 0, type: "tree1" },
-  { row: 3, col: 0, type: "tree1" },
-  { row: 4, col: 0, type: "tree1" },
-  { row: 5, col: 0, type: "tree1" },
-  { row: 10, col: 0, type: "tree1" },
-  { row: 11, col: 0, type: "tree1" },
-  { row: 12, col: 0, type: "tree1" },
-  { row: 13, col: 0, type: "tree1" },
-  { row: 14, col: 0, type: "tree1" },
-  { row: 15, col: 0, type: "tree1" },
-  { row: 16, col: 0, type: "tree1" },
-  { row: 17, col: 0, type: "tree1" },
-  { row: 0, col: 3.5, type: "tree1" },
-  { row: 1, col: 3.5, type: "tree1" },
-  { row: 2, col: 3.5, type: "tree1" },
-  { row: 3, col: 3.5, type: "tree1" },
-  { row: 4, col: 3.5, type: "tree1" },
-  { row: 5, col: 3.5, type: "tree1" },
-  { row: 10, col: 3.5, type: "tree1" },
-  { row: 11, col: 3.5, type: "tree1" },
-  { row: 12, col: 3.5, type: "tree1" },
-  { row: 13, col: 3.5, type: "tree1" },
-  { row: 14, col: 3.5, type: "tree1" },
-  { row: 15, col: 3.5, type: "tree1" },
-  { row: 16, col: 3.5, type: "tree1" },
-  { row: 17, col: 3.5, type: "tree1" },
-  { row: 0.5, col: 4, type: "tree1" },
-  { row: 2.5, col: 4, type: "tree1" },
-  { row: 4.5, col: 4, type: "tree1" },
-  { row: 11.5, col: 4, type: "tree1" },
-  { row: 13.5, col: 4, type: "tree1" },
-  { row: 15.5, col: 4, type: "tree1" },
-  { row: 0.5, col: 3.5, type: "tree1" },
-  { row: 2.5, col: 3.5, type: "tree1" },
-  { row: 4.5, col: 3.5, type: "tree1" },
-  { row: 11.5, col: 3.5, type: "tree1" },
-  { row: 13.5, col: 4, type: "tree1" },
-  { row: 15.5, col: 3.5, type: "tree1" },
-  { row: 1, col: 4, type: "tree1" },
-  { row: 3, col: 4, type: "tree1" },
-  { row: 12, col: 4, type: "tree1" },
-  { row: 14, col: 4, type: "tree1" },
-  { row: 16, col: 4, type: "tree1" },
-  { row: 1, col: 3.5, type: "tree1" },
-  { row: 3, col: 3.5, type: "tree1" },
-  { row: 12, col: 3.5, type: "tree1" },
-  { row: 14, col: 3.5, type: "tree1" },
-  { row: 16, col: 3.5, type: "tree1" },
-];
+// Map setup
+const mapImage = require("../../../../../assets/map/map14.png");
+const mapWidth = 320;
+const mapHeight = 768;
+const mapScale = width / mapWidth;
+const scaledMapHeight = mapHeight * mapScale;
 
 const carSprites = {
   NORTH: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  NORTHEAST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTHEAST/SEPARATED/Blue_CIVIC_CLEAN_NORTHEAST_001.png"),
-  ],
-  EAST: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/EAST/SEPARATED/Blue_CIVIC_CLEAN_EAST_001.png"),
-  ],
 };
 
 const questions = [
   {
     question:
-      "You're driving through Benguet province during the rainy season when you see a LANDSLIDE-PRONE AREA sign. Recent news reports mentioned heavy rains in the region, and you notice some loose rocks on the roadside.",
+      "You're driving along the Ilocos coastal road when you encounter an OPENING BRIDGE AHEAD sign. You can see the bridge in the distance, and there appears to be some marine traffic in the waterway below.",
     options: [
-      "Drive quickly through the area to minimize exposure time",
-      "Proceed cautiously, watch for falling rocks or debris, and be prepared to stop or turn around",
-      "Stop and wait for other vehicles to go first",
+      "Speed up to cross before the bridge opens",
+      "Reduce speed and be prepared to stop if the bridge is opening or about to open",
+      "Continue at normal speed since the bridge appears closed",
     ],
-    correct: "Proceed cautiously, watch for falling rocks or debris, and be prepared to stop or turn around",
+    correct: "Reduce speed and be prepared to stop if the bridge is opening or about to open",
     correctExplanation:
-      "Correct! Landslide-prone areas require extreme caution, continuous observation, and readiness to react to changing conditions.",
+      "Correct! Opening bridge signs require preparation to stop, as bridge operations prioritize marine traffic.",
     wrongExplanation: {
-      "Drive quickly through the area to minimize exposure time":
-        "Accident prone! Speed increases risk and reduces reaction time for falling debris or unstable conditions.",
-      "Stop and wait for other vehicles to go first":
-        "Wrong! Stopping unnecessarily creates traffic hazards; cautious movement is safer than stationary waiting",
+      "Speed up to cross before the bridge opens":
+        "Accident Prone! Racing to beat a bridge opening creates dangerous situations and may result in getting trapped on the bridge.",
+      "Continue at normal speed since the bridge appears closed":
+        "Continue at normal speed since the bridge appears closed; Wrong! Bridge status can change quickly; warning signs require proactive caution.",
     },
   },
 ];
@@ -177,17 +73,14 @@ function DrivingGameContent() {
     }
   };
 
-  const numColumns = mapLayout[0].length;
-  const tileSize = width / numColumns;
-  const mapHeight = mapLayout.length * tileSize;
-
-  const startOffset = -(mapHeight - height);
+  const startOffset = -(scaledMapHeight - height);
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  const warningSignRowIndex = 12.5;
-  const warningSignColIndex = 3;
-  const warningSignXOffset = 0;
+  const warningSignScale = mapScale * 1.5;
+  const warningSignSize = 32 * warningSignScale;
+  const warningSignLeft = 270 * mapScale - warningSignSize / 2;
+  const warningSignTop = 440 * mapScale;
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -208,11 +101,10 @@ function DrivingGameContent() {
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
-    const stopRow = 6;
-    const stopOffset = startOffset + stopRow * tileSize;
+    const stopPosition = startOffset + (200 * mapScale);
 
     Animated.timing(scrollY, {
-      toValue: stopOffset,
+      toValue: stopPosition,
       duration: 3000,
       useNativeDriver: true,
     }).start(() => {
@@ -272,10 +164,7 @@ function DrivingGameContent() {
     // Update backend progress (non-blocking)
     updateProgress(answer, isCorrect).catch((error) => console.error(error));
 
-    const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
-    const targetRow = 16;
-    const rowsToMove = targetRow - currentRow;
-    const nextTarget = currentScroll.current + rowsToMove * tileSize;
+    const targetPosition = startOffset + (450 * mapScale);
 
     let duration = 5000;
     if (answer === "Reduce speed and be prepared to stop if the bridge is opening or about to open") {
@@ -286,7 +175,7 @@ function DrivingGameContent() {
       duration = 5000; // Normal speed - wrong answer (not being prepared)
     }
 
-    Animated.timing(scrollY, { toValue: nextTarget, duration, useNativeDriver: true }).start(({ finished }) => {
+    Animated.timing(scrollY, { toValue: targetPosition, duration, useNativeDriver: true }).start(({ finished }) => {
       if (finished) handleFeedback(answer);
     });
   };
@@ -319,9 +208,6 @@ function DrivingGameContent() {
     }
   };
 
-  const warningSignLeft = warningSignColIndex * tileSize + warningSignXOffset;
-  const warningSignTop = warningSignRowIndex * tileSize;
-
   const currentQuestionData = questions[questionIndex];
   const feedbackMessage = isCorrectAnswer
     ? currentQuestionData.correctExplanation
@@ -333,41 +219,43 @@ function DrivingGameContent() {
         style={{
           position: "absolute",
           width: width,
-          height: mapHeight,
+          height: scaledMapHeight,
           left: 0,
           transform: [{ translateY: scrollY }],
           zIndex: 1,
         }}
       >
-        {mapLayout.map((row, rowIndex) =>
-          row.map((tile, colIndex) => (
-            <Image
-              key={`${rowIndex}-${colIndex}`}
-              source={roadTiles[tile]}
-              style={{ position: "absolute", width: tileSize, height: tileSize, left: colIndex * tileSize, top: rowIndex * tileSize }}
-              resizeMode="stretch"
-            />
-          ))
-        )}
-
-        {treePositions.map((tree, index) => (
-          <Image
-            key={`tree-${index}`}
-            source={treeSprites[tree.type]}
-            style={{ position: "absolute", width: tileSize, height: tileSize, left: tree.col * tileSize, top: tree.row * tileSize }}
-          />
-        ))}
+        <Image
+          source={mapImage}
+          style={{ width: width, height: scaledMapHeight }}
+          resizeMode="stretch"
+        />
 
         <Image
           source={warningSignSprites.floodRiskArea}
-          style={{ position: "absolute", width: tileSize, height: tileSize, left: warningSignLeft, top: warningSignTop, zIndex: 2 }}
+          style={{ 
+            position: "absolute", 
+            width: warningSignSize, 
+            height: warningSignSize, 
+            left: warningSignLeft, 
+            top: warningSignTop, 
+            zIndex: 2 
+          }}
           resizeMode="contain"
         />
       </Animated.View>
 
       <Image
-        source={carSprites[carDirection][carFrame]}
-        style={{ width: tileSize * 2.0, height: tileSize * 2.0, position: "absolute", bottom: height * 0.1, left: width * 0.29, zIndex: 3 }}
+        source={carSprites.NORTH[carFrame]}
+        style={{ 
+          width: width * 0.4, 
+          height: width * 0.4, 
+          position: "absolute", 
+          bottom: height * 0.1, 
+          left: width * 0.3, 
+          zIndex: 3 
+        }}
+        resizeMode="contain"
       />
 
       {showQuestion && (

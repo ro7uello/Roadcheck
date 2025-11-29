@@ -140,6 +140,13 @@ const carSprites = {
   ],
 };
 
+const jeepneySprites = {
+  NORTH: [
+    require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
+  ],
+};
+
 // Questions
 const questions = [
   {
@@ -247,6 +254,11 @@ function DrivingGameContent() {
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carPaused, setCarPaused] = useState(false);
 
+  // ✅ Jeepney state
+  const [jeepneyFrame, setJeepneyFrame] = useState(0);
+  const [showJeepney, setShowJeepney] = useState(false);
+  const jeepneyY = useRef(new Animated.Value(+tileSize * 2)).current;
+
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
     const stopRow = 6;
@@ -277,6 +289,17 @@ function DrivingGameContent() {
     }
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
+
+  // ✅ Jeepney animation
+  useEffect(() => {
+    let iv;
+    if (showJeepney) {
+      iv = setInterval(() => {
+        setJeepneyFrame((p) => (p + 1) % jeepneySprites.NORTH.length);
+      }, 200);
+    }
+    return () => clearInterval(iv);
+  }, [showJeepney]);
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
@@ -316,9 +339,8 @@ function DrivingGameContent() {
     }
   };
 
-  // ✅ --- MODIFIED HANDLE ANSWER WITH ANIMATION VARIANTS ---
-// ✅ --- MODIFIED HANDLE ANSWER WITH ANIMATION VARIANTS ---
-const handleAnswer = (answer) => {
+  // ✅ --- MODIFIED HANDLE ANSWER WITH JEEPNEY ---
+  const handleAnswer = (answer) => {
     console.log('🎯 Answer selected:', answer);
     
     setSelectedAnswer(answer);
@@ -334,7 +356,6 @@ const handleAnswer = (answer) => {
     updateProgress(answer, isCorrect).catch(error => {
       console.error('❌ Failed to update progress:', error);
       console.error('Error message:', error.message);
-      // Continue with animation even if backend update fails
     });
 
     const currentRow = Math.round(Math.abs(currentScroll.current - startOffset) / tileSize);
@@ -351,8 +372,6 @@ const handleAnswer = (answer) => {
 
     let duration = 10000;
     let carMovement = "NORTH";
-    
-    // This flag controls whether the default animation runs at the end
     let startAnimationImmediately = true; 
 
     // Different animations based on answer choice - LANDSLIDE SCENARIO
@@ -363,46 +382,49 @@ const handleAnswer = (answer) => {
     } else if (answer === "Proceed cautiously, watch for falling rocks or debris, and be prepared to stop or turn around") {
       duration = 8000; // Slow, careful speed - CORRECT
       carMovement = "NORTH";
-      setCarDirection("NORTH"); // Set direction explicitly if needed
+      setCarDirection("NORTH");
       console.log('⏱️ Correct - slow and cautious, watching for debris');
-} else if (answer === " Stop and wait for other vehicles to go first") {
-      // --- THIS IS THE STOPPING BLOCK ---
+  } else if (answer === "Stop and wait for other vehicles to go first") {
+  // ✅ TRIGGER JEEPNEY ANIMATION
+  startAnimationImmediately = false;
+  carMovement = "NORTH";
+  duration = 5000;
+  
+  console.log('⏱️ Stopping... jeepney will pass by.');
+  
+  setCarDirection(carMovement);
+  setCarPaused(true);
 
-      startAnimationImmediately = false; // Prevent default animation
-      carMovement = "NORTH";
-      duration = 5000; // The movement *after* the stop will take 5s
-      
-      console.log('⏱️ Stopping... will wait 10 seconds.');
-      
-      setCarDirection(carMovement);
-      // Now that scrollY.stopAnimation() has run, the car is frozen.
-      // This line updates the visual (e.g., wheels stop spinning).
-      setCarPaused(true); // 1. Stop the car visually
+  // ✅ Start jeepney animation - GOING NORTH (bottom to top)
+  setShowJeepney(true);
+  jeepneyY.setValue(height + tileSize * 2); // Start from bottom (off-screen)
+  Animated.timing(jeepneyY, {
+    toValue: -tileSize * 2, // End at top (off-screen)
+    duration: 6000,
+    useNativeDriver: true,
+  }).start(() => {
+    setShowJeepney(false);
+  });
 
-      // 2. Wait for 10 seconds
-      setTimeout(() => {
-        console.log('⏱️ 10s wait over. Proceeding slowly.');
-        setCarPaused(false); // 3. Unpause the car to start moving
+  // Wait 10 seconds then proceed
+  setTimeout(() => {
+    console.log('⏱️ 10s wait over. Proceeding slowly.');
+    setCarPaused(false);
 
-        // 4. Proceed with the animation
-        Animated.timing(scrollY, {
-          toValue: nextTarget,
-          duration: duration, // Use the 5000ms duration
-          useNativeDriver: true,
-        }).start(() => {
-          setCarPaused(true); // Stop at the end
-          handleFeedback(answer);
-        });
-      }, 10000); // 10,000 milliseconds = 10 seconds
-      
-      // --- END OF STOPPING BLOCK ---
-    }
+    Animated.timing(scrollY, {
+      toValue: nextTarget,
+      duration: duration,
+      useNativeDriver: true,
+    }).start(() => {
+      setCarPaused(true);
+      handleFeedback(answer);
+    });
+  }, 10000);
+}
+    setCarDirection(carMovement);
 
-    setCarDirection(carMovement); // Set visual direction
-
-    // Only run the default animation if our special case wasn't triggered
     if (startAnimationImmediately) {
-      setCarPaused(false); // Unpause for immediate movement
+      setCarPaused(false);
 
       Animated.timing(scrollY, {
         toValue: nextTarget,
@@ -414,6 +436,7 @@ const handleAnswer = (answer) => {
       });
     }
   };
+
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
@@ -563,6 +586,21 @@ const handleAnswer = (answer) => {
           zIndex: 3,
         }}
       />
+
+      {/* ✅ Jeepney passing by */}
+      {showJeepney && (
+        <Animated.Image
+          source={jeepneySprites.NORTH[jeepneyFrame]}
+          style={{
+            width: tileSize * 2.0,
+            height: tileSize * 2.0,
+            position: "absolute",
+            left: width * 0.13,
+            zIndex: 2,
+            transform: [{ translateY: jeepneyY }],
+          }}
+        />
+      )}
 
       {/* ✅ Rain Effect Layer - dimmed for dusk */}
       {rainDrops.map((drop, index) => (
@@ -743,33 +781,34 @@ const styles = StyleSheet.create({
   feedbackText: {
     color: "white",
     fontSize: Math.min(width * 0.06, 24),
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  nextButtonContainer: {
-    position: "absolute",
-    top: height * 0.50,
-    right: sideMargin,
-    width: width * 0.2,
-    alignItems: "center",
-    zIndex: 300,
-  },
-  nextButton: {
-    backgroundColor: "#007bff",
-    paddingVertical: height * 0.015,
-    paddingHorizontal: width * 0.06,
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    minWidth: width * 0.15,
-    alignItems: "center",
-  },
-  nextButtonText: {
-    color: "white",
-    fontSize: Math.min(width * 0.045, 20),
-    fontWeight: "bold",
-  },
+    fontWeight:
+    "bold",
+textAlign: "center",
+},
+nextButtonContainer: {
+position: "absolute",
+top: height * 0.50,
+right: sideMargin,
+width: width * 0.2,
+alignItems: "center",
+zIndex: 300,
+},
+nextButton: {
+backgroundColor: "#007bff",
+paddingVertical: height * 0.015,
+paddingHorizontal: width * 0.06,
+borderRadius: 8,
+shadowColor: "#000",
+shadowOffset: { width: 0, height: 2 },
+shadowOpacity: 0.25,
+shadowRadius: 3.84,
+elevation: 5,
+minWidth: width * 0.15,
+alignItems: "center",
+},
+nextButtonText: {
+color: "white",
+fontSize: Math.min(width * 0.045, 20),
+fontWeight: "bold",
+},
 });
