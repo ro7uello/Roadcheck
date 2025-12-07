@@ -20,6 +20,29 @@ interface Category {
   name: string;
 }
 
+// Function to get custom phase titles based on category and phase number
+const getPhaseTitle = (categoryId: string, phaseNumber: number): string => {
+  const phaseTitles: { [key: string]: { [key: number]: string } } = {
+    '1': { // Highway Driving (Road Markings)
+      1: 'Lane Positioning',
+      2: 'Overtaking and Proper Changing of Lanes',
+      3: 'Attitude and Awareness'
+    },
+    '2': { // Traffic Signs
+      1: 'Traffic Lights',
+      2: 'Regulatory Sign',
+      3: 'Warning Signs'
+    },
+    '3': { // Defensive Driving (Intersection)
+      1: 'Right of Way Rule',
+      2: 'Driving Attitude and Decision',
+      3: 'Road Awareness and Courtesy'
+    }
+  };
+
+  return phaseTitles[categoryId]?.[phaseNumber] || `Phase ${phaseNumber}`;
+};
+
 export default function PhaseSelectionScreen() {
   const { categoryId, categoryName } = useLocalSearchParams<{
     categoryId: string;
@@ -361,6 +384,9 @@ export default function PhaseSelectionScreen() {
           phaseNumber = phase.id - 6; // Intersection: 7,8,9 → 1,2,3
         }
 
+        // Get custom phase title
+        const customPhaseTitle = getPhaseTitle(categoryId as string, phaseNumber);
+
         // Determine which icon to use
         let iconSource;
         switch (phaseNumber) {
@@ -392,7 +418,7 @@ export default function PhaseSelectionScreen() {
                 style={styles.optionImage}
                 resizeMode="contain"
               />
-              <Text style={styles.optionLabel}>{phase.name.toUpperCase()}</Text>
+              <Text style={styles.optionLabel}>{customPhaseTitle.toUpperCase()}</Text>
             </TouchableOpacity>
           </Animated.View>
         );
@@ -471,7 +497,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   optionLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'normal',
     color: 'white',
     fontFamily: 'pixel',
@@ -482,8 +508,8 @@ const styles = StyleSheet.create({
     bottom: -5,
   },
   optionImage: {
-    width: 150,
-    height: 150,
+    width: 130,
+    height: 130,
   },
 
   // Loading state

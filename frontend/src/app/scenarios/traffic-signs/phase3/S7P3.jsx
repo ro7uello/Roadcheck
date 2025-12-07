@@ -246,6 +246,9 @@ function DrivingGameContent() {
   const [carFrame, setCarFrame] = useState(0);
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carPaused, setCarPaused] = useState(false);
+  const [showHeadlights, setShowHeadlights] = useState(false);
+  const [showHonk, setShowHonk] = useState(false);
+  const honkOpacity = useRef(new Animated.Value(0)).current;
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);
@@ -316,6 +319,28 @@ function DrivingGameContent() {
     }
   };
 
+  // ✅ Honk animation effect
+  const startHonkAnimation = () => {
+    setShowHonk(true);
+    const sequence = Animated.sequence([
+      Animated.timing(honkOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(honkOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]);
+
+    Animated.loop(sequence, { iterations: 6 }).start(() => {
+      setShowHonk(false);
+      honkOpacity.setValue(0);
+    });
+  };
+
   // ✅ --- MODIFIED HANDLE ANSWER WITH ANIMATION VARIANTS ---
   const handleAnswer = (answer) => {
     console.log('🎯 Answer selected:', answer);
@@ -355,6 +380,7 @@ function DrivingGameContent() {
     if (answer === "Turn on high beams and maintain speed") {
       duration = 5000; // Normal speed
       carMovement = "NORTH";
+      setShowHeadlights(true); // Turn on headlights
       console.log('⏱️ High beams - normal speed, straight');
     } else if (answer === "Reduce speed, stay alert, and be prepared to stop for animals on or near the road") {
       duration = 8000; // Slow, careful speed - CORRECT
@@ -364,6 +390,7 @@ function DrivingGameContent() {
     } else if (answer === "Honk your horn continuously to scare animals away") {
       duration = 4500; // Slightly faster, erratic
       carMovement = "NORTH";
+      startHonkAnimation(); // Start honking animation
       console.log('⏱️ Honking - fast and erratic');
     }
 
@@ -376,10 +403,12 @@ function DrivingGameContent() {
       useNativeDriver: true,
     }).start(() => {
       setCarPaused(true);
+      setShowHeadlights(false); // Turn off headlights when stopped
       handleFeedback(answer);
     });
 
-}
+  };
+
   const handleNext = async () => {
     setAnimationType(null);
     setShowNext(false);
@@ -387,6 +416,8 @@ function DrivingGameContent() {
     setIsCorrectAnswer(null);
     setCarFrame(0);
     setCarDirection("NORTH");
+    setShowHeadlights(false); // Reset headlights
+    setShowHonk(false); // Reset honk
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
@@ -447,7 +478,8 @@ function DrivingGameContent() {
       animations.forEach(anim => anim.stop());
     };
   }, []);
-
+  
+  
   return (
     <View style={{ flex: 1, backgroundColor: "#0a0a15" }}>
       {/* Dim overlay for dusk atmosphere */}
@@ -529,6 +561,115 @@ function DrivingGameContent() {
           zIndex: 3,
         }}
       />
+
+      {/* ✅ Headlights Effect - White beam, shorter length to car tip */}
+      {showHeadlights && (
+        <>
+          {/* Main headlight beam - cone shape using multiple overlapping views */}
+          <View
+            style={{
+              position: "absolute",
+              bottom: height * 0.28,
+              left: width * 0.37,
+              width: tileSize * 1.2,
+              height: tileSize * 2,
+              backgroundColor: "transparent",
+              zIndex: 2,
+              overflow: "hidden",
+            }}
+          >
+            {/* Gradient effect using multiple semi-transparent layers - WHITE */}
+            <View
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: "25%",
+                width: "50%",
+                height: "100%",
+                backgroundColor: "rgba(255, 255, 255, 0.18)",
+                borderTopLeftRadius: 100,
+                borderTopRightRadius: 100,
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: "20%",
+                width: "60%",
+                height: "90%",
+                backgroundColor: "rgba(255, 255, 255, 0.14)",
+                borderTopLeftRadius: 120,
+                borderTopRightRadius: 120,
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: "15%",
+                width: "70%",
+                height: "80%",
+                backgroundColor: "rgba(255, 255, 255, 0.10)",
+                borderTopLeftRadius: 140,
+                borderTopRightRadius: 140,
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: "10%",
+                width: "80%",
+                height: "70%",
+                backgroundColor: "rgba(255, 255, 255, 0.06)",
+                borderTopLeftRadius: 160,
+                borderTopRightRadius: 160,
+              }}
+            />
+          </View>
+          
+          {/* Bright spot at the car (headlight source) - WHITE */}
+          <View
+            style={{
+              position: "absolute",
+              bottom: height * 0.26,
+              left: width * 0.42,
+              width: tileSize * 0.25,
+              height: tileSize * 0.25,
+              backgroundColor: "rgba(255, 255, 255, 0.5)",
+              borderRadius: 100,
+              zIndex: 3,
+            }}
+          />
+        </>
+      )}
+
+      {/* ✅ Honk Text Effect */}
+      {showHonk && (
+        <Animated.View
+          style={{
+            position: "absolute",
+            top: height * 0.45,
+            left: width * 0.25,
+            zIndex: 4,
+            opacity: honkOpacity,
+          }}
+        >
+          <Text
+            style={{
+              color: "#FFD700",
+              fontSize: Math.min(width * 0.15, 60),
+              fontWeight: "bold",
+              textShadowColor: "rgba(0, 0, 0, 0.75)",
+              textShadowOffset: { width: 2, height: 2 },
+              textShadowRadius: 10,
+            }}
+          >
+            BEEP
+          </Text>
+        </Animated.View>
+      )}
 
       {/* ✅ Rain Effect Layer - dimmed for dusk */}
       {rainDrops.map((drop, index) => (
@@ -654,88 +795,89 @@ const styles = StyleSheet.create({
     flex: 1,
     bottom: height * 0.1,
     alignItems: "center",
-    justifyContent: "center",
-  },
-  questionTextContainer: {
-    padding: -height * 0.04,
-    maxWidth: width * 0.7,
-  },
-  questionText: {
-    flexWrap: "wrap",
-    color: "white",
-    fontSize: Math.min(width * 0.045, 20),
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  answersContainer: {
-    position: "absolute",
-    top: height * 0.2,
-    right: sideMargin,
-    width: width * 0.35,
-    height: height * 0.21,
-    zIndex: 200,
-  },
-  answerButton: {
-    backgroundColor: "#333",
-    padding: height * 0.015,
-    borderRadius: 8,
-    marginBottom: height * 0.015,
-    borderWidth: 1,
-    borderColor: "#555",
-  },
-  answerText: {
-    color: "white",
-    fontSize: Math.min(width * 0.04, 16),
-    textAlign: "center",
-  },
-  feedbackOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    width: width,
-    height: overlayHeight,
-    backgroundColor: "rgba(8, 8, 8, 0.43)",
-    flexDirection: "row",
-    alignItems: "flex-end",
-    paddingBottom: height * 0.01,
-    zIndex: 200,
-  },
-  feedbackBox: {
-    flex: 1,
-    bottom: height * 0.1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  feedbackText: {
-    color: "white",
-    fontSize: Math.min(width * 0.06, 24),
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  nextButtonContainer: {
-    position: "absolute",
-    top: height * 0.50,
-    right: sideMargin,
-    width: width * 0.2,
-    alignItems: "center",
-    zIndex: 300,
-  },
-  nextButton: {
-    backgroundColor: "#007bff",
-    paddingVertical: height * 0.015,
-    paddingHorizontal: width * 0.06,
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    minWidth: width * 0.15,
-    alignItems: "center",
-  },
-  nextButtonText: {
-    color: "white",
-    fontSize: Math.min(width * 0.045, 20),
-    fontWeight: "bold",
-  },
+    justifyContent
+    : "center",
+},
+questionTextContainer: {
+padding: -height * 0.04,
+maxWidth: width * 0.7,
+},
+questionText: {
+flexWrap: "wrap",
+color: "white",
+fontSize: Math.min(width * 0.045, 20),
+fontWeight: "bold",
+textAlign: "center",
+},
+answersContainer: {
+position: "absolute",
+top: height * 0.2,
+right: sideMargin,
+width: width * 0.35,
+height: height * 0.21,
+zIndex: 200,
+},
+answerButton: {
+backgroundColor: "#333",
+padding: height * 0.015,
+borderRadius: 8,
+marginBottom: height * 0.015,
+borderWidth: 1,
+borderColor: "#555",
+},
+answerText: {
+color: "white",
+fontSize: Math.min(width * 0.04, 16),
+textAlign: "center",
+},
+feedbackOverlay: {
+position: "absolute",
+bottom: 0,
+left: 0,
+width: width,
+height: overlayHeight,
+backgroundColor: "rgba(8, 8, 8, 0.43)",
+flexDirection: "row",
+alignItems: "flex-end",
+paddingBottom: height * 0.01,
+zIndex: 200,
+},
+feedbackBox: {
+flex: 1,
+bottom: height * 0.1,
+alignItems: "center",
+justifyContent: "center",
+},
+feedbackText: {
+color: "white",
+fontSize: Math.min(width * 0.06, 24),
+fontWeight: "bold",
+textAlign: "center",
+},
+nextButtonContainer: {
+position: "absolute",
+top: height * 0.50,
+right: sideMargin,
+width: width * 0.2,
+alignItems: "center",
+zIndex: 300,
+},
+nextButton: {
+backgroundColor: "#007bff",
+paddingVertical: height * 0.015,
+paddingHorizontal: width * 0.06,
+borderRadius: 8,
+shadowColor: "#000",
+shadowOffset: { width: 0, height: 2 },
+shadowOpacity: 0.25,
+shadowRadius: 3.84,
+elevation: 5,
+minWidth: width * 0.15,
+alignItems: "center",
+},
+nextButtonText: {
+color: "white",
+fontSize: Math.min(width * 0.045, 20),
+fontWeight: "bold",
+},
 });

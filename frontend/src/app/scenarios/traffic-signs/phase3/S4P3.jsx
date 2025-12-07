@@ -19,9 +19,9 @@ const roadTiles = {
   road80: require("../../../../../assets/road/road80.png"),
   road92: require("../../../../../assets/road/road92.png"),
   road20: require("../../../../../assets/road/road20.png"),
-road79:require("../../../../../assets/road/road79.png"),
-road70:require("../../../../../assets/road/road70.png"),
-road9222:require("../../../../../assets/road/road9222.png"),
+  road79:require("../../../../../assets/road/road79.png"),
+  road70:require("../../../../../assets/road/road70.png"),
+  road9222:require("../../../../../assets/road/road9222.png"),
 };
 
 const mapLayout = [
@@ -77,30 +77,37 @@ const carSprites = {
   ],
 };
 
+const jeepneySprites = {
+  NORTH: [
+    require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/JEEP TOP DOWN/Brown/MOVE/NORTH/SEPARATED/Brown_JEEP_CLEAN_NORTH_001.png"),
+  ],
+};
+
 const npcCarSprites = {
-  red: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_CIVIC_CLEAN_NORTH_001.png"),
+  sedan: [
+    require("../../../../../assets/car/SEDAN TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_SEDAN_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/SEDAN TOPDOWN/Red/MOVE/NORTH/SEPARATED/Red_SEDAN_CLEAN_NORTH_001.png"),
+  ],
+  civic: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
   ],
   black: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Black/MOVE/NORTH/SEPARATED/Black_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  blue: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Blue/MOVE/NORTH/SEPARATED/Blue_CIVIC_CLEAN_NORTH_001.png"),
-  ],
-  brown: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_001.png"),
+  white: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_001.png"),
   ],
   green: [
     require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_000.png"),
     require("../../../../../assets/car/CIVIC TOPDOWN/Green/MOVE/NORTH/SEPARATED/Green_CIVIC_CLEAN_NORTH_001.png"),
   ],
-  white: [
-    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_000.png"),
-    require("../../../../../assets/car/CIVIC TOPDOWN/White/MOVE/NORTH/SEPARATED/White_CIVIC_CLEAN_NORTH_001.png"),
+  brown: [
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_000.png"),
+    require("../../../../../assets/car/CIVIC TOPDOWN/Brown/MOVE/NORTH/SEPARATED/Brown_CIVIC_CLEAN_NORTH_001.png"),
   ],
 };
 
@@ -143,7 +150,7 @@ function DrivingGameContent() {
   const scrollY = useRef(new Animated.Value(startOffset)).current;
   const currentScroll = useRef(startOffset);
 
-  const trafficSignRowIndex = 14.6;
+  const trafficSignRowIndex = 13.4;
   const trafficSignColIndex = 3;
   const trafficSignXOffset = 20;
 
@@ -176,16 +183,35 @@ function DrivingGameContent() {
   // Start car in lane 4
   const carXAnim = useRef(new Animated.Value(lane4X)).current;
 
-  // NPC Cars - static traffic in lanes 1 and 2 only, at row 8
+  // Passing car state (for option C)
+  const [showPassingCar, setShowPassingCar] = useState(false);
+  const [passingCarFrame, setPassingCarFrame] = useState(0);
+  const passingCarY = useRef(new Animated.Value(height)).current; // Start below screen
+
+  // NPC Cars and Jeepney - creating heavy traffic
   const [npcCarFrames, setNpcCarFrames] = useState({
-    lane1: 0,
-    lane2: 0,
+    lane1_car1: 0,
+    lane1_car2: 0,
+    lane2_car1: 0,
+    lane2_car2: 0,
+    lane3_car1: 0,
+    lane3_car2: 0,
+    jeepney: 0,
   });
 
   const npcCars = [
-    { lane: 1, row: 8, color: 'red' },
-    { lane: 2, row: 8, color: 'black' },
+    // Lane 1 traffic
+    { lane: 1, row: 14, color: 'sedan', key: 'lane1_car1' },
+    { lane: 1, row: 11, color: 'black', key: 'lane1_car2' },
+    // Lane 2 traffic
+    { lane: 2, row: 7.5, color: 'civic', key: 'lane2_car1' },
+    { lane: 2, row: 10.5, color: 'white', key: 'lane2_car2' },
+    // Lane 3 traffic
+    { lane: 3, row: 9, color: 'green', key: 'lane3_car1' },
+    { lane: 3, row: 12, color: 'black', key: 'lane3_car2' },
   ];
+
+  const jeepney = { lane: 2, row: 14, key: 'jeepney' };
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
@@ -234,7 +260,18 @@ function DrivingGameContent() {
     return () => clearInterval(iv);
   }, [carPaused, carDirection]);
 
-  // NPC Car sprite frame loops
+  // Passing car sprite frame loop
+  useEffect(() => {
+    let iv;
+    if (showPassingCar) {
+      iv = setInterval(() => {
+        setPassingCarFrame((p) => (p + 1) % 2);
+      }, 200);
+    }
+    return () => clearInterval(iv);
+  }, [showPassingCar]);
+
+  // NPC Car and Jeepney sprite frame loops
   useEffect(() => {
     const intervals = [];
     Object.keys(npcCarFrames).forEach((key) => {
@@ -272,125 +309,125 @@ function DrivingGameContent() {
     }
   };
 
-const handleAnswer = async (answer) => {
-  setSelectedAnswer(answer);
-  setShowQuestion(false);
-  setShowAnswers(false);
+  const handleAnswer = async (answer) => {
+    setSelectedAnswer(answer);
+    setShowQuestion(false);
+    setShowAnswers(false);
 
-  const currentQuestion = questions[questionIndex];
-  const isCorrect = answer === currentQuestion.correct;
-  await updateProgress(answer, isCorrect);
+    const currentQuestion = questions[questionIndex];
+    const isCorrect = answer === currentQuestion.correct;
+    await updateProgress(answer, isCorrect);
 
-  if (answer === "Speed up to get ahead of other vehicles before the merge") {
-setCarDirection("NORTHWEST"); // 1. Face diagonally for the merge
-    setCarFrame(0);
+    if (answer === "Speed up to get ahead of other vehicles before the merge") {
+      setCarDirection("NORTHWEST");
+      setCarFrame(0);
 
-    const firstPartScroll = currentScroll.current + tileSize * 1;
-    const secondPartScroll = firstPartScroll + tileSize * 2;
+      const firstPartScroll = currentScroll.current + tileSize * 1;
+      const secondPartScroll = firstPartScroll + tileSize * 1.5;
 
-    // PART 1: The merge (diagonal)
-    Animated.parallel([
-      Animated.timing(carXAnim, {
-        toValue: lane3X, // Merge from Lane 4 to Lane 3
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scrollY, {
-        toValue: firstPartScroll,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      // ---- Completion callback for Part 1 ----
-      
-      // 2. The merge is finished. NOW set the direction to NORTH.
+      // PART 1: The merge (diagonal)
+      Animated.parallel([
+        Animated.timing(carXAnim, {
+          toValue: lane3X,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scrollY, {
+          toValue: firstPartScroll,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setCarDirection("NORTH");
+
+        // PART 2: The second scroll (facing north)
+        Animated.timing(scrollY, {
+          toValue: secondPartScroll,
+          duration: 1000,
+          useNativeDriver: true,
+        }).start(() => {
+          currentScroll.current = secondPartScroll;
+          setCarFrame(0);
+          setIsCarVisible(false);
+          handleFeedback(answer);
+        });
+      });
+
+      return;
+    }
+
+    if (answer === "Slow down, signal early, and merge safely when space allows") {
+      setCarDirection("NORTHWEST");
+      setCarFrame(0);
+
+      const firstPartScroll = currentScroll.current + tileSize * 1;
+      const secondPartScroll = firstPartScroll + tileSize * 1.5;
+
+      // PART 1: The merge (diagonal)
+      Animated.parallel([
+        Animated.timing(carXAnim, {
+          toValue: lane3X,
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scrollY, {
+          toValue: firstPartScroll,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setCarDirection("NORTH");
+
+        // PART 2: The second scroll (facing north)
+        Animated.timing(scrollY, {
+          toValue: secondPartScroll,
+          duration: 2000,
+          useNativeDriver: true,
+        }).start(() => {
+          currentScroll.current = secondPartScroll;
+          setCarFrame(0);
+          setIsCarVisible(false);
+          handleFeedback(answer);
+        });
+      });
+
+      return;
+    }
+
+    if (answer === "Continue in your current lane and let others merge around you") {
       setCarDirection("NORTH");
+      setCarFrame(0);
 
-      // PART 2: The second scroll (facing north)
-      Animated.timing(scrollY, {
-        toValue: secondPartScroll,
-        duration: 1000,
-        useNativeDriver: true,
-      }).start(() => {
-        // ---- Completion callback for Part 2 ----
-        
-        // 3. The entire animation is done.
-        currentScroll.current = secondPartScroll;
-        setCarFrame(0);
+      // Show passing car and animate it
+      setShowPassingCar(true);
+      passingCarY.setValue(height); // Start below screen
+
+      const targetScroll = currentScroll.current + tileSize * 0.2;
+
+      // Animate both the passing car and the scroll
+      Animated.parallel([
+        // Passing car moves from bottom to top (passing the player)
+        Animated.timing(passingCarY, {
+          toValue: -carHeight * 2, // Move past the top of screen
+          duration: 4000,
+          useNativeDriver: true,
+        }),
+        // Slow scroll
+        Animated.timing(scrollY, {
+          toValue: targetScroll,
+          duration: 6000,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        currentScroll.current = targetScroll;
         setIsCarVisible(false);
+        setShowPassingCar(false);
         handleFeedback(answer);
       });
-    });
 
-    return;
-  }
-
-if (answer === "Slow down, signal early, and merge safely when space allows") {
-    // From Lane 4 merge to Lane 3
-    setCarDirection("NORTHWEST"); // 1. Face diagonally for the merge
-    setCarFrame(0);
-
-    const firstPartScroll = currentScroll.current + tileSize * 1;
-    const secondPartScroll = firstPartScroll + tileSize * 2;
-
-    // PART 1: The merge (diagonal)
-    Animated.parallel([
-      Animated.timing(carXAnim, {
-        toValue: lane3X, // Merge from Lane 4 to Lane 3
-        duration: 2500,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scrollY, {
-        toValue: firstPartScroll,
-        duration: 2000,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      // ---- Completion callback for Part 1 ----
-      
-      // 2. The merge is finished. NOW set the direction to NORTH.
-      setCarDirection("NORTH");
-
-      // PART 2: The second scroll (facing north)
-      Animated.timing(scrollY, {
-        toValue: secondPartScroll,
-        duration: 2000,
-        useNativeDriver: true,
-      }).start(() => {
-        // ---- Completion callback for Part 2 ----
-        
-        // 3. The entire animation is done.
-        currentScroll.current = secondPartScroll;
-        setCarFrame(0);
-        setIsCarVisible(false);
-        handleFeedback(answer);
-      });
-    });
-
-    return;
-  }
-
-  if (answer === "Continue in your current lane and let others merge around you") {
-    setCarDirection("NORTH");
-    setCarFrame(0);
-
-    const targetScroll = currentScroll.current + tileSize * 0.3;
-
-    Animated.timing(scrollY, {
-      toValue: targetScroll,
-      duration: 6000,
-      useNativeDriver: true,
-    }).start(() => {
-      currentScroll.current = targetScroll;
-      setIsCarVisible(false);
-      handleFeedback(answer);
-    });
-
-    return;
-  }
-}; 
-
-
+      return;
+    }
+  }; 
 
   const handleNext = async () => {
     setAnimationType(null);
@@ -398,6 +435,7 @@ if (answer === "Slow down, signal early, and merge safely when space allows") {
     setSelectedAnswer(null);
     setCarFrame(0);
     setIsCorrectAnswer(null);
+    setShowPassingCar(false);
 
     // Reset car position and visibility to lane 4
     carXAnim.setValue(lane4X);
@@ -427,8 +465,7 @@ if (answer === "Slow down, signal early, and merge safely when space allows") {
         Alert.alert('Error', 'Failed to save session results');
       }
     } else {
-            router.push(`/scenarios/traffic-signs/phase3/S5P3`);
-
+      router.push(`/scenarios/traffic-signs/phase3/S5P3`);
     }
   };
 
@@ -443,6 +480,8 @@ if (answer === "Slow down, signal early, and merge safely when space allows") {
   const currentCarSprite = (carSprites[carDirection] && carSprites[carDirection][carFrame])
     ? carSprites[carDirection][carFrame]
     : carSprites["NORTH"][0];
+
+  const lanePositions = [lane1X, lane2X, lane3X, lane4X, lane5X];
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
@@ -480,13 +519,12 @@ if (answer === "Slow down, signal early, and merge safely when space allows") {
             width: tileSize * 1,
             height: tileSize * 1,
             position: "absolute",
-           top: trafficSignTop,
+            top: trafficSignTop,
             left: trafficSignLeft,
             zIndex: 11,
           }}
           resizeMode="contain"
         />
-
       </Animated.View>
 
       {/* Car - starts in lane 4, uses left positioning with translateX animation */}
@@ -503,33 +541,60 @@ if (answer === "Slow down, signal early, and merge safely when space allows") {
             zIndex: 8,
           }}
         />
-  	)}
+      )}
 
-      {/* NPC Cars - static traffic in lanes 1 and 2 at row 8 */}
+      {/* Passing car (for option C) - appears in lane 3 */}
+      {showPassingCar && (
+        <Animated.Image
+          source={npcCarSprites.brown[passingCarFrame]}
+          style={{
+            width: carWidth,
+            height: carHeight,
+            position: "absolute",
+            bottom: 0,
+            left: lane3X,
+            transform: [{ translateY: passingCarY }],
+            zIndex: 9,
+          }}
+        />
+      )}
+
+      {/* NPC Cars - heavy traffic in lanes 1, 2, and 3 */}
       {npcCars.map((npc, index) => {
-        const lanePositions = [lane1X, lane2X];
-        const laneIndex = [1, 2].indexOf(npc.lane);
-        const laneKey = `lane${npc.lane}`;
-
+        const laneIndex = npc.lane - 1;
         return (
           <Animated.Image
             key={`npc-${index}`}
-            source={npcCarSprites[npc.color][npcCarFrames[laneKey] || 0]}
+            source={npcCarSprites[npc.color][npcCarFrames[npc.key] || 0]}
             style={{
               width: carWidth,
               height: carHeight,
-             position: "absolute",
+              position: "absolute",
               top: npc.row * tileSize,
               left: lanePositions[laneIndex],
               transform: [{ translateY: scrollY }],
-             zIndex: 7,
+              zIndex: 7,
             }}
           />
         );
       })}
 
+      {/* Jeepney - in lane 2 */}
+      <Animated.Image
+        source={jeepneySprites.NORTH[npcCarFrames.jeepney || 0]}
+        style={{
+          width: carWidth,
+          height: carHeight,
+          position: "absolute",
+          top: jeepney.row * tileSize,
+          left: lanePositions[jeepney.lane - 1],
+          transform: [{ translateY: scrollY }],
+          zIndex: 7,
+        }}
+      />
+
       {/* Question overlay */}
-    	{showQuestion && (
+      {showQuestion && (
         <View style={styles.questionOverlay}>
           <Image
             source={require("../../../../../assets/dialog/LTO.png")}
@@ -584,7 +649,7 @@ if (answer === "Slow down, signal early, and merge safely when space allows") {
       {/* Next button */}
       {showNext && (
         <View style={styles.nextButtonContainer}>
-         <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
+          <TouchableOpacity onPress={handleNext} style={styles.nextButton}>
             <Text style={styles.nextButtonText}>Next</Text>
           </TouchableOpacity>
         </View>
@@ -610,7 +675,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: 'white',
     fontSize: 18,
-  fontWeight: 'bold',
+    fontWeight: 'bold',
   },
   questionOverlay: {
     position: "absolute",
@@ -643,7 +708,7 @@ const styles = StyleSheet.create({
   },
   questionText: {
     flexWrap: "wrap",
-  	color: "white",
+    color: "white",
     fontSize: Math.min(width * 0.045, 20),
     fontWeight: "bold",
     textAlign: "center",
@@ -651,7 +716,7 @@ const styles = StyleSheet.create({
   answersContainer: {
     position: "absolute",
     top: height * 0.16,
-  	right: sideMargin,
+    right: sideMargin,
     width: width * 0.35,
     height: height * 0.21,
     zIndex: 11,
@@ -681,7 +746,7 @@ const styles = StyleSheet.create({
     paddingBottom: height * 0.01,
     zIndex: 10,
   },
- feedbackBox: {
+  feedbackBox: {
     flex: 1,
     bottom: height * 0.1,
     alignItems: "center",
