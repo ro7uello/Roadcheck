@@ -98,12 +98,14 @@ const questions = [
 export default function DrivingGame() {
 
   const {
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-    currentScenario,
-    sessionData
-  } = useSession();
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      sessionData,
+      speakQuestion,
+      stopSpeaking
+} = useSession();
 
     const updateProgress = async (selectedOption, isCorrect) => {
       try {
@@ -166,6 +168,20 @@ export default function DrivingGame() {
 
   const correctAnim = useRef(new Animated.Value(0)).current;
   const wrongAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        // Auto-play question after 1 second delay (gives time for animation)
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking(); // Stop speaking when question disappears
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
   // Car animation frame cycling
   useEffect(() => {

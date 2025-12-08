@@ -104,12 +104,14 @@ const questions = [
 export default function S4P3() {
 
   const {
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-    currentScenario,
-    sessionData
-  } = useSession();
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      sessionData,
+      speakQuestion,
+      stopSpeaking
+} = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
@@ -168,6 +170,20 @@ export default function S4P3() {
   const visibleStartRow = useRef(mapLayout.length - (height / tileSize) + (carScreenBottomPosition / tileSize)).current;
   const cyclistYAnim = useRef(new Animated.Value(tileSize * visibleStartRow)).current;
   const cyclistAnimationRef = useRef(null);
+
+  useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        // Auto-play question after 1 second delay (gives time for animation)
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking(); // Stop speaking when question disappears
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
   // Biker animation frame cycling
   useEffect(() => {

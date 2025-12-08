@@ -94,12 +94,14 @@ const trafficSign = {
 export default function DrivingGame() {
 
   const {
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-    currentScenario,
-    sessionData
-  } = useSession();
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      sessionData,
+      speakQuestion,
+      stopSpeaking
+} = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
@@ -163,6 +165,19 @@ export default function DrivingGame() {
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - (280 / 2))).current;
+
+    useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking();
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);

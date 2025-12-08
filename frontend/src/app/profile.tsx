@@ -120,9 +120,9 @@ export default function ProfileScreen() {
         } else {
           console.warn('⚠️ Stats failed, using defaults:', statsResult.error || 'Unknown error');
           const defaultStats = {
-            road_markings: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
+            highway_driving: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
             traffic_signs: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
-            intersection_and_others: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
+            defensive_driving: { total_scenarios: 30, completed_scenarios: 0, correct_answers: 0 },
             pedestrian: { total_scenarios: 10, completed_scenarios: 0, correct_answers: 0 }
           };
           console.log('📊 Setting default stats:', defaultStats);
@@ -170,9 +170,9 @@ export default function ProfileScreen() {
   const calculateOverallProgress = () => {
     if (!stats) return 0;
 
-    const roadMarkingsAcc = calculateAccuracy("road_markings");
+    const roadMarkingsAcc = calculateAccuracy("highway_driving");
     const trafficSignsAcc = calculateAccuracy("traffic_signs");
-    const intersectionAcc = calculateAccuracy("intersection_and_others");
+    const intersectionAcc = calculateAccuracy("defensive_driving");
     const pedestrianAcc = calculateAccuracy("pedestrian");
 
     const avgAccuracy = (roadMarkingsAcc + trafficSignsAcc + intersectionAcc + pedestrianAcc) / 4;
@@ -398,11 +398,11 @@ export default function ProfileScreen() {
 
           <View style={styles.progressItem}>
             <View style={styles.progressRow}>
-              <Text style={styles.categoryName}>🛣️ ROAD MARKINGS:</Text>
-              <Text style={styles.accuracy}>{calculateAccuracy("road_markings")}% ACCURACY</Text>
+              <Text style={styles.categoryName}>🛣️ HIGHWAY DRIVING:</Text>
+              <Text style={styles.accuracy}>{calculateAccuracy("highway_driving")}% ACCURACY</Text>
             </View>
             {(() => {
-              const status = getStatusBadge(calculateAccuracy("road_markings"));
+              const status = getStatusBadge(calculateAccuracy("highway_driving"));
               return <Text style={[styles.statusLabel, { color: status.color }]}>{status.text}</Text>;
             })()}
           </View>
@@ -420,11 +420,11 @@ export default function ProfileScreen() {
 
           <View style={styles.progressItem}>
             <View style={styles.progressRow}>
-              <Text style={styles.categoryName}>🔄 INTERSECTION & OTHERS:</Text>
-              <Text style={styles.accuracy}>{calculateAccuracy("intersection_and_others")}% ACCURACY</Text>
+              <Text style={styles.categoryName}>🔄 DEFENSIVE DRIVING:</Text>
+              <Text style={styles.accuracy}>{calculateAccuracy("defensive_driving")}% ACCURACY</Text>
             </View>
             {(() => {
-              const status = getStatusBadge(calculateAccuracy("intersection_and_others"));
+              const status = getStatusBadge(calculateAccuracy("defensive_driving"));
               return <Text style={[styles.statusLabel, { color: status.color }]}>{status.text}</Text>;
             })()}
           </View>
@@ -447,7 +447,7 @@ export default function ProfileScreen() {
 
           {stats && Object.entries(stats)
             .sort(([keyA], [keyB]) => {
-              const order = ['road_markings', 'traffic_signs', 'intersection_and_others', 'pedestrian'];
+              const order = ['highway_driving', 'traffic_signs', 'defensive_driving', 'pedestrian'];
               return order.indexOf(keyA) - order.indexOf(keyB);
             })
             .map(([key, data]) => (

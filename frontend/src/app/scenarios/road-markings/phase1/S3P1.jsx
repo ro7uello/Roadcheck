@@ -143,6 +143,20 @@ export default function DrivingGame() {
   const [carDirection, setCarDirection] = useState("NORTH");
   const [carFrame, setCarFrame] = useState(0);
 
+    useEffect(() => {
+          if (showQuestion && questions[questionIndex]) {
+            // Auto-play question after 1 second delay (gives time for animation)
+            const timer = setTimeout(() => {
+              speakQuestion(questions[questionIndex].question);
+            }, 1000);
+
+            return () => {
+              clearTimeout(timer);
+              stopSpeaking(); // Stop speaking when question disappears
+            };
+          }
+        }, [showQuestion, questionIndex]);
+
   // Responsive car positioning
   const carXAnim = useRef(new Animated.Value(0)).current;
   const jeepneyYAnim = useRef(new Animated.Value(height * 1.5)).current; // Start well below the screen
@@ -160,19 +174,7 @@ export default function DrivingGame() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-      if (showQuestion && questions[questionIndex]) {
-        // Auto-play question after 1 second delay (gives time for animation)
-        const timer = setTimeout(() => {
-          speakQuestion(questions[questionIndex].question);
-        }, 1000);
 
-        return () => {
-          clearTimeout(timer);
-          stopSpeaking(); // Stop speaking when question disappears
-        };
-      }
-    }, [showQuestion, questionIndex]);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset); // Ensure scroll starts from bottom for each game start
@@ -345,6 +347,9 @@ export default function DrivingGame() {
       // Car stays NORTH
     }
   };
+
+  const scrollAnimationRef = useRef(null);
+  const jeepneyAnimationRef = useRef(null);
 
   const handleNext = async() => {
     setAnimationType(null);

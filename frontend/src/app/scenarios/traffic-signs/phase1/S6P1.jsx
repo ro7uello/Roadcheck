@@ -157,12 +157,14 @@ const trafficLightSprites = {
 export default function DrivingGame() {
 
   const {
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-    currentScenario,
-    sessionData
-  } = useSession();
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      sessionData,
+      speakQuestion,
+      stopSpeaking
+} = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
@@ -233,6 +235,19 @@ export default function DrivingGame() {
   // Traffic light
   const [trafficLightState, setTrafficLightState] = useState('green');
   const [isBlinking, setIsBlinking] = useState(true);
+
+    useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking();
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
   useEffect(() => {
     let blinkInterval;

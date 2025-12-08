@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { View, Image, Animated, Dimensions, TouchableOpacity, Text, StyleSheet, Alert } from "react-native";
 import { router } from 'expo-router';
+import { useSession } from '../../../../contexts/SessionManager';
 
 const { width, height } = Dimensions.get("window");
 
@@ -66,6 +67,34 @@ const questions = [
 ];
 
 export default function DrivingGame() {
+  const {
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      sessionData,
+      speakQuestion,
+      stopSpeaking
+} = useSession();
+
+  const updateProgress = async (selectedOption, isCorrect) => {
+     try {
+       // Intersection Phase 1: scenarios 61-70
+       const scenarioId = 80 + currentScenario;
+
+       console.log('🔍 SCENARIO DEBUG:', {
+         currentScenario,
+         calculatedScenarioId: scenarioId,
+         selectedOption,
+         isCorrect
+       });
+
+       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
+     } catch (error) {
+       console.error('Error updating scenario progress:', error);
+     }
+   };
+
   const [isCarVisible, setIsCarVisible] = useState(true);
 
   // Start from bottom of map - map positioned so bottom is visible
@@ -103,6 +132,20 @@ export default function DrivingGame() {
   const [carFrame, setCarFrame] = useState(0);
   const [carPaused, setCarPaused] = useState(false);
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+
+  useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        // Auto-play question after 1 second delay (gives time for animation)
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking(); // Stop speaking when question disappears
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
   // NPC Cars sprite animation
   useEffect(() => {
@@ -185,10 +228,14 @@ export default function DrivingGame() {
     }
   };
 
-  const handleAnswer = async (answer) => {  
-    setSelectedAnswer(answer);
-    setShowQuestion(false);
-    setShowAnswers(false);
+const handleAnswer = async (answer) => {
+  setSelectedAnswer(answer);
+  setShowQuestion(false);
+  setShowAnswers(false);
+
+  const currentQuestion = questions[questionIndex];
+  const isCorrect = answer === currentQuestion.correct;
+  await updateProgress(answer, isCorrect);
 
     if (answer === "Follow the chevron markings and stay in the guided lane") {
       // Smooth lane change to right using NORTH and NORTHEAST
@@ -318,11 +365,34 @@ export default function DrivingGame() {
     setCarPaused(false);
     
     if (questionIndex < questions.length - 1) {
-      setQuestionIndex(questionIndex + 1);
-      startScrollAnimation();
-    } else {
-      Alert.alert('Complete', 'Scenario completed!');
-    }
+          setQuestionIndex(questionIndex + 1);
+          startScrollAnimation();
+        } else if (currentScenario === 10) {
+          try {
+            console.log('🔍 Completing session for scenario 10...');
+            const sessionResults = await completeSession();
+
+            if (!sessionResults) {
+              Alert.alert('Error', 'Failed to complete session.');
+              return;
+            }
+
+            router.push({
+              pathname: '/result-page',
+              params: {
+                ...sessionResults,
+                userAttempts: JSON.stringify(sessionResults.attempts)
+              }
+            });
+          } catch (error) {
+            console.error('Error completing session:', error);
+            Alert.alert('Error', 'Failed to save session results');
+          }
+        } else {
+          moveToNextScenario();
+          const nextScreen = `S${currentScenario + 1}P3`;
+          router.push(`/scenarios/intersection/phase3/${nextScreen}`);
+        }
   };
 
   // Calculate feedback message

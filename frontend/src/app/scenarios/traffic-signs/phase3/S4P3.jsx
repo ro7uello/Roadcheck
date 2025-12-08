@@ -131,14 +131,16 @@ const questions = [
   },
 ];
 
-function DrivingGameContent() {
+export default function DrivingGame()  {
   const {
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-    currentScenario,
-    sessionData
-  } = useSession();
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      sessionData,
+      speakQuestion,
+      stopSpeaking
+} = useSession();
 
   const numColumns = mapLayout[0].length;
   const tileSize = width / numColumns;
@@ -153,6 +155,19 @@ function DrivingGameContent() {
   const trafficSignRowIndex = 13.4;
   const trafficSignColIndex = 3;
   const trafficSignXOffset = 20;
+
+    useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking();
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -222,6 +237,28 @@ function DrivingGameContent() {
         selectedOption,
         isCorrect
       });
+
+   const phaseId = sessionData?.phase_id;
+
+        if (!phaseId) {
+          console.error('❌ No phase_id found in sessionData:', sessionData);
+          return;
+        }
+
+        if (phaseId === 4) {
+          // Phase 1: scenarios 31-40
+          scenarioId = 30 + currentScenario;
+        } else if (phaseId === 5) {
+          // Phase 2: scenarios 41-50
+          scenarioId = 40 + currentScenario;
+        } else if (phaseId === 6) {
+          // Phase 3: scenarios 51-60
+          scenarioId = 50 + currentScenario;
+        } else {
+          console.error('Unknown phase ID:', phaseId);
+          return;
+        }
+
       await updateScenarioProgress(scenarioId, selectedOption, isCorrect);
     } catch (error) {
       console.error('Error updating scenario progress:', error);
@@ -655,14 +692,6 @@ function DrivingGameContent() {
         </View>
       )}
     </View>
-  );
-}
-
-export default function DrivingGame() {
-  return (
-    <SessionProvider>
-      <DrivingGameContent />
-    </SessionProvider>
   );
 }
 

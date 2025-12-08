@@ -86,11 +86,14 @@ const questions = [
 
 export default function DrivingGame() {
   const {
-    currentScenario,
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-  } = useSession();
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      sessionData,
+      speakQuestion,
+      stopSpeaking
+} = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
@@ -146,9 +149,21 @@ export default function DrivingGame() {
     { id: 2, color: 'red', column: 2, yOffset: -150, frame: 0 },
   ]);
 
-
   const [npcCars, setNpcCars] = useState(carsRef.current);
   const [carsMoving, setCarsMoving] = useState(true);
+
+    useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking();
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
 
   // Animate NPC cars - moving upward to match forward movement

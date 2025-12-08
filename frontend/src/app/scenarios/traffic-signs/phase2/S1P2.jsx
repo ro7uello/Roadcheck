@@ -77,12 +77,14 @@ const trafficSign = {
 export default function DrivingGame() {
 
   const {
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-    currentScenario,
-    sessionData
-  } = useSession();
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      sessionData,
+      speakQuestion,
+      stopSpeaking
+} = useSession();
 
   const [showIntro, setShowIntro] = useState(true);
 
@@ -138,6 +140,7 @@ export default function DrivingGame() {
   const trafficSignColIndex = 3;
   const trafficSignXOffset = -20;
 
+
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
       currentScroll.current = value;
@@ -157,6 +160,19 @@ export default function DrivingGame() {
   const [carPaused, setCarPaused] = useState(false);
   const [carDirection, setCarDirection] = useState("NORTH");
   const carXAnim = useRef(new Animated.Value(width / 2 - (carWidth / 2))).current;
+
+    useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking();
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);

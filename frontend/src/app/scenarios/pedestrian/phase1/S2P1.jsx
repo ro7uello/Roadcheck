@@ -73,11 +73,14 @@ const questions = [
 
 export default function DrivingGame() {
   const {
-    currentScenario,
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-  } = useSession();
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      sessionData,
+      speakQuestion,
+      stopSpeaking
+} = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
@@ -116,6 +119,19 @@ export default function DrivingGame() {
   const [playerPaused, setPlayerPaused] = useState(false);
   const rightX = width * 0.56 - spriteWidth / 2; // Adjusted to right side by half
   const playerXAnim = useRef(new Animated.Value(rightX)).current;
+
+    useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking();
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
   function startScrollAnimation() {
     scrollY.setValue(startOffset);

@@ -100,11 +100,14 @@ const questions = [
 
 export default function DrivingGame() {
   const {
-    currentScenario,
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-  } = useSession();
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      sessionData,
+      speakQuestion,
+      stopSpeaking
+} = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
@@ -137,7 +140,6 @@ export default function DrivingGame() {
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(null);
   const [playerDirection, setPlayerDirection] = useState("NORTH");
   const [carsPaused, setCarsPaused] = useState(false);
-
 
   // Player
   const [playerFrame, setPlayerFrame] = useState(0);
@@ -172,6 +174,18 @@ export default function DrivingGame() {
     { id: 6, mapX: scaledMapWidth * 0.52, mapY: scaledMapHeight * 0.43, spriteIndex: 1 },
   ];
 
+    useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking();
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
   // Animate NPC cars - pause when question shows
   useEffect(() => {

@@ -110,6 +110,8 @@ export default function DrivingGame() {
     moveToNextScenario,
     completeSession,
     currentScenario,
+                      speakQuestion,
+                      stopSpeaking
   } = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
@@ -158,6 +160,20 @@ export default function DrivingGame() {
   const pedestrianXAnim = useRef(new Animated.Value(pedestrianInitialX)).current;
 
   const carXAnim = useRef(new Animated.Value(width / 2 - carWidth / 2)).current;
+
+  useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        // Auto-play question after 1 second delay (gives time for animation)
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking(); // Stop speaking when question disappears
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
   useEffect(() => {
     let iv;

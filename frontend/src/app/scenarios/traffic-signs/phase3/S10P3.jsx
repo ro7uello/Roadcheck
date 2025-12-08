@@ -148,14 +148,16 @@ const warningSignSprites = {
   sharpRightTurn: require("../../../../../assets/signs/low-flying_aircraft.png"),
 };
 
-function DrivingGameContent() {
+export default function DrivingGame()  {
   const {
-    updateScenarioProgress,
-    moveToNextScenario,
-    completeSession,
-    currentScenario,
-    sessionData
-  } = useSession();
+      updateScenarioProgress,
+      moveToNextScenario,
+      completeSession,
+      currentScenario,
+      sessionData,
+      speakQuestion,
+      stopSpeaking
+} = useSession();
 
   const updateProgress = async (selectedOption, isCorrect) => {
     try {
@@ -163,9 +165,14 @@ function DrivingGameContent() {
       let scenarioId;
 
       if (phaseId === 4) {
+        // Phase 1: scenarios 31-40
         scenarioId = 30 + currentScenario;
       } else if (phaseId === 5) {
+        // Phase 2: scenarios 41-50
         scenarioId = 40 + currentScenario;
+      } else if (phaseId === 6) {
+        // Phase 3: scenarios 51-60
+        scenarioId = 50 + currentScenario;
       } else {
         console.error('Unknown phase ID:', phaseId);
         return;
@@ -196,6 +203,19 @@ function DrivingGameContent() {
   const warningSignRowIndex = 12;
   const warningSignColIndex = 3;
   const warningSignXOffset = 0;
+
+    useEffect(() => {
+      if (showQuestion && questions[questionIndex]) {
+        const timer = setTimeout(() => {
+          speakQuestion(questions[questionIndex].question);
+        }, 1000);
+
+        return () => {
+          clearTimeout(timer);
+          stopSpeaking();
+        };
+      }
+    }, [showQuestion, questionIndex]);
 
   useEffect(() => {
     const id = scrollY.addListener(({ value }) => {
@@ -567,14 +587,6 @@ function DrivingGameContent() {
         </View>
       )}
     </View>
-  );
-}
-
-export default function DrivingGame() {
-  return (
-    <SessionProvider>
-      <DrivingGameContent />
-    </SessionProvider>
   );
 }
 
